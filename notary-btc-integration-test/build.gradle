@@ -1,0 +1,58 @@
+buildscript {
+    repositories {
+        mavenCentral()
+        jcenter()
+    }
+}
+apply plugin: "kotlin-spring" // See https://kotlinlang.org/docs/reference/compiler-plugins.html#kotlin-spring-compiler-plugin
+
+sourceSets {
+    integrationTest {
+        kotlin {
+            compileClasspath += main.output + test.output
+            runtimeClasspath += main.output + test.output
+            srcDirs += 'src/integration-test/kotlin'
+        }
+        resources {
+            srcDirs = ["src/integration-test/resources"]
+        }
+    }
+}
+
+configurations {
+    integrationTestImplementation.extendsFrom testImplementation
+    integrationTestCompile.extendsFrom testCompile
+    integrationTestRuntime.extendsFrom testRuntime
+}
+
+task integrationTest(type: Test) {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = 'Runs Bitcoin integration tests.'
+
+    testClassesDirs = sourceSets.integrationTest.output.classesDirs
+    classpath = sourceSets.integrationTest.runtimeClasspath
+    setWorkingDir("$rootDir/")
+    // Enable JUnit5 tests
+    useJUnitPlatform {
+    }
+
+    mustRunAfter test
+}
+check.dependsOn integrationTest
+
+
+dependencies {
+    compile project(":btc-registration")
+    compile project(":btc-address-generation")
+    compile project(":btc-deposit")
+    compile project(":btc-withdrawal")
+
+    compile "com.github.d3ledger.notary:notary-registration:$notary_version"
+    compile "com.github.d3ledger.notary:notary-iroha-integration-test:$notary_version"
+}
+
+sonarqube {
+    properties {
+        property "sonar.projectKey", "notary:notary-btc-integration-test"
+    }
+}

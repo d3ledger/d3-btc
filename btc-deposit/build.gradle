@@ -1,0 +1,17 @@
+buildscript {
+    repositories {
+        mavenCentral()
+        jcenter()
+    }
+}
+apply plugin: "kotlin-spring" // See https://kotlinlang.org/docs/reference/compiler-plugins.html#kotlin-spring-compiler-plugin
+
+dependencies {
+    compile project(":btc")
+}
+
+sonarqube {
+    properties {
+        property "sonar.projectKey", "notary:btc-deposit"
+    }
+}
