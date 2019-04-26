@@ -53,7 +53,7 @@ pipeline {
             sh "gradle dependencies"
             sh "gradle test --info"
             sh "gradle compileIntegrationTestKotlin --info"
-            //sh "gradle integrationTest --info"
+            sh "gradle integrationTest --info"
           }
         }
       }
