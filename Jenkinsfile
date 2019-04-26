@@ -66,10 +66,6 @@ pipeline {
         }
       }
       post {
-        always {
-          junit allowEmptyResults: true, keepLongStdio: true, testResults: 'build/test-results/**/*.xml'
-          jacoco execPattern: 'build/jacoco/test.exec', sourcePattern: '.'
-        }
         cleanup {
           sh "mkdir -p build-logs"
           sh """
@@ -79,7 +75,6 @@ pipeline {
           """
           
           sh "tar -zcvf build-logs/notaryBtcIntegrationTest.gz -C notary-btc-integration-test/build/reports/tests integrationTest || true"
-          sh "tar -zcvf build-logs/jacoco.gz -C build/reports jacoco || true"
           sh "tar -zcvf build-logs/dokka.gz -C build/reports dokka || true"
           archiveArtifacts artifacts: 'build-logs/*.gz'
           sh "docker-compose -f deploy/docker-compose.yml -f deploy/docker-compose.ci.yml down"
