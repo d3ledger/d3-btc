@@ -53,14 +53,7 @@ pipeline {
             sh "gradle dependencies"
             sh "gradle test --info"
             sh "gradle compileIntegrationTestKotlin --info"
-            sh "gradle integrationTest --info"
-            sh "gradle dokka --info"
-            withCredentials([string(credentialsId: 'SONAR_TOKEN', variable: 'SONAR_TOKEN')]) {
-              sh(script: """./gradlew sonarqube --configure-on-demand \
-                -Dsonar.host.url=https://sonar.soramitsu.co.jp \
-                -Dsonar.login=${SONAR_TOKEN} \
-              """)
-            }
+            //sh "gradle integrationTest --info"
           }
         }
       }

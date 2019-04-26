@@ -21,9 +21,3 @@ task runBtcRegistration(type: JavaExec) {
     classpath = sourceSets.main.runtimeClasspath
     setWorkingDir("$rootDir/")
 }
-
-sonarqube {
-    properties {
-        property "sonar.projectKey", "notary:btc-registration"
-    }
-}

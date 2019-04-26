@@ -9,8 +9,6 @@ buildscript {
     }
     configurations.maybeCreate("pitest")
     dependencies {
-        classpath "org.jetbrains.dokka:dokka-gradle-plugin:0.9.17"
-        classpath "org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:2.6.2"
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
         classpath 'info.solidsoft.gradle.pitest:gradle-pitest-plugin:1.3.0'
         classpath "org.jetbrains.kotlin:kotlin-allopen:$kotlin_version"
@@ -24,12 +22,10 @@ version = '1.0-SNAPSHOT'
 
 apply plugin: 'info.solidsoft.pitest'
 apply plugin: 'com.github.johnrengelman.shadow'
-apply plugin: 'org.sonarqube'
 
 allprojects {
     apply plugin: 'java'
     apply plugin: 'kotlin'
-    apply plugin: 'org.jetbrains.dokka'
     apply plugin: 'maven'
     repositories {
         mavenCentral()
@@ -37,23 +33,6 @@ allprojects {
         jcenter()
         maven { url = 'https://dl.bintray.com/kotlin/ktor' }
         maven { url 'https://jitpack.io' }
-    }
-}
-
-subprojects {
-    dokka {
-        outputFormat = 'html'
-        outputDirectory = "build/reports/dokka"
-        reportUndocumented = true
-        sourceDirs = files("${project.projectDir}/src/main/kotlin")
-    }
-    sonarqube {
-        properties {
-            property "sonar.java.binaries", "${project.projectDir}/build/classes"
-            property "sonar.java.test.binaries", "${project.projectDir}/build/test-results/test/binary"
-            property "sonar.junit.reportsPaths", "${project.projectDir}/build/test-results/**/*.xml"
-            property "sonar.exclusions", "${project.projectDir}/**/*.txt"
-        }
     }
 }
 

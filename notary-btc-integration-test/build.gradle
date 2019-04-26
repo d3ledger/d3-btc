@@ -50,9 +50,3 @@ dependencies {
     compile "com.github.d3ledger.notary:notary-registration:$notary_version"
     compile "com.github.d3ledger.notary:notary-iroha-integration-test:$notary_version"
 }
-
-sonarqube {
-    properties {
-        property "sonar.projectKey", "notary:notary-btc-integration-test"
-    }
-}
