@@ -54,7 +54,6 @@ pipeline {
             sh "gradle test --info"
             sh "gradle compileIntegrationTestKotlin --info"
             sh "gradle integrationTest --info"
-            sh "gradle codeCoverageReport --info"
             sh "gradle dokka --info"
             withCredentials([string(credentialsId: 'SONAR_TOKEN', variable: 'SONAR_TOKEN')]) {
               sh(script: """./gradlew sonarqube --configure-on-demand \

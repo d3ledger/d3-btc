@@ -22,7 +22,6 @@ buildscript {
 group = 'd3'
 version = '1.0-SNAPSHOT'
 
-apply plugin: "jacoco"
 apply plugin: 'info.solidsoft.pitest'
 apply plugin: 'com.github.johnrengelman.shadow'
 apply plugin: 'org.sonarqube'
@@ -53,7 +52,6 @@ subprojects {
             property "sonar.java.binaries", "${project.projectDir}/build/classes"
             property "sonar.java.test.binaries", "${project.projectDir}/build/test-results/test/binary"
             property "sonar.junit.reportsPaths", "${project.projectDir}/build/test-results/**/*.xml"
-            property "sonar.jacoco.reportPaths", "${project.projectDir}/build/jacoco/test.exec"
             property "sonar.exclusions", "${project.projectDir}/**/*.txt"
         }
     }
@@ -115,30 +113,4 @@ pitest {
     avoidCallsTo = ['kotlin.jvm.internal', 'mu']
     mutators = ['CONDITIONALS_BOUNDARY', 'NEGATE_CONDITIONALS', 'REMOVE_CONDITIONALS', 'MATH', 'INCREMENTS',
                 'INVERT_NEGS', 'INLINE_CONSTS', 'VOID_METHOD_CALLS']
-}
-
-// -------------------------| JaCoCo code coverage |-------------------------
-
-task codeCoverageReport(type: JacocoReport) {
-
-    // Gather execution data from all subprojects
-    // (change this if you e.g. want to calculate unit test/integration test coverage separately)
-    executionData fileTree(project.rootDir.absolutePath).include("**/build/jacoco/*.exec")
-
-    // Add all relevant sourcesets from the subprojects
-    subprojects.each {
-        sourceSets it.sourceSets.main
-    }
-
-    reports {
-        xml.enabled true
-        html.enabled true
-        html.destination "${buildDir}/reports/jacoco"
-        csv.enabled false
-    }
-}
-
-// always run the tests before generating the report
-codeCoverageReport.dependsOn {
-    subprojects*.test
 }
