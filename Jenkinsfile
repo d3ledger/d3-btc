@@ -47,13 +47,13 @@ pipeline {
             sh "docker cp d3-btc-node0-${DOCKER_NETWORK}:/usr/bin/bitcoin-cli deploy/bitcoin/"
           }
 
-          iC = docker.image("gradle:5.4-jdk8-slim")
+          iC = docker.image("gradle:4.10.2-jdk8-slim")
           iC.inside("--network='d3-${DOCKER_NETWORK}' -e JVM_OPTS='-Xmx3200m' -e TERM='dumb'") {
             sh "ln -s deploy/bitcoin/bitcoin-cli /usr/bin/bitcoin-cli"
             sh "gradle dependencies"
             sh "gradle test --info"
-            sh "gradle compileIntegrationTestKotlin --info"
-            sh "gradle integrationTest --info"
+            //sh "gradle compileIntegrationTestKotlin --info"
+            //sh "gradle integrationTest --info"
           }
         }
       }
@@ -65,7 +65,7 @@ pipeline {
               docker logs \$(echo \$LINE | cut -d ' ' -f1) | gzip -6 > build-logs/\$(echo \$LINE | cut -d ' ' -f2).log.gz; \
             done < <(docker ps --filter "network=d3-${DOCKER_NETWORK}" --format "{{.ID}} {{.Names}}")
           """
-          
+
           sh "tar -zcvf build-logs/notaryBtcIntegrationTest.gz -C notary-btc-integration-test/build/reports/tests integrationTest || true"
           sh "tar -zcvf build-logs/dokka.gz -C build/reports dokka || true"
           archiveArtifacts artifacts: 'build-logs/*.gz'
@@ -80,27 +80,27 @@ pipeline {
       steps {
         script {
           def scmVars = checkout scm
-          if (env.BRANCH_NAME ==~ /(master|develop|reserved)/) {
+          if (true) {
             withCredentials([usernamePassword(credentialsId: 'nexus-d3-docker', usernameVariable: 'login', passwordVariable: 'password')]) {
               sh "docker login nexus.iroha.tech:19002 -u ${login} -p '${password}'"
 
               TAG = env.BRANCH_NAME
-              sh "rm build/libs/notary-1.0-SNAPSHOT-all.jar || true"
-              iC = docker.image("gradle:5.4-jdk8-slim")
+              iC = docker.image("gradle:4.10.2-jdk8-slim")
               iC.inside("-e JVM_OPTS='-Xmx3200m' -e TERM='dumb'") {
-
+                sh "find . -name *.jar"
                 sh "gradle btc-address-generation:shadowJar"
                 sh "gradle btc-registration:shadowJar"
                 sh "gradle btc-dw-bridge:shadowJar"
+                sh "find . -name *.jar"
               }
 
-              btcAddressGeneration = docker.build("nexus.iroha.tech:19002/${login}/btc-address-generation:${TAG}", "-f docker/btc-address-generation.dockerfile .")
-              btcRegistration = docker.build("nexus.iroha.tech:19002/${login}/btc-registration:${TAG}", "-f docker/btc-registration.dockerfile .")
-              btcDwBridge = docker.build("nexus.iroha.tech:19002/${login}/btc-dw-bridge:${TAG}", "-f docker/btc-dw-bridge.dockerfile .")
+              btcAddressGeneration = docker.build("nexus.iroha.tech:19002/${login}/btc-address-generation:develop", "-f docker/btc-address-generation.dockerfile .")
+              btcRegistration = docker.build("nexus.iroha.tech:19002/${login}/btc-registration:develop", "-f docker/btc-registration.dockerfile .")
+              btcDwBridge = docker.build("nexus.iroha.tech:19002/${login}/btc-dw-bridge:develop", "-f docker/btc-dw-bridge.dockerfile .")
 
-              btcAddressGeneration.push("${TAG}")
-              btcRegistration.push("${TAG}")
-              btcDwBridge.push("${TAG}")
+              btcAddressGeneration.push("develop")
+              btcRegistration.push("develop")
+              btcDwBridge.push("develop")
             }
           }
         }
