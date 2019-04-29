@@ -47,7 +47,7 @@ pipeline {
             sh "docker cp d3-btc-node0-${DOCKER_NETWORK}:/usr/bin/bitcoin-cli deploy/bitcoin/"
           }
 
-          iC = docker.image("gradle:5.4-jdk8-slim")
+          iC = docker.image("gradle:4.10.2-jdk8-slim")
           iC.inside("--network='d3-${DOCKER_NETWORK}' -e JVM_OPTS='-Xmx3200m' -e TERM='dumb'") {
             sh "ln -s deploy/bitcoin/bitcoin-cli /usr/bin/bitcoin-cli"
             sh "gradle dependencies"
@@ -86,7 +86,7 @@ pipeline {
 
               TAG = env.BRANCH_NAME
               sh "rm build/libs/notary-1.0-SNAPSHOT-all.jar || true"
-              iC = docker.image("gradle:5.4-jdk8-slim")
+              iC = docker.image("gradle:4.10.2-jdk8-slim")
               iC.inside("-e JVM_OPTS='-Xmx3200m' -e TERM='dumb'") {
 
                 sh "gradle btc-address-generation:shadowJar"
