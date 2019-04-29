@@ -1,0 +1,95 @@
+buildscript {
+    ext.kotlin_version = '1.3.10'
+    ext.ktor_version = '1.0.0'
+    ext.notary_version='ad70278f77'
+
+    repositories {
+        mavenCentral()
+        jcenter()
+    }
+    configurations.maybeCreate("pitest")
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+        classpath 'info.solidsoft.gradle.pitest:gradle-pitest-plugin:1.3.0'
+        classpath "org.jetbrains.kotlin:kotlin-allopen:$kotlin_version"
+        classpath 'com.github.jengelman.gradle.plugins:shadow:4.0.1'
+        pitest 'org.pitest:pitest-junit5-plugin:0.3'
+    }
+}
+
+group = 'd3'
+version = '1.0-SNAPSHOT'
+
+apply plugin: 'info.solidsoft.pitest'
+apply plugin: 'com.github.johnrengelman.shadow'
+
+allprojects {
+    apply plugin: 'java'
+    apply plugin: 'kotlin'
+    apply plugin: 'maven'
+    repositories {
+        mavenCentral()
+        // for Ktor
+        jcenter()
+        maven { url = 'https://dl.bintray.com/kotlin/ktor' }
+        maven { url 'https://jitpack.io' }
+    }
+}
+
+sourceCompatibility = 1.8
+
+// ------------------| Test dependencies |------------------
+
+allprojects {
+    dependencies {
+        // unit tests
+        testCompile('org.junit.jupiter:junit-jupiter-api:5.2.0')
+        testRuntime('org.junit.jupiter:junit-jupiter-engine:5.2.0')
+        // https://mvnrepository.com/artifact/org.mockito/mockito-all
+        testCompile group: 'org.mockito', name: 'mockito-all', version: '2.0.2-beta'
+        testCompile('com.nhaarman:mockito-kotlin:1.5.0') {
+            exclude group: 'org.jetbrains.kotlin'
+            exclude group: 'org.mockito'
+        }
+
+        // for setting env variables in tests
+        testCompile group: 'com.github.stefanbirkner', name: 'system-rules', version: '1.18.0'
+        // to run both junit4 and junit5 tests
+        testRuntime("org.junit.vintage:junit-vintage-engine:5.2.0")
+    }
+}
+
+wrapper {
+    gradleVersion = 4.10
+}
+
+allprojects {
+    compileKotlin {
+        kotlinOptions.jvmTarget = "1.8"
+    }
+    compileTestKotlin {
+        kotlinOptions.jvmTarget = "1.8"
+    }
+}
+
+// -------------------------| Iroha bindings |-------------------------
+
+import org.gradle.internal.os.OperatingSystem
+
+import static org.apache.tools.ant.taskdefs.condition.Os.*
+
+
+// -------------------------| End Iroha bindings |-------------------------
+
+// -------------------------| PIT mutation testing |-------------------------
+
+pitest {
+    pitestVersion = "1.3.0"
+    testPlugin = "junit5"
+    targetClasses = ['util.*', 'notary.*', 'registration.*', 'withdrawalservice.*']
+    excludedClasses = ['notary.db.*', '*Test*']
+    targetTests = ['util.*', 'notary.*', 'registration.*', 'withdrawalservice.*']
+    avoidCallsTo = ['kotlin.jvm.internal', 'mu']
+    mutators = ['CONDITIONALS_BOUNDARY', 'NEGATE_CONDITIONALS', 'REMOVE_CONDITIONALS', 'MATH', 'INCREMENTS',
+                'INVERT_NEGS', 'INLINE_CONSTS', 'VOID_METHOD_CALLS']
+}

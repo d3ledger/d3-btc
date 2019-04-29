@@ -1,0 +1,31 @@
+buildscript {
+    repositories {
+        mavenCentral()
+        jcenter()
+    }
+}
+apply plugin: "kotlin-spring" // See https://kotlinlang.org/docs/reference/compiler-plugins.html#kotlin-spring-compiler-plugin
+
+
+dependencies {
+    compile project(":btc")
+}
+
+// Forms a list full of 'sendBtc' task arguments
+def getSendBtcArgs() {
+    List<String> args = new ArrayList<>()
+    if (project.hasProperty("address")) {
+        args.add(project.property("address").toString())
+    }
+    if (project.hasProperty("amountSat")) {
+        args.add(project.property("amountSat").toString())
+    }
+    return args
+}
+
+task sendBtc(type: JavaExec) {
+    main = 'com.d3.btc.withdrawal.send.BtcSendBtc'
+    args getSendBtcArgs()
+    classpath = sourceSets.main.runtimeClasspath
+    setWorkingDir("$rootDir/")
+}
