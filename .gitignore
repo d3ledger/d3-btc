@@ -26,33 +26,15 @@ hs_err_pid*
 .gradle
 /build/
 /btc/build/
-/btc/gradle/
-/btc/gradlew
 /btc-address-generation/build/
-/btc-address-generation/gradle/
-/btc-address-generation/gradlew
 /btc-deposit/build/
-/btc-deposit/gradle/
-/btc-deposit/gradlew
 /btc-registration/build/
-/btc-registration/gradle/
-/btc-registration/gradlew
 /btc-withdrawal/build
-/btc-withdrawal/gradle
-/btc-withdrawal/gradlew
-/btc-withdrawal/gradlew.bat
 /notary-commons/build/
 /notary-btc-integration-test/build/
-/notary-btc-integration-test/gradle/
-/notary-btc-integration-test/gradlew
 /btc-dw-bridge/build
-/btc-dw-bridge/gradle
-/btc-dw-bridge/gradlew
-/btc-dw-bridge/gradlew.bat
 /configs/brvs/key*.*
-*gradlew.bat
 gradle/wrapper/gradle-wrapper.jar
-gradlew
 gradle/wrapper
 
 # Ignore Gradle GUI config
