@@ -1,8 +1,13 @@
+/*
+ * Copyright D3 Ledger, Inc. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 package com.d3.btc.withdrawal.transaction
 
 import com.d3.btc.model.BtcAddress
-import com.d3.btc.provider.network.BtcNetworkConfigProvider
 import com.d3.btc.provider.BtcChangeAddressProvider
+import com.d3.btc.provider.network.BtcNetworkConfigProvider
 import com.github.kittinunf.result.Result
 import com.github.kittinunf.result.fanout
 import com.github.kittinunf.result.flatMap
@@ -39,15 +44,16 @@ class TransactionCreator(
         confidenceLevel: Int
     ): Result<Pair<Transaction, List<TransactionOutput>>, Exception> {
         val transaction = Transaction(btcNetworkConfigProvider.getConfig())
-        return transactionHelper.getAvailableAddresses(withdrawalDetails.withdrawalTime).flatMap { availableAddresses ->
-            logger.info("Available addresses $availableAddresses")
-            transactionHelper.collectUnspents(
-                availableAddresses,
-                withdrawalDetails.amountSat,
-                availableHeight,
-                confidenceLevel
-            )
-        }.fanout {
+        return transactionHelper.getAvailableAddresses(withdrawalDetails.withdrawalTime)
+            .flatMap { availableAddresses ->
+                logger.info("Available addresses $availableAddresses")
+                transactionHelper.collectUnspents(
+                    availableAddresses,
+                    withdrawalDetails.amountSat,
+                    availableHeight,
+                    confidenceLevel
+                )
+            }.fanout {
             btcChangeAddressProvider.getAllChangeAddresses(withdrawalDetails.withdrawalTime)
         }.map { (unspents, changeAddresses) ->
 

@@ -1,12 +1,17 @@
+/*
+ * Copyright D3 Ledger, Inc. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 @file:JvmName("BtcAddressGenerationMain")
 
 package com.d3.btc.generation
 
 import com.d3.btc.generation.init.BtcAddressGenerationInitialization
+import com.d3.commons.config.getProfile
 import com.github.kittinunf.result.Result
 import com.github.kittinunf.result.failure
 import com.github.kittinunf.result.flatMap
-import com.d3.commons.config.getProfile
 import mu.KLogging
 import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import org.springframework.context.annotation.ComponentScan

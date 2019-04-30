@@ -1,3 +1,8 @@
+/*
+ * Copyright D3 Ledger, Inc. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 package com.d3.btc.deposit.handler
 
 import com.d3.btc.helper.address.outPutToBase58Address
@@ -35,7 +40,8 @@ class BtcDepositTxHandler(
         tx.outputs.forEach { output ->
             val txBtcAddress = outPutToBase58Address(output)
             logger.info { "Tx ${tx.hashAsString} has output address $txBtcAddress" }
-            val btcAddress = registeredAddresses.firstOrNull { btcAddress -> btcAddress.address == txBtcAddress }
+            val btcAddress =
+                registeredAddresses.firstOrNull { btcAddress -> btcAddress.address == txBtcAddress }
             if (btcAddress != null) {
                 val btcValue = satToBtc(output.value.value)
                 val event = SideChainEvent.PrimaryBlockChainEvent.OnPrimaryChainDeposit(

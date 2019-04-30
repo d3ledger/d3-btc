@@ -1,3 +1,8 @@
+/*
+ * Copyright D3 Ledger, Inc. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 package integration.btc
 
 import com.d3.commons.sidechain.iroha.CLIENT_DOMAIN
@@ -21,7 +26,8 @@ class BtcMultiNotaryIntegrationTest {
     private val peers = 3
     private val integrationHelper = BtcIntegrationHelperUtil(peers)
     private val environments = ArrayList<BtcNotaryTestEnvironment>()
-    private val registrationServiceEnvironment = RegistrationServiceTestEnvironment(integrationHelper)
+    private val registrationServiceEnvironment =
+        RegistrationServiceTestEnvironment(integrationHelper)
 
     init {
         registrationServiceEnvironment.registrationInitialization.init()
@@ -30,7 +36,8 @@ class BtcMultiNotaryIntegrationTest {
         integrationHelper.accountHelper.notaryAccounts
             .forEach { notaryAccount ->
                 val testName = "multi_notary_${peerCount++}"
-                val notaryConfig = integrationHelper.configHelper.createBtcDepositConfig(testName, notaryAccount)
+                val notaryConfig =
+                    integrationHelper.configHelper.createBtcDepositConfig(testName, notaryAccount)
                 environments.add(
                     BtcNotaryTestEnvironment(
                         integrationHelper = integrationHelper,

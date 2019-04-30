@@ -1,3 +1,8 @@
+/*
+ * Copyright D3 Ledger, Inc. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 package com.d3.btc.wallet
 
 import com.d3.btc.monitoring.Monitoring
@@ -15,7 +20,9 @@ class WalletMonitoring(
     @Autowired private val btcNetworkConfigProvider: BtcNetworkConfigProvider
 ) : Monitoring() {
     override fun monitor() = WalletSnippet(
-        wallet.watchedScripts.map { script -> script.getToAddress(btcNetworkConfigProvider.getConfig()).toString() },
+        wallet.watchedScripts.map { script ->
+            script.getToAddress(btcNetworkConfigProvider.getConfig()).toString()
+        },
         wallet.unspents.map { unspent -> "$unspent DEPTH ${unspent.parentTransactionDepthInBlocks}" },
         wallet.unspents.sumBy { unspent -> unspent.value.value.toInt() })
 

@@ -1,11 +1,17 @@
+/*
+ * Copyright D3 Ledger, Inc. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 package com.d3.btc.withdrawal.transaction
 
 import com.d3.btc.helper.address.createMsRedeemScript
 import com.d3.btc.helper.address.outPutToBase58Address
 import com.d3.btc.helper.address.toEcPubKey
+import com.d3.btc.provider.BtcChangeAddressProvider
 import com.d3.btc.provider.BtcRegisteredAddressesProvider
 import com.d3.btc.wallet.safeLoad
-import com.d3.btc.provider.BtcChangeAddressProvider
+import com.d3.commons.util.hex
 import com.github.kittinunf.result.Result
 import com.github.kittinunf.result.fanout
 import com.github.kittinunf.result.map
@@ -15,7 +21,6 @@ import org.bitcoinj.core.Transaction
 import org.bitcoinj.wallet.Wallet
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
-import com.d3.commons.util.hex
 
 /*
    Class that is used to sign transactions using available private keys
@@ -63,7 +68,8 @@ class TransactionSigner(
                 if (keyPair != null) {
                     val redeem = createMsRedeemScript(pubKeys)
                     logger.info("Redeem script for tx ${tx.hashAsString} input $inputIndex is $redeem")
-                    val hashOut = tx.hashForSignature(inputIndex, redeem, Transaction.SigHash.ALL, false)
+                    val hashOut =
+                        tx.hashForSignature(inputIndex, redeem, Transaction.SigHash.ALL, false)
                     val signature = keyPair.sign(hashOut)
                     signatures.add(
                         InputSignature(

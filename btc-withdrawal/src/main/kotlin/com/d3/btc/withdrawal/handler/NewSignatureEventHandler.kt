@@ -1,3 +1,8 @@
+/*
+ * Copyright D3 Ledger, Inc. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 package com.d3.btc.withdrawal.handler
 
 import com.d3.btc.withdrawal.service.BtcRollbackService
@@ -61,7 +66,8 @@ class NewSignatureEventHandler(
         // Hash of transaction will be changed after signing. This is why we keep an "original" hash
         val originalHash = tx.hashAsString
         signCollector.getSignatures(originalHash).fold({ signatures ->
-            val enoughSignaturesCollected = signCollector.isEnoughSignaturesCollected(tx, signatures)
+            val enoughSignaturesCollected =
+                signCollector.isEnoughSignaturesCollected(tx, signatures)
             if (!enoughSignaturesCollected) {
                 logger.info { "Not enough signatures were collected for tx $originalHash" }
                 return

@@ -1,8 +1,14 @@
+/*
+ * Copyright D3 Ledger, Inc. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 package com.d3.btc.withdrawal.transaction.consensus
 
 import com.squareup.moshi.Moshi
 
-private val withdrawalConsensusJsonAdapter = Moshi.Builder().build().adapter(WithdrawalConsensus::class.java)
+private val withdrawalConsensusJsonAdapter =
+    Moshi.Builder().build().adapter(WithdrawalConsensus::class.java)
 
 /**
  * Data class that holds all the information to decide how withdrawal transaction must be created
@@ -32,7 +38,8 @@ data class WithdrawalConsensus(val availableHeight: Int, val peers: Int) {
             }
             val commonAvailableHeight =
                 consensusData.minBy { withdrawalConsensus -> withdrawalConsensus.availableHeight }!!.availableHeight
-            val commonPeers = consensusData.minBy { withdrawalConsensus -> withdrawalConsensus.peers }!!.peers
+            val commonPeers =
+                consensusData.minBy { withdrawalConsensus -> withdrawalConsensus.peers }!!.peers
             return WithdrawalConsensus(commonAvailableHeight, commonPeers)
         }
     }

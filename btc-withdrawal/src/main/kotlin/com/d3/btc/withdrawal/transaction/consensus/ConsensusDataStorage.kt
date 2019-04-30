@@ -1,3 +1,8 @@
+/*
+ * Copyright D3 Ledger, Inc. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 package com.d3.btc.withdrawal.transaction.consensus
 
 import com.d3.btc.withdrawal.transaction.WithdrawalDetails
@@ -53,12 +58,12 @@ object ConsensusDataStorage {
 
     /**
      * Creates consensus data storage for withdrawal
-     * @param withdrawalHash - hash of withdrawal that needs consensus data
+     * @param withdrawalDetails - details of withdrawal that needs consensus data
      */
     @Synchronized
     fun create(withdrawalDetails: WithdrawalDetails) {
         consensusData[withdrawalDetails.irohaFriendlyHashCode()] =
-                WithdrawalDetailsConsensus(withdrawalDetails, ArrayList())
+            WithdrawalDetailsConsensus(withdrawalDetails, ArrayList())
     }
 }
 

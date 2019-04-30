@@ -1,3 +1,8 @@
+/*
+ * Copyright D3 Ledger, Inc. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 package com.d3.btc.withdrawal.transaction
 
 import com.d3.btc.fee.BYTES_PER_INPUT
@@ -5,9 +10,9 @@ import com.d3.btc.fee.CurrentFeeRate
 import com.d3.btc.fee.getTxFee
 import com.d3.btc.helper.address.outPutToBase58Address
 import com.d3.btc.peer.SharedPeerGroup
+import com.d3.btc.provider.BtcChangeAddressProvider
 import com.d3.btc.provider.BtcRegisteredAddressesProvider
 import com.d3.btc.provider.network.BtcNetworkConfigProvider
-import com.d3.btc.provider.BtcChangeAddressProvider
 import com.github.kittinunf.result.Result
 import com.github.kittinunf.result.fanout
 import com.github.kittinunf.result.map
@@ -61,7 +66,8 @@ class TransactionHelper(
             Coin.valueOf(amount),
             Address.fromBase58(btcNetworkConfigProvider.getConfig(), destinationAddress)
         )
-        val change = totalAmount - amount - getTxFee(transaction.inputs.size, OUTPUTS, CurrentFeeRate.get())
+        val change =
+            totalAmount - amount - getTxFee(transaction.inputs.size, OUTPUTS, CurrentFeeRate.get())
         //TODO create change address creation mechanism
         transaction.addOutput(Coin.valueOf(change), changeAddress)
     }
@@ -81,7 +87,14 @@ class TransactionHelper(
         confidenceLevel: Int
     ): Result<List<TransactionOutput>, Exception> {
         return Result.of {
-            collectUnspentsRec(availableAddresses, amount, 0, availableHeight, confidenceLevel, ArrayList())
+            collectUnspentsRec(
+                availableAddresses,
+                amount,
+                0,
+                availableHeight,
+                confidenceLevel,
+                ArrayList()
+            )
         }
     }
 
@@ -286,7 +299,10 @@ class TransactionHelper(
     }
 
     // Checks if fee output was addressed to available address
-    protected fun isAvailableOutput(availableAddresses: Set<String>, output: TransactionOutput): Boolean {
+    protected fun isAvailableOutput(
+        availableAddresses: Set<String>,
+        output: TransactionOutput
+    ): Boolean {
         val btcAddress = outPutToBase58Address(output)
         return availableAddresses.contains(btcAddress)
     }

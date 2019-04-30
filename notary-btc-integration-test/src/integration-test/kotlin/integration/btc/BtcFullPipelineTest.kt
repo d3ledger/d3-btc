@@ -1,3 +1,8 @@
+/*
+ * Copyright D3 Ledger, Inc. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 package integration.btc
 
 import com.d3.btc.helper.currency.satToBtc
@@ -31,7 +36,8 @@ class BtcFullPipelineTest {
 
     private val integrationHelper = BtcIntegrationHelperUtil()
 
-    private val addressGenerationEnvironment = BtcAddressGenerationTestEnvironment(integrationHelper, testName)
+    private val addressGenerationEnvironment =
+        BtcAddressGenerationTestEnvironment(integrationHelper, testName)
 
     private val registrationEnvironment = RegistrationServiceTestEnvironment(integrationHelper)
 
@@ -45,7 +51,8 @@ class BtcFullPipelineTest {
         integrationHelper.addBtcNotary("test_notary", "test_notary_address")
         // Run address generation
         GlobalScope.launch {
-            addressGenerationEnvironment.btcAddressGenerationInitialization.init().failure { ex -> throw ex }
+            addressGenerationEnvironment.btcAddressGenerationInitialization.init()
+                .failure { ex -> throw ex }
         }
         // Wait for initial address generation
         Thread.sleep(WAIT_PREGEN_PROCESS_MILLIS * addressGenerationEnvironment.btcGenerationConfig.threshold)
@@ -65,7 +72,8 @@ class BtcFullPipelineTest {
             blockStorageFolder.deleteRecursively()
             //Recreate folder
             blockStorageFolder.mkdirs()
-            notaryEnvironment.btcNotaryInitialization.init().failure { ex -> fail("Cannot run BTC notary", ex) }
+            notaryEnvironment.btcNotaryInitialization.init()
+                .failure { ex -> fail("Cannot run BTC notary", ex) }
         }
 
         generateChangeAddress()
@@ -73,7 +81,8 @@ class BtcFullPipelineTest {
         // Run withdrawal
         GlobalScope.launch {
             File(withdrawalEnvironment.btcWithdrawalConfig.bitcoin.blockStoragePath).mkdirs()
-            val blockStorageFolder = File(withdrawalEnvironment.btcWithdrawalConfig.bitcoin.blockStoragePath)
+            val blockStorageFolder =
+                File(withdrawalEnvironment.btcWithdrawalConfig.bitcoin.blockStoragePath)
             //Clear bitcoin blockchain folder
             blockStorageFolder.deleteRecursively()
             //Recreate folder
@@ -113,7 +122,11 @@ class BtcFullPipelineTest {
         val destBtcAddress = registerClient(destUserName, destKeypair)
 
         // Send 1 BTC
-        integrationHelper.sendBtc(srcBtcAddress, 1, notaryEnvironment.notaryConfig.bitcoin.confidenceLevel)
+        integrationHelper.sendBtc(
+            srcBtcAddress,
+            1,
+            notaryEnvironment.notaryConfig.bitcoin.confidenceLevel
+        )
         Thread.sleep(DEPOSIT_WAIT_MILLIS)
 
         // Send 10000 SAT from source to destination

@@ -1,3 +1,8 @@
+/*
+ * Copyright D3 Ledger, Inc. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 package com.d3.btc.withdrawal.transaction
 
 import com.d3.btc.monitoring.Monitoring
@@ -7,9 +12,8 @@ import org.springframework.stereotype.Component
 import java.util.concurrent.ConcurrentHashMap
 
 /*
-    Class that is used to store unsigned transactions
+ * Class that is used to store unsigned transactions
  */
-
 @Component
 class UnsignedTransactions(
     @Autowired private val signCollector: SignCollector
@@ -24,7 +28,8 @@ class UnsignedTransactions(
      * @param transaction - transaction to mark as unsigned
      */
     fun markAsUnsigned(withdrawalDetails: WithdrawalDetails, transaction: Transaction) {
-        unsignedTransactions[signCollector.shortTxHash(transaction)] = WithdrawalTx(withdrawalDetails, transaction)
+        unsignedTransactions[signCollector.shortTxHash(transaction)] =
+            WithdrawalTx(withdrawalDetails, transaction)
     }
 
     /**
@@ -47,5 +52,6 @@ class UnsignedTransactions(
      * @param txHash - hash of transaction to be checked
      * @return - true if transaction with [txHash] is present
      */
-    fun isUnsigned(txHash: String) = unsignedTransactions.containsKey(signCollector.shortTxHash(txHash))
+    fun isUnsigned(txHash: String) =
+        unsignedTransactions.containsKey(signCollector.shortTxHash(txHash))
 }

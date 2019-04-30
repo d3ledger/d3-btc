@@ -1,21 +1,26 @@
+/*
+ * Copyright D3 Ledger, Inc. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 @file:JvmName("BtcSendBtc")
 
 package com.d3.btc.withdrawal.send
 
 import com.d3.btc.helper.currency.satToBtc
+import com.d3.btc.withdrawal.config.BtcWithdrawalConfig
+import com.d3.commons.config.IrohaCredentialConfig
+import com.d3.commons.config.loadConfigs
+import com.d3.commons.model.IrohaCredential
+import com.d3.commons.sidechain.iroha.consumer.IrohaConsumer
+import com.d3.commons.sidechain.iroha.consumer.IrohaConsumerImpl
+import com.d3.commons.sidechain.iroha.util.ModelUtil
 import com.github.kittinunf.result.Result
 import com.github.kittinunf.result.failure
 import com.github.kittinunf.result.flatMap
 import com.github.kittinunf.result.map
-import com.d3.commons.config.IrohaCredentialConfig
-import com.d3.commons.config.loadConfigs
 import jp.co.soramitsu.iroha.java.IrohaAPI
-import com.d3.commons.model.IrohaCredential
 import mu.KLogging
-import com.d3.commons.sidechain.iroha.consumer.IrohaConsumer
-import com.d3.commons.sidechain.iroha.consumer.IrohaConsumerImpl
-import com.d3.commons.sidechain.iroha.util.ModelUtil
-import com.d3.btc.withdrawal.config.BtcWithdrawalConfig
 
 /*
     This is an utility file that may be used to send some money.
@@ -33,11 +38,15 @@ fun main(args: Array<String>) {
     val btcAmount = satToBtc(args[1].toLong())
     loadConfigs("btc-withdrawal", BtcWithdrawalConfig::class.java, "/btc/withdrawal.properties")
         .map { withdrawalConfig ->
-            val irohaNetwork = IrohaAPI(withdrawalConfig.iroha.hostname, withdrawalConfig.iroha.port)
+            val irohaNetwork =
+                IrohaAPI(withdrawalConfig.iroha.hostname, withdrawalConfig.iroha.port)
             sendBtc(
                 destAddress, btcAmount.toPlainString(),
                 withdrawalConfig.withdrawalCredential.accountId,
-                IrohaConsumerImpl(createNotaryCredential(withdrawalConfig.notaryCredential), irohaNetwork)
+                IrohaConsumerImpl(
+                    createNotaryCredential(withdrawalConfig.notaryCredential),
+                    irohaNetwork
+                )
             ).failure { ex ->
                 logger.error("Cannot send BTC", ex)
                 System.exit(1)

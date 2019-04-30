@@ -1,3 +1,8 @@
+/*
+ * Copyright D3 Ledger, Inc. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 package integration.btc
 
 import com.d3.btc.helper.address.outPutToBase58Address
@@ -33,7 +38,8 @@ class BtcMultiWithdrawalIntegrationTest {
     private val integrationHelper = BtcIntegrationHelperUtil(peers)
     private val withdrawalEnvironments = ArrayList<BtcWithdrawalTestEnvironment>()
     private val addressGenerationEnvironments = ArrayList<BtcAddressGenerationTestEnvironment>()
-    private val registrationServiceEnvironment = RegistrationServiceTestEnvironment(integrationHelper)
+    private val registrationServiceEnvironment =
+        RegistrationServiceTestEnvironment(integrationHelper)
 
     @AfterAll
     fun dropDown() {
@@ -60,7 +66,8 @@ class BtcMultiWithdrawalIntegrationTest {
         integrationHelper.accountHelper.btcWithdrawalAccounts
             .forEach { withdrawalAccount ->
                 val testName = testNames[peerCount++]
-                val withdrawalConfig = integrationHelper.configHelper.createBtcWithdrawalConfig(testName)
+                val withdrawalConfig =
+                    integrationHelper.configHelper.createBtcWithdrawalConfig(testName)
                 val environment =
                     BtcWithdrawalTestEnvironment(
                         integrationHelper,
@@ -69,10 +76,12 @@ class BtcMultiWithdrawalIntegrationTest {
                         withdrawalCredential = withdrawalAccount
                     )
                 environment.withdrawalTransferService.addNewBtcTransactionListener { tx ->
-                    environment.createdTransactions[tx.hashAsString] = Pair(System.currentTimeMillis(), tx)
+                    environment.createdTransactions[tx.hashAsString] =
+                        Pair(System.currentTimeMillis(), tx)
                 }
                 withdrawalEnvironments.add(environment)
-                val blockStorageFolder = File(environment.btcWithdrawalConfig.bitcoin.blockStoragePath)
+                val blockStorageFolder =
+                    File(environment.btcWithdrawalConfig.bitcoin.blockStoragePath)
                 //Clear bitcoin blockchain folder
                 blockStorageFolder.deleteRecursively()
                 //Recreate folder
@@ -84,7 +93,10 @@ class BtcMultiWithdrawalIntegrationTest {
             val testName = testNames[peerCount++]
             val environment = BtcAddressGenerationTestEnvironment(
                 integrationHelper,
-                btcGenerationConfig = integrationHelper.configHelper.createBtcAddressGenerationConfig(0, testName),
+                btcGenerationConfig = integrationHelper.configHelper.createBtcAddressGenerationConfig(
+                    0,
+                    testName
+                ),
                 mstRegistrationCredential = mstRegistrationAccount
             )
             addressGenerationEnvironments.add(environment)
@@ -117,10 +129,17 @@ class BtcMultiWithdrawalIntegrationTest {
         val randomNameSrc = String.getRandomString(9)
         val testClientSrcKeypair = ModelUtil.generateKeypair()
         val testClientSrc = "$randomNameSrc@$CLIENT_DOMAIN"
-        val res = registrationServiceEnvironment.register(randomNameSrc, testClientSrcKeypair.public.toHexString())
+        val res = registrationServiceEnvironment.register(
+            randomNameSrc,
+            testClientSrcKeypair.public.toHexString()
+        )
         assertEquals(200, res.statusCode)
         generateAddress(BtcAddressType.FREE)
-        integrationHelper.registerBtcAddressNoPreGen(randomNameSrc, CLIENT_DOMAIN, testClientSrcKeypair)
+        integrationHelper.registerBtcAddressNoPreGen(
+            randomNameSrc,
+            CLIENT_DOMAIN,
+            testClientSrcKeypair
+        )
         val btcAddressDest = integrationHelper.createBtcAddress()
         integrationHelper.addIrohaAssetTo(testClientSrc, BTC_ASSET, amount)
         val initialSrcBalance = integrationHelper.getIrohaAccountBalance(testClientSrc, BTC_ASSET)
@@ -135,7 +154,10 @@ class BtcMultiWithdrawalIntegrationTest {
         )
         Thread.sleep(WITHDRAWAL_WAIT_MILLIS)
         assertEquals(initTxCount, environment.createdTransactions.size)
-        assertEquals(initialSrcBalance, integrationHelper.getIrohaAccountBalance(testClientSrc, BTC_ASSET))
+        assertEquals(
+            initialSrcBalance,
+            integrationHelper.getIrohaAccountBalance(testClientSrc, BTC_ASSET)
+        )
         environment.transactionHelper.addToBlackList(btcAddressDest)
     }
 
@@ -154,12 +176,23 @@ class BtcMultiWithdrawalIntegrationTest {
         val randomNameSrc = String.getRandomString(9)
         val testClientSrcKeypair = ModelUtil.generateKeypair()
         val testClientSrc = "$randomNameSrc@$CLIENT_DOMAIN"
-        val res = registrationServiceEnvironment.register(randomNameSrc, testClientSrcKeypair.public.toHexString())
+        val res = registrationServiceEnvironment.register(
+            randomNameSrc,
+            testClientSrcKeypair.public.toHexString()
+        )
         assertEquals(200, res.statusCode)
         generateAddress(BtcAddressType.FREE)
         val btcAddressSrc =
-            integrationHelper.registerBtcAddressNoPreGen(randomNameSrc, CLIENT_DOMAIN, testClientSrcKeypair)
-        integrationHelper.sendBtc(btcAddressSrc, 1, environment.btcWithdrawalConfig.bitcoin.confidenceLevel)
+            integrationHelper.registerBtcAddressNoPreGen(
+                randomNameSrc,
+                CLIENT_DOMAIN,
+                testClientSrcKeypair
+            )
+        integrationHelper.sendBtc(
+            btcAddressSrc,
+            1,
+            environment.btcWithdrawalConfig.bitcoin.confidenceLevel
+        )
         val btcAddressDest = integrationHelper.createBtcAddress()
         integrationHelper.addIrohaAssetTo(testClientSrc, BTC_ASSET, amount)
         integrationHelper.transferAssetIrohaFromClient(
@@ -195,7 +228,8 @@ class BtcMultiWithdrawalIntegrationTest {
         })
         //Check that change addresses are watched
         withdrawalEnvironments.forEach { withdrawalEnvironment ->
-            val changeAddresses = withdrawalEnvironment.btcChangeAddressProvider.getAllChangeAddresses().get()
+            val changeAddresses =
+                withdrawalEnvironment.btcChangeAddressProvider.getAllChangeAddresses().get()
             changeAddresses.forEach { changeAddress ->
                 withdrawalEnvironment.transferWallet.isAddressWatched(
                     Address.fromBase58(
@@ -218,8 +252,9 @@ class BtcMultiWithdrawalIntegrationTest {
         environment.btcKeyGenSessionProvider.createPubKeyCreationSession(
             sessionAccountName,
             environment.btcGenerationConfig.nodeId
-        ).fold({ BtcAddressGenerationIntegrationTest.logger.info { "session $sessionAccountName was created" } },
-            { ex -> fail("cannot create session", ex) })
+        )
+            .fold({ BtcAddressGenerationIntegrationTest.logger.info { "session $sessionAccountName was created" } },
+                { ex -> fail("cannot create session", ex) })
         environment.triggerProvider.trigger(sessionAccountName)
         Thread.sleep(WAIT_PREGEN_PROCESS_MILLIS)
         val sessionDetails =
