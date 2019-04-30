@@ -1,3 +1,8 @@
+/*
+ * Copyright D3 Ledger, Inc. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 package com.d3.btc.deposit.service
 
 import com.d3.btc.deposit.config.BtcDepositConfig
@@ -35,7 +40,10 @@ class BtcWalletListenerRestartService(
      * @param transferWallet - wallet that stores all the D3 Bitcoin transactions. Used to get unconfirmed transactions
      * @param onTxSave - function that is called to save transaction in wallet
      */
-    fun restartTransactionListeners(transferWallet: Wallet, onTxSave: () -> Unit): Result<Unit, Exception> {
+    fun restartTransactionListeners(
+        transferWallet: Wallet,
+        onTxSave: () -> Unit
+    ): Result<Unit, Exception> {
         return btcRegisteredAddressesProvider.getRegisteredAddresses().map { registeredAddresses ->
             transferWallet.walletTransactions
                 .filter { walletTransaction ->

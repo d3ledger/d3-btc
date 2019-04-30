@@ -1,3 +1,8 @@
+/*
+ * Copyright D3 Ledger, Inc. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 package com.d3.btc.withdrawal.init
 
 import com.d3.btc.fee.CurrentFeeRate
@@ -121,9 +126,10 @@ class BtcWithdrawalInitialization(
                 ) { transferWallet.saveToFile(File(btcWithdrawalConfig.btcTransfersWalletPath)) }
             }
         // Handle 'set new consensus' events
-        getSetDetailCommands(block).filter { command -> isNewConsensus(command) }.forEach { command ->
-            newConsensusDataHandler.handleNewConsensusCommand(command.setAccountDetail)
-        }
+        getSetDetailCommands(block).filter { command -> isNewConsensus(command) }
+            .forEach { command ->
+                newConsensusDataHandler.handleNewConsensusCommand(command.setAccountDetail)
+            }
         // Handle newly registered Bitcoin addresses. We need it to update transferWallet object.
         getSetDetailCommands(block).forEach { command ->
             newBtcClientRegistrationHandler.handleNewClientCommand(command, transferWallet)

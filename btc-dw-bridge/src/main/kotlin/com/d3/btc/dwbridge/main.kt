@@ -1,3 +1,8 @@
+/*
+ * Copyright D3 Ledger, Inc. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 @file:JvmName("BtcDepositWithdrawalMain")
 
 package com.d3.btc.dwbridge
@@ -5,17 +10,17 @@ package com.d3.btc.dwbridge
 import com.d3.btc.deposit.init.BtcNotaryInitialization
 import com.d3.btc.dwbridge.config.dwBridgeConfig
 import com.d3.btc.withdrawal.init.BtcWithdrawalInitialization
+import com.d3.commons.config.getProfile
+import com.d3.commons.util.createFolderIfDoesntExist
 import com.github.kittinunf.result.Result
 import com.github.kittinunf.result.failure
 import com.github.kittinunf.result.map
-import com.d3.commons.config.getProfile
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import mu.KLogging
 import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import org.springframework.context.annotation.ComponentScan
 import org.springframework.context.annotation.EnableMBeanExport
-import com.d3.commons.util.createFolderIfDoesntExist
 
 const val BTC_DW_BRIDGE_SERVICE_NAME = "btc-dw-bridge"
 

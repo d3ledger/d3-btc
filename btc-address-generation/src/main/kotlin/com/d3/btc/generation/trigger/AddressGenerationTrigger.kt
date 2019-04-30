@@ -1,3 +1,8 @@
+/*
+ * Copyright D3 Ledger, Inc. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 package com.d3.btc.generation.trigger
 
 import com.d3.btc.model.BtcAddressType
@@ -61,7 +66,10 @@ class AddressGenerationTrigger(
      * @param addressesThreshold - minimum number of free addresses to keep in Iroha
      * @param nodeId - node id
      */
-    fun startFreeAddressGenerationIfNeeded(addressesThreshold: Int, nodeId: String): Result<Unit, Exception> {
+    fun startFreeAddressGenerationIfNeeded(
+        addressesThreshold: Int,
+        nodeId: String
+    ): Result<Unit, Exception> {
         return btcFreeAddressesProvider.getFreeAddresses().flatMap { freeAddresses ->
             if (freeAddresses.size < addressesThreshold) {
                 val addressesToGenerate = addressesThreshold - freeAddresses.size

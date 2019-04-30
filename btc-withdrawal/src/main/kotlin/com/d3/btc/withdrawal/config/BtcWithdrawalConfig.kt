@@ -1,10 +1,15 @@
+/*
+ * Copyright D3 Ledger, Inc. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 package com.d3.btc.withdrawal.config
 
 import com.d3.commons.config.BitcoinConfig
 import com.d3.commons.config.IrohaConfig
 import com.d3.commons.config.IrohaCredentialConfig
 
-const val BTC_WITHDRAWAL_SERVICE_NAME="btc-withdrawal"
+const val BTC_WITHDRAWAL_SERVICE_NAME = "btc-withdrawal"
 
 interface BtcWithdrawalConfig {
     // Web port for health check service
@@ -16,7 +21,7 @@ interface BtcWithdrawalConfig {
     // Account that is used to deal with registered accounts
     val registrationCredential: IrohaCredentialConfig
     //Account that stores withdrawal consensus data
-    val btcConsensusCredential:IrohaCredentialConfig
+    val btcConsensusCredential: IrohaCredentialConfig
     // Account that stores created addresses
     val mstRegistrationAccount: String
     // Account that stores change addresses

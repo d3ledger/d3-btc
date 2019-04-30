@@ -1,3 +1,8 @@
+/*
+ * Copyright D3 Ledger, Inc. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 package com.d3.btc.withdrawal.handler
 
 import com.d3.btc.helper.address.getSignThreshold
@@ -26,7 +31,8 @@ class NewConsensusDataHandler(
      */
     fun handleNewConsensusCommand(addConsensusCommand: Commands.SetAccountDetail) {
         val withdrawalHash = addConsensusCommand.accountId.replace("@$BTC_CONSENSUS_DOMAIN", "")
-        val withdrawalConsensus = WithdrawalConsensus.fromJson(addConsensusCommand.value.irohaUnEscape())
+        val withdrawalConsensus =
+            WithdrawalConsensus.fromJson(addConsensusCommand.value.irohaUnEscape())
         if (!ConsensusDataStorage.add(withdrawalHash, withdrawalConsensus)) {
             logger.warn("Cannot add consensus data. Withdrawal with hash $withdrawalHash probably was handled before")
             return

@@ -1,3 +1,8 @@
+/*
+ * Copyright D3 Ledger, Inc. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 package com.d3.btc.deposit.init
 
 import com.d3.btc.deposit.config.BTC_DEPOSIT_SERVICE_NAME
@@ -95,7 +100,12 @@ class BtcNotaryInitialization(
 
     //Checks if address is watched by notary
     fun isWatchedAddress(btcAddress: String) =
-        transferWallet.isAddressWatched(Address.fromBase58(btcNetworkConfigProvider.getConfig(), btcAddress))
+        transferWallet.isAddressWatched(
+            Address.fromBase58(
+                btcNetworkConfigProvider.getConfig(),
+                btcAddress
+            )
+        )
 
     /**
      * Initiates Btc deposit events

@@ -1,3 +1,8 @@
+/*
+ * Copyright D3 Ledger, Inc. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 package integration.btc
 
 import com.d3.commons.sidechain.iroha.CLIENT_DOMAIN
@@ -24,7 +29,8 @@ class BtcRegistrationIntegrationTest {
     private val integrationHelper = BtcIntegrationHelperUtil()
 
     private val btcRegistrationEnvironment = BtcRegistrationTestEnvironment(integrationHelper)
-    private val registrationServiceEnvironment = RegistrationServiceTestEnvironment(integrationHelper)
+    private val registrationServiceEnvironment =
+        RegistrationServiceTestEnvironment(integrationHelper)
 
     // Moshi adapter for response JSON deserialization
     private val moshiAdapter = Moshi
@@ -62,12 +68,13 @@ class BtcRegistrationIntegrationTest {
         val response = moshiAdapter.fromJson(res.jsonObject.toString())!!
         val registeredBtcAddress = response["clientId"]
 
-        btcRegistrationEnvironment.btcRegisteredAddressesProvider.getRegisteredAddresses().fold({ addresses ->
-            assertEquals(
-                "$userName@$CLIENT_DOMAIN",
-                addresses.first { btcAddress -> btcAddress.address == registeredBtcAddress }.info.irohaClient
-            )
-        }, { ex -> fail("cannot get addresses", ex) })
+        btcRegistrationEnvironment.btcRegisteredAddressesProvider.getRegisteredAddresses()
+            .fold({ addresses ->
+                assertEquals(
+                    "$userName@$CLIENT_DOMAIN",
+                    addresses.first { btcAddress -> btcAddress.address == registeredBtcAddress }.info.irohaClient
+                )
+            }, { ex -> fail("cannot get addresses", ex) })
         assertEquals(
             BigInteger.ZERO.toString(),
             integrationHelper.getIrohaAccountBalance("$userName@$CLIENT_DOMAIN", "btc#bitcoin")
@@ -98,12 +105,13 @@ class BtcRegistrationIntegrationTest {
 
         val registeredBtcAddress = response["clientId"]
 
-        btcRegistrationEnvironment.btcRegisteredAddressesProvider.getRegisteredAddresses().fold({ addresses ->
-            assertEquals(
-                "$userName@$CLIENT_DOMAIN",
-                addresses.first { btcAddress -> btcAddress.address == registeredBtcAddress }.info.irohaClient
-            )
-        }, { ex -> fail("cannot get addresses", ex) })
+        btcRegistrationEnvironment.btcRegisteredAddressesProvider.getRegisteredAddresses()
+            .fold({ addresses ->
+                assertEquals(
+                    "$userName@$CLIENT_DOMAIN",
+                    addresses.first { btcAddress -> btcAddress.address == registeredBtcAddress }.info.irohaClient
+                )
+            }, { ex -> fail("cannot get addresses", ex) })
         assertEquals(
             BigInteger.ZERO.toString(),
             integrationHelper.getIrohaAccountBalance("$userName@$CLIENT_DOMAIN", "btc#bitcoin")
@@ -119,7 +127,8 @@ class BtcRegistrationIntegrationTest {
     @Test
     fun testRegistrationNoAddressForMyNode() {
         val clientsBeforeRegistration =
-            btcRegistrationEnvironment.btcRegisteredAddressesProvider.getRegisteredAddresses().get().size
+            btcRegistrationEnvironment.btcRegisteredAddressesProvider.getRegisteredAddresses().get()
+                .size
         integrationHelper.genFreeBtcAddress(
             btcRegistrationEnvironment.btcAddressGenerationConfig.btcKeysWalletPath,
             "different node id"
@@ -158,9 +167,11 @@ class BtcRegistrationIntegrationTest {
 
             val keypair = Ed25519Sha3().generateKeypair()
             val userName = String.getRandomString(9)
-            val newestAddress = btcRegistrationEnvironment.btcFreeAddressesProvider.getFreeAddresses().get()
-                .maxBy { address -> address.info.generationTime ?: 0 }!!
-            var res = registrationServiceEnvironment.register(userName, keypair.public.toHexString())
+            val newestAddress =
+                btcRegistrationEnvironment.btcFreeAddressesProvider.getFreeAddresses().get()
+                    .maxBy { address -> address.info.generationTime ?: 0 }!!
+            var res =
+                registrationServiceEnvironment.register(userName, keypair.public.toHexString())
             assertEquals(200, res.statusCode)
             res = btcRegistrationEnvironment.register(userName, keypair.public.toHexString())
             assertEquals(200, res.statusCode)
@@ -169,12 +180,13 @@ class BtcRegistrationIntegrationTest {
             assertEquals(newestAddress.address, registeredBtcAddress)
             assertFalse(takenAddresses.contains(registeredBtcAddress))
             takenAddresses.add(registeredBtcAddress)
-            btcRegistrationEnvironment.btcRegisteredAddressesProvider.getRegisteredAddresses().fold({ addresses ->
-                assertEquals(
-                    "$userName@$CLIENT_DOMAIN",
-                    addresses.first { btcAddress -> btcAddress.address == registeredBtcAddress }.info.irohaClient
-                )
-            }, { ex -> fail("cannot get addresses", ex) })
+            btcRegistrationEnvironment.btcRegisteredAddressesProvider.getRegisteredAddresses()
+                .fold({ addresses ->
+                    assertEquals(
+                        "$userName@$CLIENT_DOMAIN",
+                        addresses.first { btcAddress -> btcAddress.address == registeredBtcAddress }.info.irohaClient
+                    )
+                }, { ex -> fail("cannot get addresses", ex) })
             assertEquals(
                 BigInteger.ZERO.toString(),
                 integrationHelper.getIrohaAccountBalance("$userName@$CLIENT_DOMAIN", "btc#bitcoin")
@@ -196,7 +208,8 @@ class BtcRegistrationIntegrationTest {
     @Test
     fun testRegistrationNoFree() {
         val clientsBeforeRegistration =
-            btcRegistrationEnvironment.btcRegisteredAddressesProvider.getRegisteredAddresses().get().size
+            btcRegistrationEnvironment.btcRegisteredAddressesProvider.getRegisteredAddresses().get()
+                .size
         val keypair = Ed25519Sha3().generateKeypair()
         val userName = String.getRandomString(9)
 
@@ -223,7 +236,8 @@ class BtcRegistrationIntegrationTest {
     @Test
     fun testRegistrationOnlyChangeAddresses() {
         val clientsBeforeRegistration =
-            btcRegistrationEnvironment.btcRegisteredAddressesProvider.getRegisteredAddresses().get().size
+            btcRegistrationEnvironment.btcRegisteredAddressesProvider.getRegisteredAddresses().get()
+                .size
         integrationHelper.genChangeBtcAddress(btcRegistrationEnvironment.btcAddressGenerationConfig.btcKeysWalletPath)
 
         val num =

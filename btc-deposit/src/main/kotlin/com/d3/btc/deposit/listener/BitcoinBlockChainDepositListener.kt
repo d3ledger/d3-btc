@@ -1,3 +1,8 @@
+/*
+ * Copyright D3 Ledger, Inc. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 package com.d3.btc.deposit.listener
 
 import com.d3.btc.deposit.handler.BtcDepositTxHandler
@@ -30,7 +35,12 @@ class BitcoinBlockChainDepositListener(
 
     private val processedBlocks = HashSet<String>()
 
-    override fun onBlocksDownloaded(peer: Peer?, block: Block, filteredBlock: FilteredBlock?, blocksLeft: Int) {
+    override fun onBlocksDownloaded(
+        peer: Peer?,
+        block: Block,
+        filteredBlock: FilteredBlock?,
+        blocksLeft: Int
+    ) {
         if (block.time.time < System.currentTimeMillis() - DAY_MILLIS) {
             //We cannot handle too old blocks due to Iroha time restrictions.
             return

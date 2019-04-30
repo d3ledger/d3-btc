@@ -1,3 +1,8 @@
+/*
+ * Copyright D3 Ledger, Inc. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 package integration.btc
 
 import com.d3.btc.model.AddressInfo
@@ -84,7 +89,8 @@ class BtcAddressGenerationIntegrationTest {
                 environment.btcGenerationConfig.notaryAccount,
                 environment.btcGenerationConfig.mstRegistrationAccount.accountId
             )
-        val expectedMsAddress = com.d3.btc.helper.address.createMsAddress(notaryKeys, RegTestParams.get())
+        val expectedMsAddress =
+            com.d3.btc.helper.address.createMsAddress(notaryKeys, RegTestParams.get())
         assertTrue(wallet.isAddressWatched(expectedMsAddress))
         val generatedAddress =
             AddressInfo.fromJson(notaryAccountDetails[expectedMsAddress.toBase58()]!!)!!
@@ -128,7 +134,8 @@ class BtcAddressGenerationIntegrationTest {
                 environment.btcGenerationConfig.changeAddressesStorageAccount,
                 environment.btcGenerationConfig.mstRegistrationAccount.accountId
             )
-        val expectedMsAddress = com.d3.btc.helper.address.createMsAddress(notaryKeys, RegTestParams.get())
+        val expectedMsAddress =
+            com.d3.btc.helper.address.createMsAddress(notaryKeys, RegTestParams.get())
         val generatedAddress =
             AddressInfo.fromJson(changeAddressStorageAccountDetails[expectedMsAddress.toBase58()]!!)!!
         assertNull(generatedAddress.irohaClient)

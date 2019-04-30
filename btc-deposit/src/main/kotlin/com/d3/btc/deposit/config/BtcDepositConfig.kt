@@ -1,10 +1,15 @@
+/*
+ * Copyright D3 Ledger, Inc. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 package com.d3.btc.deposit.config
 
 import com.d3.commons.config.BitcoinConfig
 import com.d3.commons.config.IrohaConfig
 import com.d3.commons.config.IrohaCredentialConfig
 
-const val BTC_DEPOSIT_SERVICE_NAME="btc-deposit"
+const val BTC_DEPOSIT_SERVICE_NAME = "btc-deposit"
 
 /** Configuration of Bitcoin deposit */
 interface BtcDepositConfig {

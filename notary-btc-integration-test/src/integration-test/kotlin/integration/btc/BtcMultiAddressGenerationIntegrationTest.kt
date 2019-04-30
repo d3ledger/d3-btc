@@ -1,3 +1,8 @@
+/*
+ * Copyright D3 Ledger, Inc. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 package integration.btc
 
 import com.d3.btc.model.AddressInfo
@@ -43,7 +48,10 @@ class BtcMultiAddressGenerationIntegrationTest {
             integrationHelper.addBtcNotary("test_notary_${peerCount++}", "test_notary_address")
             val environment = BtcAddressGenerationTestEnvironment(
                 integrationHelper,
-                btcGenerationConfig = integrationHelper.configHelper.createBtcAddressGenerationConfig(0, walletPostfix),
+                btcGenerationConfig = integrationHelper.configHelper.createBtcAddressGenerationConfig(
+                    0,
+                    walletPostfix
+                ),
                 mstRegistrationCredential = mstRegistrationAccount
             )
             environments.add(environment)
@@ -71,8 +79,9 @@ class BtcMultiAddressGenerationIntegrationTest {
         environment.btcKeyGenSessionProvider.createPubKeyCreationSession(
             sessionAccountName,
             nodeId.toString()
-        ).fold({ BtcAddressGenerationIntegrationTest.logger.info { "session $sessionAccountName was created" } },
-            { ex -> fail("cannot create session", ex) })
+        )
+            .fold({ BtcAddressGenerationIntegrationTest.logger.info { "session $sessionAccountName was created" } },
+                { ex -> fail("cannot create session", ex) })
         environment.triggerProvider.trigger(sessionAccountName)
         Thread.sleep(WAIT_PREGEN_PROCESS_MILLIS)
         val sessionDetails =
@@ -86,7 +95,8 @@ class BtcMultiAddressGenerationIntegrationTest {
                 entry.key != ADDRESS_GENERATION_TIME_KEY
                         && entry.key != ADDRESS_GENERATION_NODE_ID_KEY
             }.map { entry -> entry.value }
-        val expectedMsAddress = com.d3.btc.helper.address.createMsAddress(notaryKeys, RegTestParams.get())
+        val expectedMsAddress =
+            com.d3.btc.helper.address.createMsAddress(notaryKeys, RegTestParams.get())
         val wallets = ArrayList<Wallet>()
         environments.forEach { env ->
             wallets.add(Wallet.loadFromFile(File(env.btcGenerationConfig.btcKeysWalletPath)))

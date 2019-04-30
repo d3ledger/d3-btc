@@ -1,3 +1,8 @@
+/*
+ * Copyright D3 Ledger, Inc. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 package integration.btc
 
 import com.d3.commons.sidechain.iroha.CLIENT_DOMAIN
@@ -21,7 +26,8 @@ import java.util.concurrent.TimeUnit
 class BtcDepositFailResistanceIntegrationTest {
     private val integrationHelper = BtcIntegrationHelperUtil()
     private val environment = BtcNotaryTestEnvironment(integrationHelper)
-    private val registrationServiceEnvironment = RegistrationServiceTestEnvironment(integrationHelper)
+    private val registrationServiceEnvironment =
+        RegistrationServiceTestEnvironment(integrationHelper)
 
     @AfterAll
     fun dropDown() {
@@ -70,7 +76,8 @@ class BtcDepositFailResistanceIntegrationTest {
         //Simulate failure
         simulateFailRightAfterGettingDeposit(walletFile, btcAddress, btcAmount)
         //Start deposit service
-        environment.btcNotaryInitialization.init().failure { ex -> fail("Cannot run BTC notary", ex) }
+        environment.btcNotaryInitialization.init()
+            .failure { ex -> fail("Cannot run BTC notary", ex) }
         //Wait a little to initiale service properly
         Thread.sleep(DEPOSIT_WAIT_MILLIS)
         // Confirm coin

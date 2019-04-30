@@ -1,3 +1,8 @@
+/*
+ * Copyright D3 Ledger, Inc. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 package integration.btc
 
 import com.d3.commons.sidechain.iroha.CLIENT_DOMAIN
@@ -21,7 +26,8 @@ class BtcNotaryIntegrationTest {
 
     private val integrationHelper = BtcIntegrationHelperUtil()
     private val environment = BtcNotaryTestEnvironment(integrationHelper)
-    private val registrationServiceEnvironment = RegistrationServiceTestEnvironment(integrationHelper)
+    private val registrationServiceEnvironment =
+        RegistrationServiceTestEnvironment(integrationHelper)
 
     @AfterAll
     fun dropDown() {
@@ -38,7 +44,8 @@ class BtcNotaryIntegrationTest {
         blockStorageFolder.mkdirs()
         integrationHelper.generateBtcInitialBlocks()
         integrationHelper.addBtcNotary("test_notary", "test_notary_address")
-        environment.btcNotaryInitialization.init().failure { ex -> fail("Cannot run BTC notary", ex) }
+        environment.btcNotaryInitialization.init()
+            .failure { ex -> fail("Cannot run BTC notary", ex) }
     }
 
     /**
@@ -49,7 +56,8 @@ class BtcNotaryIntegrationTest {
      */
     @Test
     fun testDeposit() {
-        val initUTXOCount = Wallet.loadFromFile(File(environment.notaryConfig.btcTransferWalletPath)).unspents.size
+        val initUTXOCount =
+            Wallet.loadFromFile(File(environment.notaryConfig.btcTransferWalletPath)).unspents.size
         val randomName = String.getRandomString(9)
         val testClient = "$randomName@$CLIENT_DOMAIN"
         val res = registrationServiceEnvironment.register(randomName)
@@ -87,7 +95,8 @@ class BtcNotaryIntegrationTest {
      */
     @Test
     fun testMultipleDeposit() {
-        val initUTXOCount = Wallet.loadFromFile(File(environment.notaryConfig.btcTransferWalletPath)).unspents.size
+        val initUTXOCount =
+            Wallet.loadFromFile(File(environment.notaryConfig.btcTransferWalletPath)).unspents.size
         val totalDeposits = 3
         val randomName = String.getRandomString(9)
         val testClient = "$randomName@$CLIENT_DOMAIN"
@@ -130,7 +139,8 @@ class BtcNotaryIntegrationTest {
     @Disabled
     @Test
     fun testMultipleDepositMultiThreaded() {
-        val initUTXOCount = Wallet.loadFromFile(File(environment.notaryConfig.btcTransferWalletPath)).unspents.size
+        val initUTXOCount =
+            Wallet.loadFromFile(File(environment.notaryConfig.btcTransferWalletPath)).unspents.size
         val totalDeposits = 5
         val randomName = String.getRandomString(9)
         val testClient = "$randomName@$CLIENT_DOMAIN"
@@ -180,7 +190,8 @@ class BtcNotaryIntegrationTest {
      */
     @Test
     fun testDepositNotConfirmed() {
-        val initUTXOCount = Wallet.loadFromFile(File(environment.notaryConfig.btcTransferWalletPath)).unspents.size
+        val initUTXOCount =
+            Wallet.loadFromFile(File(environment.notaryConfig.btcTransferWalletPath)).unspents.size
         val randomName = String.getRandomString(9)
         val testClient = "$randomName@$CLIENT_DOMAIN"
         val res = registrationServiceEnvironment.register(randomName)
@@ -220,7 +231,8 @@ class BtcNotaryIntegrationTest {
      */
     @Test
     fun testDepositConfirmation() {
-        val initUTXOCount = Wallet.loadFromFile(File(environment.notaryConfig.btcTransferWalletPath)).unspents.size
+        val initUTXOCount =
+            Wallet.loadFromFile(File(environment.notaryConfig.btcTransferWalletPath)).unspents.size
         val randomName = String.getRandomString(9)
         val testClient = "$randomName@$CLIENT_DOMAIN"
         val res = registrationServiceEnvironment.register(randomName)

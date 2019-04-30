@@ -1,3 +1,8 @@
+/*
+ * Copyright D3 Ledger, Inc. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 package integration.btc
 
 import com.d3.btc.helper.address.outPutToBase58Address
@@ -27,9 +32,13 @@ class BtcWithdrawalFailResistanceIntegrationTest {
     private val integrationHelper = BtcIntegrationHelperUtil()
 
     private val environment =
-        BtcWithdrawalTestEnvironment(integrationHelper, "fail_resistance_${String.getRandomString(5)}")
+        BtcWithdrawalTestEnvironment(
+            integrationHelper,
+            "fail_resistance_${String.getRandomString(5)}"
+        )
 
-    private val registrationServiceEnvironment = RegistrationServiceTestEnvironment(integrationHelper)
+    private val registrationServiceEnvironment =
+        RegistrationServiceTestEnvironment(integrationHelper)
 
     private lateinit var changeAddress: Address
 
@@ -56,7 +65,10 @@ class BtcWithdrawalFailResistanceIntegrationTest {
         integrationHelper.generateBtcInitialBlocks()
         integrationHelper.genChangeBtcAddress(environment.btcWithdrawalConfig.btcKeysWalletPath)
             .fold({ address -> changeAddress = address }, { ex -> throw  ex })
-        integrationHelper.preGenFreeBtcAddresses(environment.btcWithdrawalConfig.btcKeysWalletPath, TOTAL_TESTS * 2)
+        integrationHelper.preGenFreeBtcAddresses(
+            environment.btcWithdrawalConfig.btcKeysWalletPath,
+            TOTAL_TESTS * 2
+        )
         environment.withdrawalTransferService.addNewBtcTransactionListener { tx ->
             environment.createdTransactions[tx.hashAsString] = Pair(System.currentTimeMillis(), tx)
         }
@@ -77,15 +89,27 @@ class BtcWithdrawalFailResistanceIntegrationTest {
         val randomNameSrc = String.getRandomString(9)
         val testClientSrcKeypair = ModelUtil.generateKeypair()
         val testClientSrc = "$randomNameSrc@$CLIENT_DOMAIN"
-        var res = registrationServiceEnvironment.register(randomNameSrc, testClientSrcKeypair.public.toHexString())
+        var res = registrationServiceEnvironment.register(
+            randomNameSrc,
+            testClientSrcKeypair.public.toHexString()
+        )
         assertEquals(200, res.statusCode)
         val btcAddressSrc =
-            integrationHelper.registerBtcAddressNoPreGen(randomNameSrc, CLIENT_DOMAIN, testClientSrcKeypair)
-        integrationHelper.sendBtc(btcAddressSrc, 1, environment.btcWithdrawalConfig.bitcoin.confidenceLevel)
+            integrationHelper.registerBtcAddressNoPreGen(
+                randomNameSrc,
+                CLIENT_DOMAIN,
+                testClientSrcKeypair
+            )
+        integrationHelper.sendBtc(
+            btcAddressSrc,
+            1,
+            environment.btcWithdrawalConfig.bitcoin.confidenceLevel
+        )
         val randomNameDest = String.getRandomString(9)
         res = registrationServiceEnvironment.register(randomNameDest)
         assertEquals(200, res.statusCode)
-        val btcAddressDest = integrationHelper.registerBtcAddressNoPreGen(randomNameDest, CLIENT_DOMAIN)
+        val btcAddressDest =
+            integrationHelper.registerBtcAddressNoPreGen(randomNameDest, CLIENT_DOMAIN)
         integrationHelper.addIrohaAssetTo(testClientSrc, BTC_ASSET, amount)
         integrationHelper.transferAssetIrohaFromClient(
             testClientSrc,
