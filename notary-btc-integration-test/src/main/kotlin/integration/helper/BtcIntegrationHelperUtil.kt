@@ -60,7 +60,7 @@ class BtcIntegrationHelperUtil(peers: Int = 1) : IrohaIntegrationHelperUtil(peer
     }
 
     private val btcRegisteredAddressesProvider = BtcRegisteredAddressesProvider(
-        queryAPI,
+        queryHelper,
         accountHelper.registrationAccount.accountId,
         accountHelper.notaryAccount.accountId
     )
@@ -68,13 +68,13 @@ class BtcIntegrationHelperUtil(peers: Int = 1) : IrohaIntegrationHelperUtil(peer
     private val btcRegistrationStrategy by lazy {
         val btcAddressesProvider =
             BtcAddressesProvider(
-                queryAPI,
+                queryHelper,
                 accountHelper.mstRegistrationAccount.accountId,
                 accountHelper.notaryAccount.accountId
             )
         val btcTakenAddressesProvider =
             BtcRegisteredAddressesProvider(
-                queryAPI,
+                queryHelper,
                 accountHelper.registrationAccount.accountId,
                 accountHelper.notaryAccount.accountId
             )
@@ -157,7 +157,13 @@ class BtcIntegrationHelperUtil(peers: Int = 1) : IrohaIntegrationHelperUtil(peer
         hosts: List<String>,
         walletInitializer: WalletInitializer
     ): SharedPeerGroup {
-        return SharedPeerGroup(btcNetworkConfigProvider, wallet, blockStoragePath, hosts, walletInitializer)
+        return SharedPeerGroup(
+            btcNetworkConfigProvider,
+            wallet,
+            blockStoragePath,
+            hosts,
+            walletInitializer
+        )
     }
 
     /**

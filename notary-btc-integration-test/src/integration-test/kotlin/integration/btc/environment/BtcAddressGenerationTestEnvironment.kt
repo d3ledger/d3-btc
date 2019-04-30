@@ -18,11 +18,11 @@ import com.d3.commons.sidechain.iroha.IrohaChainListener
 import com.d3.commons.sidechain.iroha.consumer.IrohaConsumerImpl
 import com.d3.commons.sidechain.iroha.consumer.MultiSigIrohaConsumer
 import com.d3.commons.sidechain.iroha.util.ModelUtil
+import com.d3.commons.sidechain.iroha.util.impl.IrohaQueryHelperImpl
 import com.d3.commons.util.createPrettySingleThreadPool
 import integration.helper.BtcIntegrationHelperUtil
 import io.grpc.ManagedChannelBuilder
 import jp.co.soramitsu.iroha.java.IrohaAPI
-import jp.co.soramitsu.iroha.java.QueryAPI
 import org.bitcoinj.wallet.Wallet
 import java.io.Closeable
 import java.io.File
@@ -52,7 +52,8 @@ class BtcAddressGenerationTestEnvironment(
      * It's essential to handle blocks in this service one-by-one.
      * This is why we explicitly set single threaded executor.
      */
-    private val executor = createPrettySingleThreadPool(BTC_ADDRESS_GENERATION_SERVICE_NAME, "iroha-chain-listener")
+    private val executor =
+        createPrettySingleThreadPool(BTC_ADDRESS_GENERATION_SERVICE_NAME, "iroha-chain-listener")
 
     private val irohaApi by lazy {
         val irohaAPI = IrohaAPI(
@@ -100,7 +101,7 @@ class BtcAddressGenerationTestEnvironment(
 
     private val btcNetworkConfigProvider = BtcRegTestConfigProvider()
 
-    private val registrationQueryAPI = QueryAPI(
+    private val registrationQueryHelper = IrohaQueryHelperImpl(
         irohaApi,
         registrationCredential.accountId,
         registrationCredential.keyPair
@@ -108,7 +109,7 @@ class BtcAddressGenerationTestEnvironment(
 
     private fun btcPublicKeyProvider(): BtcPublicKeyProvider {
         val notaryPeerListProvider = NotaryPeerListProviderImpl(
-            registrationQueryAPI,
+            registrationQueryHelper,
             btcGenerationConfig.notaryListStorageAccount,
             btcGenerationConfig.notaryListSetterAccount
         )
@@ -129,22 +130,26 @@ class BtcAddressGenerationTestEnvironment(
     )
 
     private val btcAddressesProvider = BtcAddressesProvider(
-        registrationQueryAPI,
+        registrationQueryHelper,
         btcGenerationConfig.mstRegistrationAccount.accountId,
         btcGenerationConfig.notaryAccount
     )
 
     private val btcRegisteredAddressesProvider = BtcRegisteredAddressesProvider(
-        registrationQueryAPI,
+        registrationQueryHelper,
         registrationCredential.accountId,
         btcGenerationConfig.notaryAccount
     )
 
     val btcFreeAddressesProvider =
-        BtcFreeAddressesProvider(btcGenerationConfig.nodeId, btcAddressesProvider, btcRegisteredAddressesProvider)
+        BtcFreeAddressesProvider(
+            btcGenerationConfig.nodeId,
+            btcAddressesProvider,
+            btcRegisteredAddressesProvider
+        )
 
     private val btcChangeAddressesProvider = BtcChangeAddressProvider(
-        registrationQueryAPI,
+        registrationQueryHelper,
         btcGenerationConfig.mstRegistrationAccount.accountId,
         btcGenerationConfig.changeAddressesStorageAccount
     )
@@ -159,7 +164,7 @@ class BtcAddressGenerationTestEnvironment(
 
     val btcAddressGenerationInitialization = BtcAddressGenerationInitialization(
         keysWallet,
-        registrationQueryAPI,
+        registrationQueryHelper,
         btcGenerationConfig,
         btcPublicKeyProvider(),
         irohaListener,

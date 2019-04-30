@@ -8,7 +8,6 @@ import org.bitcoinj.core.PeerGroup
 import org.bitcoinj.store.LevelDBBlockStore
 import org.bitcoinj.wallet.Wallet
 import java.io.File
-import java.net.InetAddress
 
 private val logger = KLogging().logger
 
@@ -24,7 +23,11 @@ fun startChainDownload(peerGroup: PeerGroup) {
 /**
  * Returns Bitcoin blockchain
  */
-fun getBlockChain(wallet: Wallet, networkParameters: NetworkParameters, blockStoragePath: String): BlockChain {
+fun getBlockChain(
+    wallet: Wallet,
+    networkParameters: NetworkParameters,
+    blockStoragePath: String
+): BlockChain {
     val levelDbFolder = File(blockStoragePath)
     val blockStore = LevelDBBlockStore(Context(networkParameters), levelDbFolder)
     return BlockChain(networkParameters, wallet, blockStore)
@@ -36,7 +39,11 @@ fun getBlockChain(wallet: Wallet, networkParameters: NetworkParameters, blockSto
  * @param onNoPeersLeft - function that is called, when no peers left in a given peer group
  * @param onNewPeerConnected - function that is called, when new peer appears
  */
-fun addPeerConnectionStatusListener(peerGroup: PeerGroup, onNoPeersLeft: () -> Unit, onNewPeerConnected: () -> Unit) {
+fun addPeerConnectionStatusListener(
+    peerGroup: PeerGroup,
+    onNoPeersLeft: () -> Unit,
+    onNewPeerConnected: () -> Unit
+) {
     peerGroup.addDisconnectedEventListener { _, peerCount ->
         //If no peers left
         if (peerCount == 0) {

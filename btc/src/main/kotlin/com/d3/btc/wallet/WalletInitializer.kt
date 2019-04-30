@@ -30,5 +30,4 @@ class WalletInitializer(
             wallet.addWatchedAddresses(registeredAddresses)
         }.failure { ex -> throw ex }
     }
-
 }

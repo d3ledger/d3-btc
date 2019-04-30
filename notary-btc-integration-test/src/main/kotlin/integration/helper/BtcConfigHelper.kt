@@ -5,7 +5,6 @@ import com.d3.btc.generation.config.BtcAddressGenerationConfig
 import com.d3.btc.registration.config.BtcRegistrationConfig
 import com.d3.btc.withdrawal.config.BtcWithdrawalConfig
 import com.d3.commons.config.BitcoinConfig
-import com.d3.commons.config.IrohaCredentialConfig
 import com.d3.commons.config.loadConfigs
 import com.d3.commons.model.IrohaCredential
 import org.bitcoinj.params.RegTestParams
@@ -40,7 +39,8 @@ class BtcConfigHelper(
         return object : BtcAddressGenerationConfig {
             override val threshold = initAddresses
             override val nodeId = NODE_ID
-            override val changeAddressesStorageAccount = accountHelper.changeAddressesStorageAccount.accountId
+            override val changeAddressesStorageAccount =
+                accountHelper.changeAddressesStorageAccount.accountId
             override val healthCheckPort = btcPkPreGenConfig.healthCheckPort
             override val notaryListStorageAccount = accountHelper.notaryListStorageAccount.accountId
             override val notaryListSetterAccount = accountHelper.notaryAccount.accountId
@@ -50,7 +50,8 @@ class BtcConfigHelper(
             override val notaryAccount = accountHelper.notaryAccount.accountId
             override val iroha = createIrohaConfig()
             override val btcKeysWalletPath = createWalletFile("keys.$walletNamePostfix")
-            override val registrationAccount = accountHelper.createCredentialConfig(accountHelper.registrationAccount)
+            override val registrationAccount =
+                accountHelper.createCredentialConfig(accountHelper.registrationAccount)
         }
     }
 
@@ -61,7 +62,11 @@ class BtcConfigHelper(
      */
     fun createBtcWithdrawalConfig(testName: String = ""): BtcWithdrawalConfig {
         val btcWithdrawalConfig =
-            loadConfigs("btc-withdrawal", BtcWithdrawalConfig::class.java, "/btc/withdrawal.properties").get()
+            loadConfigs(
+                "btc-withdrawal",
+                BtcWithdrawalConfig::class.java,
+                "/btc/withdrawal.properties"
+            ).get()
         return object : BtcWithdrawalConfig {
             override val btcConsensusCredential =
                 accountHelper.createCredentialConfig(accountHelper.btcConsensusAccount)
@@ -72,14 +77,17 @@ class BtcConfigHelper(
             override val notaryListSetterAccount = accountHelper.notaryAccount.accountId
             override val signatureCollectorCredential =
                 accountHelper.createCredentialConfig(accountHelper.btcWithdrawalSignatureCollectorAccount)
-            override val changeAddressesStorageAccount = accountHelper.changeAddressesStorageAccount.accountId
+            override val changeAddressesStorageAccount =
+                accountHelper.changeAddressesStorageAccount.accountId
             override val registrationCredential =
                 accountHelper.createCredentialConfig(accountHelper.registrationAccount)
             override val mstRegistrationAccount = accountHelper.mstRegistrationAccount.accountId
             override val bitcoin = createBitcoinConfig(btcWithdrawalConfig.bitcoin, testName)
-            override val notaryCredential = accountHelper.createCredentialConfig(accountHelper.notaryAccount)
+            override val notaryCredential =
+                accountHelper.createCredentialConfig(accountHelper.notaryAccount)
             override val healthCheckPort = btcWithdrawalConfig.healthCheckPort
-            override val withdrawalCredential = accountHelper.createCredentialConfig(accountHelper.btcWithdrawalAccount)
+            override val withdrawalCredential =
+                accountHelper.createCredentialConfig(accountHelper.btcWithdrawalAccount)
             override val iroha = btcWithdrawalConfig.iroha
         }
     }
@@ -107,22 +115,29 @@ class BtcConfigHelper(
         testName: String = "",
         notaryIrohaCredential: IrohaCredential = accountHelper.notaryAccount
     ): BtcDepositConfig {
-        val btcDepositConfig = loadConfigs("btc-deposit", BtcDepositConfig::class.java, "/btc/deposit.properties").get()
+        val btcDepositConfig = loadConfigs(
+            "btc-deposit",
+            BtcDepositConfig::class.java,
+            "/btc/deposit.properties"
+        ).get()
         return object : BtcDepositConfig {
             override val mstRegistrationAccount = accountHelper.mstRegistrationAccount.accountId
-            override val changeAddressesStorageAccount = accountHelper.changeAddressesStorageAccount.accountId
+            override val changeAddressesStorageAccount =
+                accountHelper.changeAddressesStorageAccount.accountId
             override val btcTransferWalletPath = createWalletFile("transfers.$testName")
             override val healthCheckPort = btcDepositConfig.healthCheckPort
             override val registrationAccount = accountHelper.registrationAccount.accountId
             override val iroha = createIrohaConfig()
             override val bitcoin = createBitcoinConfig(btcDepositConfig.bitcoin, testName)
-            override val notaryCredential = accountHelper.createCredentialConfig(notaryIrohaCredential)
+            override val notaryCredential =
+                accountHelper.createCredentialConfig(notaryIrohaCredential)
         }
     }
 
     private fun createBitcoinConfig(bitcoinConfig: BitcoinConfig, testName: String): BitcoinConfig {
         return object : BitcoinConfig {
-            override val blockStoragePath = createTempBlockStorageFolder(bitcoinConfig.blockStoragePath, testName)
+            override val blockStoragePath =
+                createTempBlockStorageFolder(bitcoinConfig.blockStoragePath, testName)
             override val confidenceLevel = bitcoinConfig.confidenceLevel
             override val hosts = bitcoinConfig.hosts
         }

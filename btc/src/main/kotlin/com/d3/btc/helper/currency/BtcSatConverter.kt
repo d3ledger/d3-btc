@@ -11,7 +11,6 @@ private val SAT_IN_BTC = BigDecimal.valueOf(100_000_000)
  */
 fun btcToSat(btc: BigDecimal) = btc.multiply(SAT_IN_BTC).toLong()
 
-
 /**
  * Converts Satoshis into Bitcoins
  * @param sat - amount of Satoshis

@@ -1,7 +1,7 @@
 package com.d3.btc.model
 
-import com.squareup.moshi.Moshi
 import com.d3.commons.util.irohaEscape
+import com.squareup.moshi.Moshi
 
 private val addressInfoJsonAdapter = Moshi.Builder().build().adapter(AddressInfo::class.java)
 
@@ -28,7 +28,10 @@ data class AddressInfo(
         fun createFreeAddressInfo(notaryKeys: List<String>, nodeId: String, generationTime: Long) =
             AddressInfo(null, notaryKeys, nodeId, generationTime)
 
-        fun createChangeAddressInfo(notaryKeys: List<String>, nodeId: String, generationTime: Long) =
-            AddressInfo(null, notaryKeys, nodeId, generationTime)
+        fun createChangeAddressInfo(
+            notaryKeys: List<String>,
+            nodeId: String,
+            generationTime: Long
+        ) = AddressInfo(null, notaryKeys, nodeId, generationTime)
     }
 }

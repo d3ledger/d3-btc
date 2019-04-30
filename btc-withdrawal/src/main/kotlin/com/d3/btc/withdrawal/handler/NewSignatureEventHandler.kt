@@ -94,7 +94,6 @@ class NewSignatureEventHandler(
                 })
 
         }, { ex ->
-
             btcRollbackService.rollback(
                 withdrawalCommand.sourceAccountId,
                 withdrawalCommand.amountSat,

@@ -16,15 +16,12 @@ import com.d3.commons.sidechain.iroha.util.ModelUtil
 import com.d3.commons.util.getRandomId
 import com.d3.commons.util.hex
 import com.d3.commons.util.irohaEscape
-import com.d3.commons.util.toJson
 import com.github.kittinunf.result.Result
-import com.github.kittinunf.result.failure
 import com.github.kittinunf.result.map
 import mu.KLogging
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
-import kotlin.math.absoluteValue
 
 @Component
 class WithdrawalConsensusProvider(
