@@ -259,5 +259,4 @@ class BtcFullPipelineTest {
      * Logger
      */
     companion object : KLogging()
-
 }

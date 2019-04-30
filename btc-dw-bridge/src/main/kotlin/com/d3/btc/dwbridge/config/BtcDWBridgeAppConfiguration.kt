@@ -18,12 +18,12 @@ import com.d3.commons.sidechain.iroha.IrohaChainListener
 import com.d3.commons.sidechain.iroha.consumer.IrohaConsumerImpl
 import com.d3.commons.sidechain.iroha.consumer.MultiSigIrohaConsumer
 import com.d3.commons.sidechain.iroha.util.ModelUtil
+import com.d3.commons.sidechain.iroha.util.impl.IrohaQueryHelperImpl
 import com.d3.commons.util.createPrettySingleThreadPool
 import io.grpc.ManagedChannelBuilder
 import io.reactivex.Observable
 import io.reactivex.subjects.PublishSubject
 import jp.co.soramitsu.iroha.java.IrohaAPI
-import jp.co.soramitsu.iroha.java.QueryAPI
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
@@ -80,9 +80,6 @@ class BtcDWBridgeAppConfiguration {
         createPrettySingleThreadPool(BTC_DEPOSIT_SERVICE_NAME, "tx-confidence-listener")
 
     @Bean
-    fun queryAPI() = QueryAPI(irohaAPI(), notaryCredential.accountId, notaryKeypair)
-
-    @Bean
     fun btcEventsSource(): PublishSubject<SideChainEvent.PrimaryBlockChainEvent> {
         return PublishSubject.create<SideChainEvent.PrimaryBlockChainEvent>()
     }
@@ -94,7 +91,11 @@ class BtcDWBridgeAppConfiguration {
 
     @Bean
     fun notary() =
-        NotaryImpl(MultiSigIrohaConsumer(notaryCredential, irohaAPI()), notaryCredential, btcEventsObservable())
+        NotaryImpl(
+            MultiSigIrohaConsumer(notaryCredential, irohaAPI()),
+            notaryCredential,
+            btcEventsObservable()
+        )
 
     @Bean
     fun rmqConfig() = rmqConfig
@@ -138,7 +139,11 @@ class BtcDWBridgeAppConfiguration {
         )
             .fold({ keypair ->
                 return BtcRegisteredAddressesProvider(
-                    QueryAPI(irohaAPI(), depositConfig.notaryCredential.accountId, keypair),
+                    IrohaQueryHelperImpl(
+                        irohaAPI(),
+                        depositConfig.notaryCredential.accountId,
+                        keypair
+                    ),
                     depositConfig.registrationAccount,
                     depositConfig.notaryCredential.accountId
                 )
@@ -179,13 +184,17 @@ class BtcDWBridgeAppConfiguration {
     )
 
     @Bean
-    fun withdrawalQueryAPI() =
-        QueryAPI(irohaAPI(), withdrawalCredential().accountId, withdrawalCredential().keyPair)
+    fun withdrawalQueryHelper() =
+        IrohaQueryHelperImpl(
+            irohaAPI(),
+            withdrawalCredential().accountId,
+            withdrawalCredential().keyPair
+        )
 
     @Bean
     fun btcChangeAddressProvider(): BtcChangeAddressProvider {
         return BtcChangeAddressProvider(
-            withdrawalQueryAPI(),
+            withdrawalQueryHelper(),
             withdrawalConfig.mstRegistrationAccount,
             withdrawalConfig.changeAddressesStorageAccount
         )
@@ -200,7 +209,7 @@ class BtcDWBridgeAppConfiguration {
     @Bean
     fun notaryPeerListProvider() =
         NotaryPeerListProviderImpl(
-            withdrawalQueryAPI(),
+            withdrawalQueryHelper(),
             withdrawalConfig.notaryListStorageAccount,
             withdrawalConfig.notaryListSetterAccount
         )

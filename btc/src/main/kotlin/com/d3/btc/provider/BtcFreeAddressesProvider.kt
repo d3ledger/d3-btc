@@ -17,7 +17,8 @@ class BtcFreeAddressesProvider(
      * Returns list of free(not taken by clients) addresses
      */
     fun getFreeAddresses(): Result<List<BtcAddress>, Exception> {
-        return btcAddressesProvider.getAddresses().fanout { btcRegisteredAddressesProvider.getRegisteredAddresses() }
+        return btcAddressesProvider.getAddresses()
+            .fanout { btcRegisteredAddressesProvider.getRegisteredAddresses() }
             .map { (addresses, takenAddresses) ->
                 addresses
                     .filter { btcAddress ->

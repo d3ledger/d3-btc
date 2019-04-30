@@ -5,7 +5,6 @@ import org.bitcoinj.script.Script
 import org.bitcoinj.script.ScriptBuilder
 import org.bitcoinj.script.ScriptBuilder.createP2SHOutputScript
 
-
 private const val UNDEFINED_ADDRESS = "[undefined]"
 /**
  * Safely takes base58 encoded address from tx output
@@ -81,6 +80,6 @@ fun isValidBtcAddress(address: String): Boolean {
         Base58.decodeChecked(address)
         return true
     } catch (expected: AddressFormatException) {
-        return false;
+        return false
     }
 }
