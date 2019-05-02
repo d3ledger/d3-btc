@@ -75,12 +75,8 @@ class BtcWithdrawalInitialization(
         //Set minimum fee rate
         CurrentFeeRate.setMinimum()
         // Check wallet network
-        return transferWallet.checkWalletNetwork(btcNetworkConfigProvider.getConfig()).flatMap {
-            btcChangeAddressProvider.getAllChangeAddresses()
-        }.map { changeAddresses ->
-            if (changeAddresses.isEmpty()) {
-                throw IllegalStateException("No change addresses were generated")
-            }
+        return transferWallet.checkWalletNetwork(btcNetworkConfigProvider.getConfig()).map {
+            waitChangeAddresses()
         }.flatMap {
             initBtcBlockChain()
         }.flatMap {
@@ -163,6 +159,16 @@ class BtcWithdrawalInitialization(
             startChainDownload(peerGroup)
             addPeerConnectionStatusListener(peerGroup, ::notHealthy, ::cured)
             peerGroup
+        }
+    }
+
+    /**
+     * Waits until change addresses are generated
+     */
+    private fun waitChangeAddresses() {
+        while (btcChangeAddressProvider.getAllChangeAddresses().get().isEmpty()) {
+            logger.warn("No change addresses have been generated yet. Wait.")
+            Thread.sleep(5_000)
         }
     }
 
