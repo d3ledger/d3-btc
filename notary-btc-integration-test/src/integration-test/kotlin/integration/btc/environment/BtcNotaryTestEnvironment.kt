@@ -17,7 +17,7 @@ import com.d3.btc.provider.BtcRegisteredAddressesProvider
 import com.d3.btc.provider.network.BtcRegTestConfigProvider
 import com.d3.btc.wallet.WalletInitializer
 import com.d3.btc.wallet.loadAutoSaveWallet
-import com.d3.commons.config.BitcoinConfig
+import com.d3.btc.config.BitcoinConfig
 import com.d3.commons.model.IrohaCredential
 import com.d3.commons.notary.NotaryImpl
 import com.d3.commons.sidechain.SideChainEvent

@@ -16,7 +16,7 @@ import com.d3.btc.provider.address.BtcAddressesProvider
 import com.d3.btc.provider.network.BtcNetworkConfigProvider
 import com.d3.btc.registration.strategy.BtcRegistrationStrategyImpl
 import com.d3.btc.wallet.WalletInitializer
-import com.d3.commons.config.BitcoinConfig
+import com.d3.btc.config.BitcoinConfig
 import com.d3.commons.notary.IrohaCommand
 import com.d3.commons.notary.IrohaOrderedBatch
 import com.d3.commons.notary.IrohaTransaction

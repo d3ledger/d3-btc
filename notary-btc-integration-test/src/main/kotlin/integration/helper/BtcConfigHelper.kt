@@ -9,7 +9,7 @@ import com.d3.btc.deposit.config.BtcDepositConfig
 import com.d3.btc.generation.config.BtcAddressGenerationConfig
 import com.d3.btc.registration.config.BtcRegistrationConfig
 import com.d3.btc.withdrawal.config.BtcWithdrawalConfig
-import com.d3.commons.config.BitcoinConfig
+import com.d3.btc.config.BitcoinConfig
 import com.d3.commons.config.loadConfigs
 import com.d3.commons.model.IrohaCredential
 import org.bitcoinj.params.RegTestParams

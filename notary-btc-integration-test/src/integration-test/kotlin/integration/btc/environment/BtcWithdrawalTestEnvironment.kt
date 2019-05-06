@@ -26,7 +26,7 @@ import com.d3.btc.withdrawal.service.BtcRollbackService
 import com.d3.btc.withdrawal.service.WithdrawalTransferService
 import com.d3.btc.withdrawal.statistics.WithdrawalStatistics
 import com.d3.btc.withdrawal.transaction.*
-import com.d3.commons.config.BitcoinConfig
+import com.d3.btc.config.BitcoinConfig
 import com.d3.commons.config.RMQConfig
 import com.d3.commons.config.getConfigFolder
 import com.d3.commons.config.loadRawConfigs
