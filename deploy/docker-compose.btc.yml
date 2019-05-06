@@ -8,7 +8,7 @@ services:
     ports:
       - 8086:8086
     environment:
-      WAIT_HOSTS: d3-rmq:5672, d3-iroha:50051
+      WAIT_HOSTS: d3-iroha:50051
       WAIT_BEFORE_HOSTS: 10
       WAIT_HOSTS_TIMEOUT: 60
     volumes:
@@ -31,6 +31,7 @@ services:
       - ../deploy/bitcoin:/opt/notary/deploy/bitcoin
       - ../deploy/iroha/keys:/opt/notary/deploy/iroha/keys
     depends_on:
+      - d3-btc-node0
       - d3-btc-address-generation
       - d3-btc-registration
     networks:
@@ -42,7 +43,7 @@ services:
     ports:
       - 7071:7071
     environment:
-      WAIT_HOSTS: d3-rmq:5672, d3-iroha:50051
+      WAIT_HOSTS: d3-iroha:50051
       WAIT_BEFORE_HOSTS: 10
       WAIT_HOSTS_TIMEOUT: 60
     volumes:
@@ -51,6 +52,25 @@ services:
       - ../deploy/iroha/keys:/opt/notary/deploy/iroha/keys
     networks:
       - d3-network
+
+  # bitcoin
+  d3-btc-node0:
+    image: kylemanna/bitcoind:latest
+    container_name: d3-btc-node0
+    entrypoint:
+      - bitcoind
+      - --rpcuser=test
+      - --rpcpassword=test
+      - --regtest=1
+      - --server=1
+      - --rpcallowip=::/0
+      - --rpcport=8332
+    ports:
+      - 8332:8332
+      - 18333:18333
+      - 18444:18444
+    networks:
+        - d3-network
 
 networks:
   d3-network:
