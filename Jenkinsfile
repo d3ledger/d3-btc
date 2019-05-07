@@ -48,7 +48,7 @@ pipeline {
           }
 
           iC = docker.image("gradle:4.10.2-jdk8-slim")
-          iC.inside("--network='d3-${DOCKER_NETWORK}' -e JVM_OPTS='-Xmx3200m' -e TERM='dumb' -v /var/run/docker.sock:/var/run/docker.sock -v /tmp:/tmp") {
+          iC.inside("--network='d3-${DOCKER_NETWORK}' -e JVM_OPTS='-Xmx3200m' -e TERM='dumb' -v $PWD:$PWD -w $PWD -v /var/run/docker.sock:/var/run/docker.sock -v /tmp:/tmp") {
             sh "ln -s deploy/bitcoin/bitcoin-cli /usr/bin/bitcoin-cli"
             sh "gradle dependencies"
             sh "gradle test --info"
