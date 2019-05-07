@@ -45,7 +45,7 @@ class BtcContainerHelper : Closeable {
             ImageFromDockerfile()
                 .withFileFromFile(jarFile, File(jarFile))
                 .withFileFromFile("Dockerfile", File(dockerFile)).withBuildArg("JAR_FILE", jarFile)
-        ).withLogConsumer { outputFrame -> System.err.print(outputFrame.utf8String) }.withNetwork(network)
+        ).withLogConsumer { outputFrame -> print(outputFrame.utf8String) }.withNetwork(network)
     }
 
     /**
@@ -92,6 +92,8 @@ class BtcContainerHelper : Closeable {
      * @return true if healthy
      */
     fun isServiceHealthy(serviceContainer: KGenericContainerImage, healthCheckPort: Int): Boolean {
+        println("PORT is $healthCheckPort")
+        println("Mapper PORT is ${serviceContainer.getMappedPort(healthCheckPort)}")
         val healthy = khttp.get(
             "http://127.0.0.1:${serviceContainer.getMappedPort(healthCheckPort)}/health"
         ).statusCode == 200

@@ -42,6 +42,7 @@ class BtcAddressGenerationFailFastTest {
         // Create mock config file
         containerHelper.createMockIrohaConfig(configFile, mockConfigFile, "btc-address-generation")
         // Expose health check port
+        println("Expose PORT ${getServiceHealthCheckPort()}")
         addressGenerationContainer.addExposedPort(getServiceHealthCheckPort())
         // Start Iroha
         containerHelper.irohaContainer.start()
