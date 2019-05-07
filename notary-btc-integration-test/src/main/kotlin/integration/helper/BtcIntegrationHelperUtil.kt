@@ -33,6 +33,9 @@ import org.bitcoinj.core.Address
 import org.bitcoinj.crypto.DeterministicKey
 import org.bitcoinj.params.RegTestParams
 import org.bitcoinj.wallet.Wallet
+import org.testcontainers.containers.FixedHostPortGenericContainer
+import org.testcontainers.containers.GenericContainer
+import org.testcontainers.images.builder.ImageFromDockerfile
 import java.io.File
 import java.math.BigDecimal
 import java.security.KeyPair
@@ -341,3 +344,11 @@ class BtcIntegrationHelperUtil(peers: Int = 1) : IrohaIntegrationHelperUtil(peer
      */
     companion object : KLogging()
 }
+
+/**
+ * The GenericContainer class is not very friendly to Kotlin.
+ * So the following class was created as a workaround.
+ */
+class KGenericContainerImage(image: ImageFromDockerfile) : GenericContainer<KGenericContainerImage>(image)
+
+class KGenericContainerImageName(imageName: String) : GenericContainer<KGenericContainerImageName>(imageName)

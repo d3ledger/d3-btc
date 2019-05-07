@@ -52,16 +52,16 @@ class BtcAddressGenerationInitialization(
     @Autowired private val btcNetworkConfigProvider: BtcNetworkConfigProvider
 ) : HealthyService() {
 
-    /*
-    Initiates listener that listens to events in trigger account.
-    If trigger account is triggered, new session account full notary public keys will be created
+    /**
+     * Initiates address generation process
+     * @param onIrohaFail - function that will be called on Iroha failure
      */
-    fun init(): Result<Unit, Exception> {
+    fun init(onIrohaFail: () -> Unit): Result<Unit, Exception> {
         //Check wallet network
         return keysWallet.checkWalletNetwork(btcNetworkConfigProvider.getConfig()).flatMap {
             irohaChainListener.getBlockObservable()
         }.map { irohaObservable ->
-            initIrohaObservable(irohaObservable)
+            initIrohaObservable(irohaObservable, onIrohaFail)
         }.flatMap {
             // Start free address generation at initial phase
             addressGenerationTrigger
@@ -76,7 +76,15 @@ class BtcAddressGenerationInitialization(
         }
     }
 
-    private fun initIrohaObservable(irohaObservable: Observable<BlockOuterClass.Block>) {
+    /**
+     * Initiates Iroha observable
+     * @param irohaObservable - Iroha observable object to initiate
+     * @param onIrohaFail - function that will be called on Iroha failure
+     */
+    private fun initIrohaObservable(
+        irohaObservable: Observable<BlockOuterClass.Block>,
+        onIrohaFail: () -> Unit
+    ) {
         irohaObservable.subscribeOn(
             Schedulers.from(
                 createPrettySingleThreadPool(
@@ -121,6 +129,7 @@ class BtcAddressGenerationInitialization(
         }, { ex ->
             notHealthy()
             logger.error("Error on subscribe", ex)
+            onIrohaFail()
         })
     }
 

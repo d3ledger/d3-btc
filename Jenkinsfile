@@ -52,6 +52,12 @@ pipeline {
             sh "ln -s deploy/bitcoin/bitcoin-cli /usr/bin/bitcoin-cli"
             sh "gradle dependencies"
             sh "gradle test --info"
+
+            //We need these jars for fail-fast tests
+            sh "gradle btc-address-generation:shadowJar"
+            sh "gradle btc-registration:shadowJar"
+            sh "gradle btc-dw-bridge:shadowJar"
+
             sh "gradle compileIntegrationTestKotlin --info"
             sh "gradle integrationTest --info"
           }
@@ -87,7 +93,6 @@ pipeline {
               TAG = env.BRANCH_NAME
               iC = docker.image("gradle:4.10.2-jdk8-slim")
               iC.inside("-e JVM_OPTS='-Xmx3200m' -e TERM='dumb'") {
-
                 sh "gradle btc-address-generation:shadowJar"
                 sh "gradle btc-registration:shadowJar"
                 sh "gradle btc-dw-bridge:shadowJar"
