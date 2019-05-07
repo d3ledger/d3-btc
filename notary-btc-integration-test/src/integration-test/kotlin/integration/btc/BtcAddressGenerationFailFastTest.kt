@@ -10,7 +10,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.testcontainers.containers.BindMode
 
-
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class BtcAddressGenerationFailFastTest {
 
