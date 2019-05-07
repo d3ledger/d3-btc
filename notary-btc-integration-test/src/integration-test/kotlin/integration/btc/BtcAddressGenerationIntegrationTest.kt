@@ -27,7 +27,6 @@ const val WAIT_PREGEN_INIT_PROCESS_MILLIS = 30_000L
 
 //TODO don't forget to remove
 @Disabled
-
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class BtcAddressGenerationIntegrationTest {
 
