@@ -1,10 +1,11 @@
 package integration.btc
 
-import com.d3.btc.generation.config.BtcAddressGenerationConfig
-import com.d3.commons.config.loadRawConfigs
 import integration.helper.BtcContainerHelper
-import org.junit.jupiter.api.*
+import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
 import org.testcontainers.containers.BindMode
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -41,9 +42,6 @@ class BtcAddressGenerationFailFastTest {
         )
         // Create mock config file
         containerHelper.createMockIrohaConfig(configFile, mockConfigFile, "btc-address-generation")
-        // Expose health check port
-        println("Expose PORT ${getServiceHealthCheckPort()}")
-        addressGenerationContainer.addExposedPort(getServiceHealthCheckPort())
         // Start Iroha
         containerHelper.irohaContainer.start()
         // Start service
@@ -65,23 +63,12 @@ class BtcAddressGenerationFailFastTest {
     fun testFailFast() {
         // Let service work a little
         Thread.sleep(15_000)
-        assertTrue(containerHelper.isServiceHealthy(addressGenerationContainer, getServiceHealthCheckPort()))
+        assertTrue(containerHelper.isServiceHealthy(addressGenerationContainer))
         // Kill Iroha
         containerHelper.irohaContainer.stop()
         // Wait a little
         Thread.sleep(5_000)
         // Check that the service is dead
         assertTrue(containerHelper.isServiceDead(addressGenerationContainer))
-    }
-
-    /**
-     * Returns address generation health check service port
-     */
-    private fun getServiceHealthCheckPort(): Int {
-        return loadRawConfigs(
-            "btc-address-generation",
-            BtcAddressGenerationConfig::class.java,
-            mockConfigFile
-        ).healthCheckPort
     }
 }

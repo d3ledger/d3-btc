@@ -91,14 +91,7 @@ class BtcContainerHelper : Closeable {
      * @param healthCheckPort - port of health check service
      * @return true if healthy
      */
-    fun isServiceHealthy(serviceContainer: KGenericContainerImage, healthCheckPort: Int): Boolean {
-        println("PORT is $healthCheckPort")
-        println("Mapper PORT is ${serviceContainer.getMappedPort(healthCheckPort)}")
-        val healthy = khttp.get(
-            "http://127.0.0.1:${serviceContainer.getMappedPort(healthCheckPort)}/health"
-        ).statusCode == 200
-        return healthy && serviceContainer.isRunning
-    }
+    fun isServiceHealthy(serviceContainer: KGenericContainerImage) = serviceContainer.isRunning
 
     /**
      * Cheks if service is dead
