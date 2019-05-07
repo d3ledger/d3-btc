@@ -26,6 +26,8 @@ import kotlin.test.assertFalse
 
 private const val TOTAL_TESTS = 1
 
+//TODO don't forget to remove
+@Disabled
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class BtcWithdrawalFailResistanceIntegrationTest {
 

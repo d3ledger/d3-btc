@@ -3,11 +3,8 @@ package integration.btc
 import com.d3.btc.generation.config.BtcAddressGenerationConfig
 import com.d3.commons.config.loadRawConfigs
 import integration.helper.BtcContainerHelper
-import org.junit.jupiter.api.AfterAll
+import org.junit.jupiter.api.*
 import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInstance
 import org.testcontainers.containers.BindMode
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
