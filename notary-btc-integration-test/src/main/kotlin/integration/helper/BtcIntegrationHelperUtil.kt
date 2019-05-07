@@ -33,7 +33,6 @@ import org.bitcoinj.core.Address
 import org.bitcoinj.crypto.DeterministicKey
 import org.bitcoinj.params.RegTestParams
 import org.bitcoinj.wallet.Wallet
-import org.testcontainers.containers.FixedHostPortGenericContainer
 import org.testcontainers.containers.GenericContainer
 import org.testcontainers.images.builder.ImageFromDockerfile
 import java.io.File
@@ -350,5 +349,3 @@ class BtcIntegrationHelperUtil(peers: Int = 1) : IrohaIntegrationHelperUtil(peer
  * So the following class was created as a workaround.
  */
 class KGenericContainerImage(image: ImageFromDockerfile) : GenericContainer<KGenericContainerImage>(image)
-
-class KGenericContainerImageName(imageName: String) : GenericContainer<KGenericContainerImageName>(imageName)
