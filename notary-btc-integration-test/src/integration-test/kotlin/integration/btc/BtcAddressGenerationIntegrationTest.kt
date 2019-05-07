@@ -17,16 +17,17 @@ import kotlinx.coroutines.launch
 import mu.KLogging
 import org.bitcoinj.params.RegTestParams
 import org.bitcoinj.wallet.Wallet
-import org.junit.jupiter.api.*
+import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
+import org.junit.jupiter.api.fail
 import java.io.File
 import java.util.*
 
 const val WAIT_PREGEN_PROCESS_MILLIS = 15_000L
 const val WAIT_PREGEN_INIT_PROCESS_MILLIS = 30_000L
 
-//TODO don't forget to remove
-@Disabled
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class BtcAddressGenerationIntegrationTest {
 
@@ -45,7 +46,7 @@ class BtcAddressGenerationIntegrationTest {
     init {
         integrationHelper.addBtcNotary("test_notary", "test_notary_address")
         GlobalScope.launch {
-            environment.btcAddressGenerationInitialization.init{}.failure { ex -> throw ex }
+            environment.btcAddressGenerationInitialization.init {}.failure { ex -> throw ex }
         }
         // Wait for initial address generation
         Thread.sleep(WAIT_PREGEN_INIT_PROCESS_MILLIS)
