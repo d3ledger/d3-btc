@@ -26,7 +26,6 @@ import kotlin.test.assertFalse
 
 private const val TOTAL_TESTS = 1
 
-
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class BtcWithdrawalFailResistanceIntegrationTest {
 

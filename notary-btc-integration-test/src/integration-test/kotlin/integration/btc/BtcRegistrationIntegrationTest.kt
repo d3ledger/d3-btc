@@ -23,7 +23,6 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.fail
 import java.math.BigInteger
 
-
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class BtcRegistrationIntegrationTest {
 

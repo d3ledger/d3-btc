@@ -34,7 +34,6 @@ private const val TOTAL_TESTS = 14
 private const val FAILED_WITHDRAW_AMOUNT = 6666L
 private const val FAILED_BROADCAST_AMOUNT = 7777L
 
-
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class BtcWithdrawalIntegrationTest {
     private val integrationHelper = BtcIntegrationHelperUtil()

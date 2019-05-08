@@ -21,7 +21,6 @@ import java.math.BigDecimal
 
 const val DEPOSIT_WAIT_MILLIS = 10_000L
 
-
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class BtcNotaryIntegrationTest {
 

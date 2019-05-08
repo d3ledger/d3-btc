@@ -22,7 +22,6 @@ import java.math.BigDecimal
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
-
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class BtcDepositFailResistanceIntegrationTest {
     private val integrationHelper = BtcIntegrationHelperUtil()

@@ -28,7 +28,6 @@ import java.util.*
 const val WAIT_PREGEN_PROCESS_MILLIS = 15_000L
 const val WAIT_PREGEN_INIT_PROCESS_MILLIS = 30_000L
 
-
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class BtcAddressGenerationIntegrationTest {
 
