@@ -38,7 +38,10 @@ fun main(args: Array<String>) {
         context.refresh()
         context
     }.flatMap { context ->
-        context.getBean(BtcAddressGenerationInitialization::class.java).init()
+        context.getBean(BtcAddressGenerationInitialization::class.java).init {
+            logger.error("Iroha failure. Exit.")
+            System.exit(1)
+        }
     }.failure { ex ->
         logger.error("cannot run btc address generation", ex)
         System.exit(1)
