@@ -12,11 +12,8 @@ import org.testcontainers.containers.BindMode
 class BtcAddressGenerationFailFastTest {
 
     private val containerHelper = BtcContainerHelper()
-    private val mockConfigFile = "${containerHelper.userDir}/configs/btc/mock/address_generation_local.properties"
-    private val configFile = "${containerHelper.userDir}/configs/btc/address_generation_local.properties"
     private val dockerfile = "${containerHelper.userDir}/docker/dockerfile"
     private val jarFile = "${containerHelper.userDir}/btc-address-generation/build/libs/btc-address-generation-all.jar"
-
     // Create address generation container
     private val addressGenerationContainer = containerHelper.createContainer(jarFile, dockerfile)
 
@@ -24,7 +21,7 @@ class BtcAddressGenerationFailFastTest {
     fun startUp() {
         // Mount configs
         addressGenerationContainer.addFileSystemBind(
-            "${containerHelper.userDir}/configs/btc/mock",
+            "${containerHelper.userDir}/configs/btc",
             "/opt/notary/configs/btc",
             BindMode.READ_ONLY
         )
@@ -42,8 +39,14 @@ class BtcAddressGenerationFailFastTest {
         )
         // Start Iroha
         containerHelper.irohaContainer.start()
-        // Create mock config file
-        containerHelper.createMockIrohaConfig(configFile, mockConfigFile, "btc-address-generation")
+        addressGenerationContainer.addEnv(
+            "BTC-ADDRESS-GENERATION_IROHA_HOSTNAME",
+            containerHelper.irohaContainer.toriiAddress.host
+        )
+        addressGenerationContainer.addEnv(
+            "BTC-ADDRESS-GENERATION_IROHA_PORT",
+            containerHelper.irohaContainer.toriiAddress.port.toString()
+        )
         // Start service
         addressGenerationContainer.start()
     }

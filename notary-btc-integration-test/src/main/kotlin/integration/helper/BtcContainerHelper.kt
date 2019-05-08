@@ -58,27 +58,6 @@ class BtcContainerHelper : Closeable {
     }
 
     /**
-     * Creates mock config. It takes original config and creates new file with modified Iroha configs
-     * @param originalConfigFile - path to original config file
-     * @param mockConfigFile - path to mock config file. It will be created if it doesn't exist
-     * @param configPrefix - prefix of config
-     */
-    fun createMockIrohaConfig(originalConfigFile: String, mockConfigFile: String, configPrefix: String) {
-        val config = Properties()
-        FileInputStream(originalConfigFile).use {
-            config.load(it)
-            config.setProperty("$configPrefix.iroha.hostname", irohaContainer.toriiAddress.host)
-            config.setProperty("$configPrefix.iroha.port", irohaContainer.toriiAddress.port.toString())
-            val file = File(mockConfigFile)
-            if (!file.parentFile.exists()) {
-                file.parentFile.mkdirs()
-            }
-            file.createNewFile()
-            config.store(FileOutputStream(mockConfigFile), "Mock config")
-        }
-    }
-
-    /**
      * Checks if service is healthy
      * @param serviceContainer - container of service to check
      * @param healthCheckPort - port of health check service

@@ -43,3 +43,9 @@ interface BtcWithdrawalConfig {
     // Path to wallet that stores keys
     val btcKeysWalletPath: String
 }
+
+
+fun main(args: Array<String>) {
+    println()
+    println()
+}
