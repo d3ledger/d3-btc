@@ -15,13 +15,15 @@ import integration.registration.RegistrationServiceTestEnvironment
 import jp.co.soramitsu.crypto.ed25519.Ed25519Sha3
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
-import org.junit.jupiter.api.*
+import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
+import org.junit.jupiter.api.fail
 import java.math.BigInteger
 
-//TODO don't forget to remove
-@Disabled
+
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class BtcRegistrationIntegrationTest {
 

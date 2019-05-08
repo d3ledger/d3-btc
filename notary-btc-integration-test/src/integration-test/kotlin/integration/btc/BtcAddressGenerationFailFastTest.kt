@@ -1,12 +1,14 @@
 package integration.btc
 
 import integration.helper.BtcContainerHelper
-import org.junit.jupiter.api.*
+import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
 import org.testcontainers.containers.BindMode
 
-//TODO don't forget to remove
-@Disabled
+
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class BtcAddressGenerationFailFastTest {
 
