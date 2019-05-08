@@ -69,7 +69,7 @@ class BtcDepositWithdrawalFailFastTest {
         // Kill Iroha
         containerHelper.irohaContainer.stop()
         // Wait a little
-        Thread.sleep(25_000)
+        Thread.sleep(5_000)
         // Check that the service is dead
         Assertions.assertTrue(containerHelper.isServiceDead(depositWithdrawalContainer))
     }

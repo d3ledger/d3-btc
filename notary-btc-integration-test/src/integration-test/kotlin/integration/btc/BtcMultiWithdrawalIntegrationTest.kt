@@ -31,6 +31,8 @@ import java.util.*
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 
+//TODO don't forget to remove
+@Disabled
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class BtcMultiWithdrawalIntegrationTest {
 
