@@ -26,6 +26,9 @@ services:
     expose:
     - 15672
     - 5672
+    ports:
+    - 8181:15672
+    - 5672:5672
     networks:
     - d3-notary
   d3-chain-adapter:
