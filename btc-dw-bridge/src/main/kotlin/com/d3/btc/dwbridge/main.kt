@@ -72,7 +72,10 @@ fun main(args: Array<String>) {
 
         // Run deposit service
         GlobalScope.launch {
-            context.getBean(BtcNotaryInitialization::class.java).init().failure { ex ->
+            context.getBean(BtcNotaryInitialization::class.java).init {
+                logger.error("Iroha failure. Exit.")
+                System.exit(1)
+            }.failure { ex ->
                 logger.error("Error in deposit service", ex)
                 System.exit(1)
             }

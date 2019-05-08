@@ -57,7 +57,7 @@ class BtcMultiNotaryIntegrationTest {
         integrationHelper.generateBtcInitialBlocks()
         environments.forEach { environment ->
             GlobalScope.launch {
-                environment.btcNotaryInitialization.init()
+                environment.btcNotaryInitialization.init {}
                     .failure { ex -> fail("Cannot run BTC notary", ex) }
             }
         }

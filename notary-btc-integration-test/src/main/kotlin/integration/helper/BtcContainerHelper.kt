@@ -5,7 +5,6 @@ import com.google.protobuf.util.JsonFormat
 import iroha.protocol.BlockOuterClass
 import jp.co.soramitsu.iroha.testcontainers.IrohaContainer
 import jp.co.soramitsu.iroha.testcontainers.PeerConfig
-import org.testcontainers.containers.Network
 import org.testcontainers.images.builder.ImageFromDockerfile
 import java.io.Closeable
 import java.io.File
@@ -18,8 +17,6 @@ import java.util.*
  */
 class BtcContainerHelper : Closeable {
 
-    private val network = Network.SHARED
-
     val userDir = System.getProperty("user.dir")!!
 
     private val peerKeyPair =
@@ -31,7 +28,6 @@ class BtcContainerHelper : Closeable {
     val irohaContainer =
         IrohaContainer()
             .withPeerConfig(getPeerConfig())
-            .withNetwork(network)
             .withLogger(null)!! // turn of nasty Iroha logs
 
     /**
@@ -45,7 +41,7 @@ class BtcContainerHelper : Closeable {
             ImageFromDockerfile()
                 .withFileFromFile(jarFile, File(jarFile))
                 .withFileFromFile("Dockerfile", File(dockerFile)).withBuildArg("JAR_FILE", jarFile)
-        ).withLogConsumer { outputFrame -> print(outputFrame.utf8String) }.withNetwork(network)
+        ).withLogConsumer { outputFrame -> print(outputFrame.utf8String) }.withNetworkMode("host")
     }
 
     /**
@@ -71,11 +67,8 @@ class BtcContainerHelper : Closeable {
         val config = Properties()
         FileInputStream(originalConfigFile).use {
             config.load(it)
-            config.setProperty("$configPrefix.iroha.hostname", IrohaContainer.defaultIrohaAlias)
-            config.setProperty(
-                "$configPrefix.iroha.port",
-                50051.toString()
-            )
+            config.setProperty("$configPrefix.iroha.hostname", irohaContainer.toriiAddress.host)
+            config.setProperty("$configPrefix.iroha.port", irohaContainer.toriiAddress.port.toString())
             val file = File(mockConfigFile)
             if (!file.parentFile.exists()) {
                 file.parentFile.mkdirs()

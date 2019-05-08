@@ -40,10 +40,10 @@ class BtcAddressGenerationFailFastTest {
             "/opt/notary/deploy/iroha/keys",
             BindMode.READ_WRITE
         )
-        // Create mock config file
-        containerHelper.createMockIrohaConfig(configFile, mockConfigFile, "btc-address-generation")
         // Start Iroha
         containerHelper.irohaContainer.start()
+        // Create mock config file
+        containerHelper.createMockIrohaConfig(configFile, mockConfigFile, "btc-address-generation")
         // Start service
         addressGenerationContainer.start()
     }
