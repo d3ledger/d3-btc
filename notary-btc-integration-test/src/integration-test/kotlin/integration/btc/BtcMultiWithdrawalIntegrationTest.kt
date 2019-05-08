@@ -77,7 +77,7 @@ class BtcMultiWithdrawalIntegrationTest {
                     )
                 environment.withdrawalTransferService.addNewBtcTransactionListener { tx ->
                     environment.createdTransactions[tx.hashAsString] =
-                        Pair(System.currentTimeMillis(), tx)
+                            Pair(System.currentTimeMillis(), tx)
                 }
                 withdrawalEnvironments.add(environment)
                 val blockStorageFolder =
@@ -101,7 +101,7 @@ class BtcMultiWithdrawalIntegrationTest {
             )
             addressGenerationEnvironments.add(environment)
             GlobalScope.launch {
-                environment.btcAddressGenerationInitialization.init().failure { ex -> throw ex }
+                environment.btcAddressGenerationInitialization.init {}.failure { ex -> throw ex }
             }
         }
         //Wait services to init
