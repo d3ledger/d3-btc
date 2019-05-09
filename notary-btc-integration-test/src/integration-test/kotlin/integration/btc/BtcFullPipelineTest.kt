@@ -51,7 +51,7 @@ class BtcFullPipelineTest {
         integrationHelper.addBtcNotary("test_notary", "test_notary_address")
         // Run address generation
         GlobalScope.launch {
-            addressGenerationEnvironment.btcAddressGenerationInitialization.init{}
+            addressGenerationEnvironment.btcAddressGenerationInitialization.init {}
                 .failure { ex -> throw ex }
         }
         // Wait for initial address generation
@@ -72,7 +72,7 @@ class BtcFullPipelineTest {
             blockStorageFolder.deleteRecursively()
             //Recreate folder
             blockStorageFolder.mkdirs()
-            notaryEnvironment.btcNotaryInitialization.init()
+            notaryEnvironment.btcNotaryInitialization.init {}
                 .failure { ex -> fail("Cannot run BTC notary", ex) }
         }
 

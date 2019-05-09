@@ -112,6 +112,3 @@ deploy/chain-adapter/
 
 # Bitcoin test wallets
 deploy/bitcoin/regtest/test wallets/
-
-# Mock Bitcoin configs
-configs/btc/mock/

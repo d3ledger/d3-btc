@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 import java.net.InetAddress
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * This is a peer group implementation that can be used in multiple services simultaneously with no fear of get exception while calling 'startAsync()' or 'stopAsync()' twice
@@ -43,8 +44,8 @@ class SharedPeerGroup(
         }
     }
 
-    private var started = false
-    private var stopped = false
+    private val started = AtomicBoolean()
+    private val stopped = AtomicBoolean()
 
     /**
      * Returns block by hash
@@ -53,35 +54,28 @@ class SharedPeerGroup(
      */
     fun getBlock(blockHash: Sha256Hash) = chain?.blockStore?.get(blockHash)
 
-    @Synchronized
     override fun startAsync(): ListenableFuture<*>? {
-        if (!started) {
+        if (started.compareAndSet(false, true)) {
             // Initialize wallet only once
             walletInitializer.initializeWallet(wallet)
-            val asyncStart = super.startAsync()
-            started = true
-            return asyncStart
+            return super.startAsync()
         }
         logger.warn { "Cannot start peer group, because it was started previously." }
         return null
     }
 
-    @Synchronized
     override fun stopAsync(): ListenableFuture<*>? {
-        if (!stopped) {
+        if (stopped.compareAndSet(false, true)) {
             // Close block store if possible
             chain?.blockStore?.close()
-            val asyncStop = super.stopAsync()
-            stopped = true
-            return asyncStop
+            return super.stopAsync()
         }
         logger.warn { "Cannot stop peer group, because it was stopped previously" }
         return null
     }
 
-    @Synchronized
     override fun downloadBlockChain() {
-        if (started) {
+        if (started.get()) {
             super.downloadBlockChain()
         }
     }
