@@ -67,8 +67,9 @@ class BtcNotaryInitialization(
 
     /**
      * Init notary
+     * @param onIrohaFailure - function that will be called on Iroha failure
      */
-    fun init(): Result<Unit, Exception> {
+    fun init(onIrohaFailure: () -> Unit): Result<Unit, Exception> {
         logger.info { "Btc notary initialization" }
         //Enables short log format for Bitcoin events
         BriefLogFormatter.init()
@@ -87,6 +88,7 @@ class BtcNotaryInitialization(
             ) {
                 // Kill deposit service if Iroha chain listener is not functioning
                 close()
+                onIrohaFailure()
             }
             logger.info { "Registration service listener was successfully initialized" }
         }.map {
