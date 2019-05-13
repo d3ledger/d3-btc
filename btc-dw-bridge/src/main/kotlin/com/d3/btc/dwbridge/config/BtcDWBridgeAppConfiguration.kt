@@ -5,6 +5,7 @@
 
 package com.d3.btc.dwbridge.config
 
+import com.d3.btc.config.BitcoinConfig.Companion.extractHosts
 import com.d3.btc.deposit.config.BTC_DEPOSIT_SERVICE_NAME
 import com.d3.btc.deposit.config.BtcDepositConfig
 import com.d3.btc.dwbridge.BTC_DW_BRIDGE_SERVICE_NAME
@@ -209,7 +210,7 @@ class BtcDWBridgeAppConfiguration {
     fun blockStoragePath() = dwBridgeConfig.bitcoin.blockStoragePath
 
     @Bean
-    fun btcHosts() = BitcoinConfig.extractHosts(dwBridgeConfig.bitcoin)
+    fun btcHosts() = extractHosts(dwBridgeConfig.bitcoin)
 
     @Bean
     fun notaryPeerListProvider() =

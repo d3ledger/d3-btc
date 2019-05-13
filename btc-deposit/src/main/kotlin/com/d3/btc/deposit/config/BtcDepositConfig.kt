@@ -5,7 +5,7 @@
 
 package com.d3.btc.deposit.config
 
-import com.d3.commons.config.BitcoinConfig
+import com.d3.btc.config.BitcoinConfig
 import com.d3.commons.config.IrohaConfig
 import com.d3.commons.config.IrohaCredentialConfig
 
