@@ -34,7 +34,6 @@ pipeline {
       steps {
         script {
           def scmVars = checkout scm
-          tmp = docker.image("openjdk:8-jdk")
           env.WORKSPACE = pwd()
 
           DOCKER_NETWORK = "${scmVars.CHANGE_ID}-${scmVars.GIT_COMMIT}-${BUILD_NUMBER}"

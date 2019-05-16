@@ -9,7 +9,7 @@ import com.d3.btc.provider.BtcFreeAddressesProvider
 import com.d3.btc.provider.BtcRegisteredAddressesProvider
 import com.d3.btc.provider.account.IrohaBtcAccountRegistrator
 import com.d3.btc.provider.address.BtcAddressesProvider
-import com.d3.commons.config.loadConfigs
+import com.d3.commons.config.loadLocalConfigs
 import com.d3.commons.model.IrohaCredential
 import com.d3.commons.sidechain.iroha.consumer.IrohaConsumerImpl
 import com.d3.commons.sidechain.iroha.util.ModelUtil
@@ -18,10 +18,10 @@ import jp.co.soramitsu.iroha.java.IrohaAPI
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
-val btcRegistrationConfig = loadConfigs(
+val btcRegistrationConfig = loadLocalConfigs(
     "btc-registration",
     BtcRegistrationConfig::class.java,
-    "/btc/registration.properties"
+    "registration.properties"
 ).get()
 
 @Configuration

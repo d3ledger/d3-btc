@@ -7,15 +7,15 @@
 
 package com.d3.btc.cli
 
+import com.d3.commons.config.loadRawLocalConfigs
 import com.github.jleskovar.btcrpc.BitcoinRpcClientFactory
 import com.github.kittinunf.result.Result
-import com.d3.commons.config.loadConfigs
 import mu.KLogging
 
 private val logger = KLogging().logger
 
 private val btcNodeRpcConfig =
-    loadConfigs("btc-node-rpc", BtcNodeRpcConfig::class.java, "/btc/node-rpc.properties").get()
+    loadRawLocalConfigs("btc-node-rpc", BtcNodeRpcConfig::class.java, "node-rpc.properties")
 
 private val rpcClient = BitcoinRpcClientFactory.createClient(
     user = btcNodeRpcConfig.user,

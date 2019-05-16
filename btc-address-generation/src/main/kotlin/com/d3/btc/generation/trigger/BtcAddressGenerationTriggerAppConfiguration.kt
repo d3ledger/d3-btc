@@ -10,7 +10,7 @@ import com.d3.btc.provider.BtcFreeAddressesProvider
 import com.d3.btc.provider.BtcRegisteredAddressesProvider
 import com.d3.btc.provider.address.BtcAddressesProvider
 import com.d3.btc.provider.generation.BtcSessionProvider
-import com.d3.commons.config.loadConfigs
+import com.d3.commons.config.loadLocalConfigs
 import com.d3.commons.model.IrohaCredential
 import com.d3.commons.provider.TriggerProvider
 import com.d3.commons.sidechain.iroha.consumer.IrohaConsumerImpl
@@ -21,10 +21,10 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
 val btcAddressGenerationTriggerConfig =
-    loadConfigs(
+    loadLocalConfigs(
         "btc-address-generation",
         BtcAddressGenerationConfig::class.java,
-        "/btc/address_generation.properties"
+        "address_generation.properties"
     ).get()
 
 @Configuration

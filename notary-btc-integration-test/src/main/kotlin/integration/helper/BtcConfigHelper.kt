@@ -10,7 +10,7 @@ import com.d3.btc.generation.config.BtcAddressGenerationConfig
 import com.d3.btc.registration.config.BtcRegistrationConfig
 import com.d3.btc.withdrawal.config.BtcWithdrawalConfig
 import com.d3.btc.config.BitcoinConfig
-import com.d3.commons.config.loadConfigs
+import com.d3.commons.config.loadLocalConfigs
 import com.d3.commons.model.IrohaCredential
 import org.bitcoinj.params.RegTestParams
 import org.bitcoinj.wallet.Wallet
@@ -35,10 +35,10 @@ class BtcConfigHelper(
         walletNamePostfix: String = "test"
     ): BtcAddressGenerationConfig {
         val btcPkPreGenConfig =
-            loadConfigs(
+            loadLocalConfigs(
                 "btc-address-generation",
                 BtcAddressGenerationConfig::class.java,
-                "/btc/address_generation.properties"
+                "address_generation.properties"
             ).get()
 
         return object : BtcAddressGenerationConfig {
@@ -67,10 +67,10 @@ class BtcConfigHelper(
      */
     fun createBtcWithdrawalConfig(testName: String = ""): BtcWithdrawalConfig {
         val btcWithdrawalConfig =
-            loadConfigs(
+            loadLocalConfigs(
                 "btc-withdrawal",
                 BtcWithdrawalConfig::class.java,
-                "/btc/withdrawal.properties"
+                "withdrawal.properties"
             ).get()
         return object : BtcWithdrawalConfig {
             override val btcConsensusCredential =
@@ -120,10 +120,10 @@ class BtcConfigHelper(
         testName: String = "",
         notaryIrohaCredential: IrohaCredential = accountHelper.notaryAccount
     ): BtcDepositConfig {
-        val btcDepositConfig = loadConfigs(
+        val btcDepositConfig = loadLocalConfigs(
             "btc-deposit",
             BtcDepositConfig::class.java,
-            "/btc/deposit.properties"
+            "deposit.properties"
         ).get()
         return object : BtcDepositConfig {
             override val mstRegistrationAccount = accountHelper.mstRegistrationAccount.accountId

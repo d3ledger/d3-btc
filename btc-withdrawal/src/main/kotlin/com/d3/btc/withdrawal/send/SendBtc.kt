@@ -10,7 +10,7 @@ package com.d3.btc.withdrawal.send
 import com.d3.btc.helper.currency.satToBtc
 import com.d3.btc.withdrawal.config.BtcWithdrawalConfig
 import com.d3.commons.config.IrohaCredentialConfig
-import com.d3.commons.config.loadConfigs
+import com.d3.commons.config.loadLocalConfigs
 import com.d3.commons.model.IrohaCredential
 import com.d3.commons.sidechain.iroha.consumer.IrohaConsumer
 import com.d3.commons.sidechain.iroha.consumer.IrohaConsumerImpl
@@ -36,7 +36,7 @@ private val logger = KLogging().logger
 fun main(args: Array<String>) {
     val destAddress = args[0]
     val btcAmount = satToBtc(args[1].toLong())
-    loadConfigs("btc-withdrawal", BtcWithdrawalConfig::class.java, "/btc/withdrawal.properties")
+    loadLocalConfigs("btc-withdrawal", BtcWithdrawalConfig::class.java, "withdrawal.properties")
         .map { withdrawalConfig ->
             val irohaNetwork =
                 IrohaAPI(withdrawalConfig.iroha.hostname, withdrawalConfig.iroha.port)
