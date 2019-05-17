@@ -7,7 +7,7 @@ package com.d3.btc.generation.config
 
 import com.d3.btc.generation.BTC_ADDRESS_GENERATION_SERVICE_NAME
 import com.d3.btc.provider.BtcChangeAddressProvider
-import com.d3.commons.config.loadConfigs
+import com.d3.commons.config.loadLocalConfigs
 import com.d3.commons.model.IrohaCredential
 import com.d3.commons.provider.NotaryPeerListProvider
 import com.d3.commons.provider.NotaryPeerListProviderImpl
@@ -25,10 +25,10 @@ import org.springframework.context.annotation.Configuration
 import java.io.File
 
 val btcAddressGenerationConfig =
-    loadConfigs(
+    loadLocalConfigs(
         "btc-address-generation",
         BtcAddressGenerationConfig::class.java,
-        "/btc/address_generation.properties"
+        "address_generation.properties"
     ).get()
 
 @Configuration

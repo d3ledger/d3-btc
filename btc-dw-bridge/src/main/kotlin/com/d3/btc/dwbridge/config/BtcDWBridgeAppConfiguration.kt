@@ -34,21 +34,21 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
 val withdrawalConfig =
-    loadConfigs(
+    loadLocalConfigs(
         "btc-withdrawal",
         BtcWithdrawalConfig::class.java,
-        "/btc/withdrawal.properties"
+        "withdrawal.properties"
     ).get()
 val depositConfig =
-    loadConfigs("btc-deposit", BtcDepositConfig::class.java, "/btc/deposit.properties").get()
+    loadLocalConfigs("btc-deposit", BtcDepositConfig::class.java, "deposit.properties").get()
 val dwBridgeConfig =
-    loadConfigs("btc-dw-bridge", BtcDWBridgeConfig::class.java, "/btc/dw-bridge.properties").get()
+    loadLocalConfigs("btc-dw-bridge", BtcDWBridgeConfig::class.java, "dw-bridge.properties").get()
 
 @Configuration
 class BtcDWBridgeAppConfiguration {
 
     private val rmqConfig =
-        loadRawConfigs("rmq", RMQConfig::class.java, "${getConfigFolder()}/rmq.properties")
+        loadRawLocalConfigs("rmq", RMQConfig::class.java, "rmq.properties")
 
     private val withdrawalKeypair = ModelUtil.loadKeypair(
         withdrawalConfig.withdrawalCredential.pubkeyPath,

@@ -12,7 +12,6 @@ services:
       WAIT_BEFORE_HOSTS: 10
       WAIT_HOSTS_TIMEOUT: 60
     volumes:
-      - ../configs:/opt/notary/configs
       - ../deploy/iroha/keys:/opt/notary/deploy/iroha/keys
     networks:
       - d3-network
@@ -27,7 +26,6 @@ services:
       WAIT_BEFORE_HOSTS: 10
       WAIT_HOSTS_TIMEOUT: 60
     volumes:
-      - ../configs:/opt/notary/configs
       - ../deploy/bitcoin:/opt/notary/deploy/bitcoin
       - ../deploy/iroha/keys:/opt/notary/deploy/iroha/keys
     depends_on:
@@ -47,7 +45,6 @@ services:
       WAIT_BEFORE_HOSTS: 10
       WAIT_HOSTS_TIMEOUT: 60
     volumes:
-      - ../configs:/opt/notary/configs
       - ../deploy/bitcoin:/opt/notary/deploy/bitcoin
       - ../deploy/iroha/keys:/opt/notary/deploy/iroha/keys
     networks:

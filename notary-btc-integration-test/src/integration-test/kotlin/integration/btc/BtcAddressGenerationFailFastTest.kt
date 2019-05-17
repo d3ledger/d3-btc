@@ -19,12 +19,6 @@ class BtcAddressGenerationFailFastTest {
 
     @BeforeAll
     fun startUp() {
-        // Mount configs
-        addressGenerationContainer.addFileSystemBind(
-            "${containerHelper.userDir}/configs/btc",
-            "/opt/notary/configs/btc",
-            BindMode.READ_ONLY
-        )
         // Mount Bitcoin wallet
         addressGenerationContainer.addFileSystemBind(
             "${containerHelper.userDir}/deploy/bitcoin",

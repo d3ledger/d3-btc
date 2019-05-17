@@ -15,12 +15,6 @@ class BtcDepositWithdrawalFailFastTest {
 
     @BeforeAll
     fun startUp() {
-        // Mount configs
-        depositWithdrawalContainer.addFileSystemBind(
-            "${containerHelper.userDir}/configs",
-            "/opt/notary/configs",
-            BindMode.READ_ONLY
-        )
         // Mount Bitcoin wallet
         depositWithdrawalContainer.addFileSystemBind(
             "${containerHelper.userDir}/deploy/bitcoin",
