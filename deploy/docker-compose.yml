@@ -61,7 +61,6 @@ services:
       - d3-iroha
       - d3-rmq
     volumes:
-      - ../configs/:/opt/chain-adapter/configs
       - ../deploy/chain-adapter/:/opt/chain-adapter/deploy/chain-adapter
       - ../deploy/iroha/keys:/opt/chain-adapter/deploy/iroha/keys
     environment:
