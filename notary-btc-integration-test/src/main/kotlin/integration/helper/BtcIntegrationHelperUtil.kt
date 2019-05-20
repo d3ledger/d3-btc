@@ -349,3 +349,5 @@ class BtcIntegrationHelperUtil(peers: Int = 1) : IrohaIntegrationHelperUtil(peer
  * So the following class was created as a workaround.
  */
 class KGenericContainerImage(image: ImageFromDockerfile) : GenericContainer<KGenericContainerImage>(image)
+
+class KGenericContainer(imageName: String) : GenericContainer<KGenericContainer>(imageName)

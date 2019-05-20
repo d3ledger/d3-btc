@@ -12,6 +12,9 @@ import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.util.*
 
+
+const val DEFAULT_RMQ_PORT = 5672
+
 /**
  * Helper that is used to start Iroha, create containers, etc
  */
@@ -29,6 +32,9 @@ class BtcContainerHelper : Closeable {
         IrohaContainer()
             .withPeerConfig(getPeerConfig())
             .withLogger(null)!! // turn of nasty Iroha logs
+
+    val rmq =
+        KGenericContainer("rabbitmq:3-management").withExposedPorts(DEFAULT_RMQ_PORT)
 
     /**
      * Creates service docker container based on [dockerFile]
@@ -73,7 +79,14 @@ class BtcContainerHelper : Closeable {
     fun isServiceDead(serviceContainer: KGenericContainerImage) = !serviceContainer.isRunning
 
     override fun close() {
-        irohaContainer.stop()
+        if (irohaContainer.irohaDockerContainer != null
+            && irohaContainer.irohaDockerContainer.isRunning()
+        ) {
+            irohaContainer.stop()
+        }
+        if (rmq.isRunning) {
+            rmq.close()
+        }
     }
 
 }

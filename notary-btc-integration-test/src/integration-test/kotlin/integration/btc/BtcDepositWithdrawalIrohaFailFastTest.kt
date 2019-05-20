@@ -1,71 +1,70 @@
 package integration.btc
 
 import integration.helper.BtcContainerHelper
-import org.junit.jupiter.api.AfterAll
-import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInstance
+import org.junit.jupiter.api.*
 import org.testcontainers.containers.BindMode
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class BtcAddressGenerationFailFastTest {
-
+class BtcDepositWithdrawalIrohaFailFastTest {
     private val containerHelper = BtcContainerHelper()
     private val dockerfile = "${containerHelper.userDir}/docker/dockerfile"
-    private val jarFile = "${containerHelper.userDir}/btc-address-generation/build/libs/btc-address-generation-all.jar"
-    // Create address generation container
-    private val addressGenerationContainer = containerHelper.createContainer(jarFile, dockerfile)
+    private val jarFile = "${containerHelper.userDir}/btc-dw-bridge/build/libs/btc-dw-bridge-all.jar"
+
+    // Create deposit-withdrawal container
+    private val depositWithdrawalContainer = containerHelper.createContainer(jarFile, dockerfile)
 
     @BeforeAll
     fun startUp() {
         // Mount Bitcoin wallet
-        addressGenerationContainer.addFileSystemBind(
+        depositWithdrawalContainer.addFileSystemBind(
             "${containerHelper.userDir}/deploy/bitcoin",
             "/opt/notary/deploy/bitcoin",
             BindMode.READ_WRITE
         )
         // Mount Iroha keys
-        addressGenerationContainer.addFileSystemBind(
+        depositWithdrawalContainer.addFileSystemBind(
             "${containerHelper.userDir}/deploy/iroha/keys",
             "/opt/notary/deploy/iroha/keys",
             BindMode.READ_WRITE
         )
         // Start Iroha
         containerHelper.irohaContainer.start()
-        addressGenerationContainer.addEnv(
-            "BTC-ADDRESS-GENERATION_IROHA_HOSTNAME",
+
+        depositWithdrawalContainer.addEnv(
+            "BTC-DW-BRIDGE_IROHA_HOSTNAME",
             containerHelper.irohaContainer.toriiAddress.host
         )
-        addressGenerationContainer.addEnv(
-            "BTC-ADDRESS-GENERATION_IROHA_PORT",
+        depositWithdrawalContainer.addEnv(
+            "BTC-DW-BRIDGE_IROHA_PORT",
             containerHelper.irohaContainer.toriiAddress.port.toString()
         )
+        depositWithdrawalContainer.addEnv("BTC-DW-BRIDGE_BITCOIN_HOSTS", "127.0.0.1")
+        depositWithdrawalContainer.addEnv("RMQ_HOST", "127.0.0.1")
         // Start service
-        addressGenerationContainer.start()
+        depositWithdrawalContainer.start()
     }
 
     @AfterAll
     fun tearDown() {
         containerHelper.close()
-        addressGenerationContainer.stop()
+        depositWithdrawalContainer.stop()
     }
 
     /**
-     * @given address generation and Iroha services being started
+     * @given dw-bridge and Iroha services being started
      * @when Iroha dies
-     * @then address generation dies as well
+     * @then dw-bridge dies as well
      */
     @Test
     fun testFailFast() {
         // Let service work a little
         Thread.sleep(15_000)
-        assertTrue(containerHelper.isServiceHealthy(addressGenerationContainer))
+        Assertions.assertTrue(containerHelper.isServiceHealthy(depositWithdrawalContainer))
         // Kill Iroha
         containerHelper.irohaContainer.stop()
         // Wait a little
         Thread.sleep(5_000)
         // Check that the service is dead
-        assertTrue(containerHelper.isServiceDead(addressGenerationContainer))
+        Assertions.assertTrue(containerHelper.isServiceDead(depositWithdrawalContainer))
     }
 }
