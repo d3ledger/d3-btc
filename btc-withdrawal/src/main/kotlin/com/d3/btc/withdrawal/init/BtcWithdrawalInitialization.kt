@@ -64,10 +64,7 @@ class BtcWithdrawalInitialization(
             BTC_WITHDRAWAL_SERVICE_NAME,
             "rmq-consumer"
         ),
-        autoAck = false,
-        subscribe = { block, ack ->
-            safeApplyAck({ handleIrohaBlock(block) }, { ack() })
-        }
+        autoAck = false
     )
 
     fun init(): Result<Unit, Exception> {
@@ -90,15 +87,12 @@ class BtcWithdrawalInitialization(
      */
     private fun initWithdrawalTransferListener(
     ): Result<Unit, Exception> {
-        return Result.of {
-            irohaChainListener.getBlockObservable().map { observable ->
-                observable.doOnError { ex ->
-                    notHealthy()
-                    logger.error("Error on transfer events subscription", ex)
+        return irohaChainListener.getBlockObservable()
+            .map { observable ->
+                observable.subscribe { (block, ack) ->
+                    safeApplyAck({ handleIrohaBlock(block) }, { ack() })
                 }
-            }
-            Unit
-        }
+            }.flatMap { irohaChainListener.listen() }
     }
 
     /**
