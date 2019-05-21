@@ -30,8 +30,18 @@ class BtcDepositWithdrawalRmqFailFastTest {
         )
         // Start RMQ
         containerHelper.rmq.start()
+        
+        // Start Iroha
+        containerHelper.irohaContainer.start()
 
-        depositWithdrawalContainer.addEnv("BTC-DW-BRIDGE_IROHA_HOSTNAME", "127.0.0.1")
+        depositWithdrawalContainer.addEnv(
+            "BTC-DW-BRIDGE_IROHA_HOSTNAME",
+            containerHelper.irohaContainer.toriiAddress.host
+        )
+        depositWithdrawalContainer.addEnv(
+            "BTC-DW-BRIDGE_IROHA_PORT",
+            containerHelper.irohaContainer.toriiAddress.port.toString()
+        )
         depositWithdrawalContainer.addEnv("BTC-DW-BRIDGE_BITCOIN_HOSTS", "127.0.0.1")
         depositWithdrawalContainer.addEnv("RMQ_HOST", containerHelper.rmq.containerIpAddress)
         depositWithdrawalContainer.addEnv("RMQ_PORT", containerHelper.rmq.getMappedPort(DEFAULT_RMQ_PORT).toString())
