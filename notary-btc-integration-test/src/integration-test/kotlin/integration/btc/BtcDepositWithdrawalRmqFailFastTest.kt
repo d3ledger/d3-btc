@@ -30,7 +30,8 @@ class BtcDepositWithdrawalRmqFailFastTest {
         )
         // Start RMQ
         containerHelper.rmq.start()
-
+        
+        depositWithdrawalContainer.addEnv("BTC-DW-BRIDGE_BITCOIN_HOSTS", "127.0.0.1")
         depositWithdrawalContainer.addEnv("RMQ_HOST", containerHelper.rmq.containerIpAddress)
         depositWithdrawalContainer.addEnv("RMQ_PORT", containerHelper.rmq.getMappedPort(DEFAULT_RMQ_PORT).toString())
 
