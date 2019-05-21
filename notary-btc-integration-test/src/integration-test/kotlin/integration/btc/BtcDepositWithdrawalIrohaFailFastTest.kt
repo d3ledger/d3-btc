@@ -1,12 +1,12 @@
 package integration.btc
 
-import integration.helper.BtcContainerHelper
+import integration.helper.ContainerHelper
 import org.junit.jupiter.api.*
 import org.testcontainers.containers.BindMode
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class BtcDepositWithdrawalIrohaFailFastTest {
-    private val containerHelper = BtcContainerHelper()
+    private val containerHelper = ContainerHelper()
     private val dockerfile = "${containerHelper.userDir}/docker/dockerfile"
     private val jarFile = "${containerHelper.userDir}/btc-dw-bridge/build/libs/btc-dw-bridge-all.jar"
 

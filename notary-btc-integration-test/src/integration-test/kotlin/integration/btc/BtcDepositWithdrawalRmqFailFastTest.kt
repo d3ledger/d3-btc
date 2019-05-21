@@ -1,13 +1,13 @@
 package integration.btc
 
-import integration.helper.BtcContainerHelper
+import integration.helper.ContainerHelper
 import integration.helper.DEFAULT_RMQ_PORT
 import org.junit.jupiter.api.*
 import org.testcontainers.containers.BindMode
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class BtcDepositWithdrawalRmqFailFastTest {
-    private val containerHelper = BtcContainerHelper()
+    private val containerHelper = ContainerHelper()
     private val dockerfile = "${containerHelper.userDir}/docker/dockerfile"
     private val jarFile = "${containerHelper.userDir}/btc-dw-bridge/build/libs/btc-dw-bridge-all.jar"
 
@@ -29,8 +29,8 @@ class BtcDepositWithdrawalRmqFailFastTest {
             BindMode.READ_WRITE
         )
         // Start RMQ
-        containerHelper.rmq.start()
-        
+        containerHelper.rmqContainer.start()
+
         // Start Iroha
         containerHelper.irohaContainer.start()
 
@@ -43,8 +43,11 @@ class BtcDepositWithdrawalRmqFailFastTest {
             containerHelper.irohaContainer.toriiAddress.port.toString()
         )
         depositWithdrawalContainer.addEnv("BTC-DW-BRIDGE_BITCOIN_HOSTS", "127.0.0.1")
-        depositWithdrawalContainer.addEnv("RMQ_HOST", containerHelper.rmq.containerIpAddress)
-        depositWithdrawalContainer.addEnv("RMQ_PORT", containerHelper.rmq.getMappedPort(DEFAULT_RMQ_PORT).toString())
+        depositWithdrawalContainer.addEnv("RMQ_HOST", containerHelper.rmqContainer.containerIpAddress)
+        depositWithdrawalContainer.addEnv(
+            "RMQ_PORT",
+            containerHelper.rmqContainer.getMappedPort(DEFAULT_RMQ_PORT).toString()
+        )
 
         // Start service
         depositWithdrawalContainer.start()
@@ -67,7 +70,7 @@ class BtcDepositWithdrawalRmqFailFastTest {
         Thread.sleep(15_000)
         Assertions.assertTrue(containerHelper.isServiceHealthy(depositWithdrawalContainer))
         // Kill Iroha
-        containerHelper.rmq.stop()
+        containerHelper.rmqContainer.stop()
         // Wait a little
         // Yeah, RMQ really takes a long time to accept its death
         Thread.sleep(15_000)
