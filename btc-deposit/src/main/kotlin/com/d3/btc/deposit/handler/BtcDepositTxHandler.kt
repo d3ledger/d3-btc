@@ -44,7 +44,7 @@ class BtcDepositTxHandler(
                 registeredAddresses.firstOrNull { btcAddress -> btcAddress.address == txBtcAddress }
             if (btcAddress != null) {
                 val btcValue = satToBtc(output.value.value)
-                val event = SideChainEvent.PrimaryBlockChainEvent.OnPrimaryChainDeposit(
+                val event = SideChainEvent.PrimaryBlockChainEvent.ChainAnchoredOnPrimaryChainDeposit(
                     tx.hashAsString,
                     /*
                     Due to Iroha time restrictions, tx time must be in range [current time - 1 day; current time + 5 min],

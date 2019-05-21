@@ -1,6 +1,6 @@
 package integration.btc
 
-import integration.helper.BtcContainerHelper
+import integration.helper.ContainerHelper
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
@@ -11,7 +11,7 @@ import org.testcontainers.containers.BindMode
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class BtcAddressGenerationIrohaFailFastTest {
 
-    private val containerHelper = BtcContainerHelper()
+    private val containerHelper = ContainerHelper()
     private val dockerfile = "${containerHelper.userDir}/docker/dockerfile"
     private val jarFile = "${containerHelper.userDir}/btc-address-generation/build/libs/btc-address-generation-all.jar"
     // Create address generation container
