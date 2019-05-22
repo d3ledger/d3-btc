@@ -34,8 +34,6 @@ hs_err_pid*
 /notary-btc-integration-test/build/
 /btc-dw-bridge/build
 /configs/brvs/key*.*
-gradle/wrapper/gradle-wrapper.jar
-gradle/wrapper
 
 # Ignore Gradle GUI config
 gradle-app.setting
