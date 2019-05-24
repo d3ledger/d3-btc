@@ -15,7 +15,9 @@ import com.d3.btc.wallet.WalletInitializer
 import com.d3.btc.wallet.loadAutoSaveWallet
 import com.d3.btc.withdrawal.config.BtcWithdrawalConfig
 import com.d3.btc.withdrawal.statistics.WithdrawalStatistics
-import com.d3.commons.config.*
+import com.d3.commons.config.RMQConfig
+import com.d3.commons.config.loadLocalConfigs
+import com.d3.commons.config.loadRawLocalConfigs
 import com.d3.commons.model.IrohaCredential
 import com.d3.commons.notary.NotaryImpl
 import com.d3.commons.provider.NotaryPeerListProviderImpl
@@ -30,6 +32,7 @@ import io.grpc.ManagedChannelBuilder
 import io.reactivex.Observable
 import io.reactivex.subjects.PublishSubject
 import jp.co.soramitsu.iroha.java.IrohaAPI
+import jp.co.soramitsu.iroha.java.Utils
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
@@ -50,27 +53,27 @@ class BtcDWBridgeAppConfiguration {
     private val rmqConfig =
         loadRawLocalConfigs("rmq", RMQConfig::class.java, "rmq.properties")
 
-    private val withdrawalKeypair = ModelUtil.loadKeypair(
-        withdrawalConfig.withdrawalCredential.pubkeyPath,
-        withdrawalConfig.withdrawalCredential.privkeyPath
-    ).fold({ keypair -> keypair }, { ex -> throw ex })
+    private val withdrawalKeypair = Utils.parseHexKeypair(
+        withdrawalConfig.withdrawalCredential.pubkey,
+        withdrawalConfig.withdrawalCredential.privkey
+    )
+    private val notaryKeypair = Utils.parseHexKeypair(
+        depositConfig.notaryCredential.pubkey,
+        depositConfig.notaryCredential.privkey
+    )
 
-    private val notaryKeypair = ModelUtil.loadKeypair(
-        depositConfig.notaryCredential.pubkeyPath,
-        depositConfig.notaryCredential.privkeyPath
-    ).fold({ keypair -> keypair }, { ex -> throw ex })
+    private val signatureCollectorKeypair = Utils.parseHexKeypair(
+        withdrawalConfig.signatureCollectorCredential.pubkey,
+        withdrawalConfig.signatureCollectorCredential.privkey
+    )
 
-    private val signatureCollectorKeypair = ModelUtil.loadKeypair(
-        withdrawalConfig.signatureCollectorCredential.pubkeyPath,
-        withdrawalConfig.signatureCollectorCredential.privkeyPath
-    ).fold({ keypair -> keypair }, { ex -> throw ex })
-
-    private val btcConsensusCredential = ModelUtil.loadKeypair(
-        withdrawalConfig.btcConsensusCredential.pubkeyPath,
-        withdrawalConfig.btcConsensusCredential.privkeyPath
-    ).fold({ keypair ->
-        IrohaCredential(withdrawalConfig.btcConsensusCredential.accountId, keypair)
-    }, { ex -> throw ex })
+    private val btcConsensusCredential =
+        IrohaCredential(
+            withdrawalConfig.btcConsensusCredential.accountId, Utils.parseHexKeypair(
+                withdrawalConfig.btcConsensusCredential.pubkey,
+                withdrawalConfig.btcConsensusCredential.privkey
+            )
+        )
 
     private val notaryCredential =
         IrohaCredential(depositConfig.notaryCredential.accountId, notaryKeypair)
@@ -139,21 +142,15 @@ class BtcDWBridgeAppConfiguration {
 
     @Bean
     fun btcRegisteredAddressesProvider(): BtcRegisteredAddressesProvider {
-        ModelUtil.loadKeypair(
-            depositConfig.notaryCredential.pubkeyPath,
-            depositConfig.notaryCredential.privkeyPath
+        return BtcRegisteredAddressesProvider(
+            IrohaQueryHelperImpl(
+                irohaAPI(),
+                depositConfig.notaryCredential.accountId,
+                notaryKeypair
+            ),
+            depositConfig.registrationAccount,
+            depositConfig.notaryCredential.accountId
         )
-            .fold({ keypair ->
-                return BtcRegisteredAddressesProvider(
-                    IrohaQueryHelperImpl(
-                        irohaAPI(),
-                        depositConfig.notaryCredential.accountId,
-                        keypair
-                    ),
-                    depositConfig.registrationAccount,
-                    depositConfig.notaryCredential.accountId
-                )
-            }, { ex -> throw ex })
     }
 
     @Bean

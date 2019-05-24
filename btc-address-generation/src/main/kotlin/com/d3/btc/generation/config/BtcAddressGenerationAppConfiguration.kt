@@ -14,11 +14,11 @@ import com.d3.commons.provider.NotaryPeerListProviderImpl
 import com.d3.commons.sidechain.iroha.IrohaChainListener
 import com.d3.commons.sidechain.iroha.consumer.IrohaConsumerImpl
 import com.d3.commons.sidechain.iroha.consumer.MultiSigIrohaConsumer
-import com.d3.commons.sidechain.iroha.util.ModelUtil
 import com.d3.commons.sidechain.iroha.util.impl.IrohaQueryHelperImpl
 import com.d3.commons.util.createPrettySingleThreadPool
 import io.grpc.ManagedChannelBuilder
 import jp.co.soramitsu.iroha.java.IrohaAPI
+import jp.co.soramitsu.iroha.java.Utils
 import org.bitcoinj.wallet.Wallet
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -35,12 +35,10 @@ val btcAddressGenerationConfig =
 class BtcAddressGenerationAppConfiguration {
 
     private val registrationKeyPair =
-        ModelUtil.loadKeypair(
-            btcAddressGenerationConfig.registrationAccount.pubkeyPath,
-            btcAddressGenerationConfig.registrationAccount.privkeyPath
-        ).fold({ keypair ->
-            keypair
-        }, { ex -> throw ex })
+        Utils.parseHexKeypair(
+            btcAddressGenerationConfig.registrationAccount.pubkey,
+            btcAddressGenerationConfig.registrationAccount.privkey
+        )
 
     private val registrationCredential =
         IrohaCredential(
@@ -49,12 +47,10 @@ class BtcAddressGenerationAppConfiguration {
         )
 
     private val mstRegistrationKeyPair =
-        ModelUtil.loadKeypair(
-            btcAddressGenerationConfig.mstRegistrationAccount.pubkeyPath,
-            btcAddressGenerationConfig.mstRegistrationAccount.privkeyPath
-        ).fold({ keypair ->
-            keypair
-        }, { ex -> throw ex })
+        Utils.parseHexKeypair(
+            btcAddressGenerationConfig.mstRegistrationAccount.pubkey,
+            btcAddressGenerationConfig.mstRegistrationAccount.privkey
+        )
 
     private val mstRegistrationCredential =
         IrohaCredential(
