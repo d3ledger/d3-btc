@@ -15,6 +15,7 @@ import com.d3.commons.sidechain.iroha.consumer.IrohaConsumerImpl
 import com.d3.commons.sidechain.iroha.util.ModelUtil
 import com.d3.commons.sidechain.iroha.util.impl.IrohaQueryHelperImpl
 import jp.co.soramitsu.iroha.java.IrohaAPI
+import jp.co.soramitsu.iroha.java.Utils
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
@@ -27,14 +28,12 @@ val btcRegistrationConfig = loadLocalConfigs(
 @Configuration
 class BtcRegistrationAppConfiguration {
 
-    private val btcRegistrationCredential = ModelUtil.loadKeypair(
-        btcRegistrationConfig.registrationCredential.pubkeyPath,
-        btcRegistrationConfig.registrationCredential.privkeyPath
-    ).fold(
-        { keypair ->
-            IrohaCredential(btcRegistrationConfig.registrationCredential.accountId, keypair)
-        },
-        { ex -> throw ex }
+    private val btcRegistrationCredential = IrohaCredential(
+        btcRegistrationConfig.registrationCredential.accountId,
+        Utils.parseHexKeypair(
+            btcRegistrationConfig.registrationCredential.pubkey,
+            btcRegistrationConfig.registrationCredential.privkey
+        )
     )
 
     @Bean

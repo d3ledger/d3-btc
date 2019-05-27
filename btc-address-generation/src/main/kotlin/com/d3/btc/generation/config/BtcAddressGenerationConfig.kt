@@ -6,7 +6,7 @@
 package com.d3.btc.generation.config
 
 import com.d3.commons.config.IrohaConfig
-import com.d3.commons.config.IrohaCredentialConfig
+import com.d3.commons.config.IrohaCredentialRawConfig
 
 interface BtcAddressGenerationConfig {
     /*
@@ -25,10 +25,10 @@ interface BtcAddressGenerationConfig {
 
     //TODO the only purpose of this account is creating PeerListProvider. This account must be removed from config.
     //Account that is used to register BTC addresses
-    val registrationAccount: IrohaCredentialConfig
+    val registrationAccount: IrohaCredentialRawConfig
 
     //Account that is used to register BTC addresses in MST fashion
-    val mstRegistrationAccount: IrohaCredentialConfig
+    val mstRegistrationAccount: IrohaCredentialRawConfig
 
     //Account that stores all registered notaries
     val notaryListStorageAccount: String

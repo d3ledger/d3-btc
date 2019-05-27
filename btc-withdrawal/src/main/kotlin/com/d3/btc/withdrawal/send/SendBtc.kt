@@ -9,7 +9,7 @@ package com.d3.btc.withdrawal.send
 
 import com.d3.btc.helper.currency.satToBtc
 import com.d3.btc.withdrawal.config.BtcWithdrawalConfig
-import com.d3.commons.config.IrohaCredentialConfig
+import com.d3.commons.config.IrohaCredentialRawConfig
 import com.d3.commons.config.loadLocalConfigs
 import com.d3.commons.model.IrohaCredential
 import com.d3.commons.sidechain.iroha.consumer.IrohaConsumer
@@ -20,6 +20,7 @@ import com.github.kittinunf.result.failure
 import com.github.kittinunf.result.flatMap
 import com.github.kittinunf.result.map
 import jp.co.soramitsu.iroha.java.IrohaAPI
+import jp.co.soramitsu.iroha.java.Utils
 import mu.KLogging
 
 /*
@@ -56,15 +57,12 @@ fun main(args: Array<String>) {
 
 // Creates notary credential
 private fun createNotaryCredential(
-    notaryCredential: IrohaCredentialConfig
+    notaryCredential: IrohaCredentialRawConfig
 ): IrohaCredential {
-    val notaryKeypair = ModelUtil.loadKeypair(
-        notaryCredential.pubkeyPath,
-        notaryCredential.privkeyPath
-    ).fold(
-        { keypair -> keypair },
-        { ex -> throw ex })
-    return IrohaCredential(notaryCredential.accountId, notaryKeypair)
+    return IrohaCredential(
+        notaryCredential.accountId,
+        Utils.parseHexKeypair(notaryCredential.pubkey, notaryCredential.privkey)
+    )
 }
 
 /**

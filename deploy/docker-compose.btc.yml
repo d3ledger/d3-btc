@@ -11,8 +11,6 @@ services:
       WAIT_HOSTS: d3-iroha:50051
       WAIT_BEFORE_HOSTS: 10
       WAIT_HOSTS_TIMEOUT: 60
-    volumes:
-      - ../deploy/iroha/keys:/opt/notary/deploy/iroha/keys
     networks:
       - d3-network
 
@@ -27,7 +25,6 @@ services:
       WAIT_HOSTS_TIMEOUT: 60
     volumes:
       - ../deploy/bitcoin:/opt/notary/deploy/bitcoin
-      - ../deploy/iroha/keys:/opt/notary/deploy/iroha/keys
     depends_on:
       - d3-btc-node0
       - d3-btc-address-generation
@@ -46,7 +43,6 @@ services:
       WAIT_HOSTS_TIMEOUT: 60
     volumes:
       - ../deploy/bitcoin:/opt/notary/deploy/bitcoin
-      - ../deploy/iroha/keys:/opt/notary/deploy/iroha/keys
     networks:
       - d3-network
 

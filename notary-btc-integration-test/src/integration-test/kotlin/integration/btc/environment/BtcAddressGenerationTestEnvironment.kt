@@ -22,12 +22,12 @@ import com.d3.commons.provider.TriggerProvider
 import com.d3.commons.sidechain.iroha.IrohaChainListener
 import com.d3.commons.sidechain.iroha.consumer.IrohaConsumerImpl
 import com.d3.commons.sidechain.iroha.consumer.MultiSigIrohaConsumer
-import com.d3.commons.sidechain.iroha.util.ModelUtil
 import com.d3.commons.sidechain.iroha.util.impl.IrohaQueryHelperImpl
 import com.d3.commons.util.createPrettySingleThreadPool
 import integration.helper.BtcIntegrationHelperUtil
 import io.grpc.ManagedChannelBuilder
 import jp.co.soramitsu.iroha.java.IrohaAPI
+import jp.co.soramitsu.iroha.java.Utils
 import org.bitcoinj.wallet.Wallet
 import java.io.Closeable
 import java.io.File
@@ -45,10 +45,10 @@ class BtcAddressGenerationTestEnvironment(
         integrationHelper.configHelper.createBtcAddressGenerationConfig(INIT_ADDRESSES, testName),
     mstRegistrationCredential: IrohaCredential = IrohaCredential(
         btcGenerationConfig.mstRegistrationAccount.accountId,
-        ModelUtil.loadKeypair(
-            btcGenerationConfig.mstRegistrationAccount.pubkeyPath,
-            btcGenerationConfig.mstRegistrationAccount.privkeyPath
-        ).get()
+        Utils.parseHexKeypair(
+            btcGenerationConfig.mstRegistrationAccount.pubkey,
+            btcGenerationConfig.mstRegistrationAccount.privkey
+        )
     )
 ) : Closeable {
 
@@ -86,12 +86,10 @@ class BtcAddressGenerationTestEnvironment(
     )
 
     private val registrationKeyPair =
-        ModelUtil.loadKeypair(
-            btcGenerationConfig.registrationAccount.pubkeyPath,
-            btcGenerationConfig.registrationAccount.privkeyPath
-        ).fold({ keypair ->
-            keypair
-        }, { ex -> throw ex })
+        Utils.parseHexKeypair(
+            btcGenerationConfig.registrationAccount.pubkey,
+            btcGenerationConfig.registrationAccount.privkey
+        )
 
     private val registrationCredential =
         IrohaCredential(btcGenerationConfig.registrationAccount.accountId, registrationKeyPair)

@@ -16,6 +16,7 @@ import com.d3.commons.sidechain.iroha.consumer.IrohaConsumerImpl
 import com.d3.commons.sidechain.iroha.util.ModelUtil
 import com.d3.commons.util.toHexString
 import integration.helper.BtcIntegrationHelperUtil
+import jp.co.soramitsu.iroha.java.Utils
 import khttp.post
 import khttp.responses.Response
 import java.io.Closeable
@@ -31,15 +32,13 @@ class BtcRegistrationTestEnvironment(private val integrationHelper: BtcIntegrati
     val btcAddressGenerationConfig =
         integrationHelper.configHelper.createBtcAddressGenerationConfig(0)
 
-    private val btcRegistrationCredential = ModelUtil.loadKeypair(
-        btcRegistrationConfig.registrationCredential.pubkeyPath,
-        btcRegistrationConfig.registrationCredential.privkeyPath
-    ).fold(
-        { keypair ->
-            IrohaCredential(btcRegistrationConfig.registrationCredential.accountId, keypair)
-        },
-        { ex -> throw ex }
-    )
+    private val btcRegistrationCredential =
+        IrohaCredential(
+            btcRegistrationConfig.registrationCredential.accountId, Utils.parseHexKeypair(
+                btcRegistrationConfig.registrationCredential.pubkey,
+                btcRegistrationConfig.registrationCredential.privkey
+            )
+        )
 
     private val btcClientCreatorConsumer =
         IrohaConsumerImpl(btcRegistrationCredential, integrationHelper.irohaAPI)
