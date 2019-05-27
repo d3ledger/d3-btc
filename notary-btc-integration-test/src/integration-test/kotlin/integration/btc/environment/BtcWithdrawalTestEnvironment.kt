@@ -5,6 +5,7 @@
 
 package integration.btc.environment
 
+import com.d3.btc.config.BitcoinConfig
 import com.d3.btc.handler.NewBtcClientRegistrationHandler
 import com.d3.btc.helper.address.outPutToBase58Address
 import com.d3.btc.peer.SharedPeerGroup
@@ -26,9 +27,7 @@ import com.d3.btc.withdrawal.service.BtcRollbackService
 import com.d3.btc.withdrawal.service.WithdrawalTransferService
 import com.d3.btc.withdrawal.statistics.WithdrawalStatistics
 import com.d3.btc.withdrawal.transaction.*
-import com.d3.btc.config.BitcoinConfig
 import com.d3.commons.config.RMQConfig
-import com.d3.commons.config.getConfigFolder
 import com.d3.commons.config.loadRawLocalConfigs
 import com.d3.commons.model.IrohaCredential
 import com.d3.commons.provider.NotaryPeerListProviderImpl
@@ -40,6 +39,7 @@ import com.rabbitmq.client.ConnectionFactory
 import integration.helper.BtcIntegrationHelperUtil
 import io.grpc.ManagedChannelBuilder
 import jp.co.soramitsu.iroha.java.IrohaAPI
+import jp.co.soramitsu.iroha.java.Utils
 import org.bitcoinj.core.Transaction
 import org.bitcoinj.core.TransactionOutput
 import org.bitcoinj.wallet.Wallet
@@ -58,10 +58,11 @@ class BtcWithdrawalTestEnvironment(
     ),
     withdrawalCredential: IrohaCredential =
         IrohaCredential(
-            btcWithdrawalConfig.withdrawalCredential.accountId, ModelUtil.loadKeypair(
-                btcWithdrawalConfig.withdrawalCredential.pubkeyPath,
-                btcWithdrawalConfig.withdrawalCredential.privkeyPath
-            ).get()
+            btcWithdrawalConfig.withdrawalCredential.accountId,
+            Utils.parseHexKeypair(
+                btcWithdrawalConfig.withdrawalCredential.pubkey,
+                btcWithdrawalConfig.withdrawalCredential.privkey
+            )
         )
 ) : Closeable {
 
@@ -112,10 +113,10 @@ class BtcWithdrawalTestEnvironment(
         irohaAPI
     }
 
-    private val signaturesCollectorKeypair = ModelUtil.loadKeypair(
-        btcWithdrawalConfig.signatureCollectorCredential.pubkeyPath,
-        btcWithdrawalConfig.signatureCollectorCredential.privkeyPath
-    ).fold({ keypair -> keypair }, { ex -> throw ex })
+    private val signaturesCollectorKeypair = Utils.parseHexKeypair(
+        btcWithdrawalConfig.signatureCollectorCredential.pubkey,
+        btcWithdrawalConfig.signatureCollectorCredential.privkey
+    )
 
     private val signaturesCollectorCredential =
         IrohaCredential(
@@ -123,10 +124,10 @@ class BtcWithdrawalTestEnvironment(
             signaturesCollectorKeypair
         )
 
-    private val btcConsensusKeyPair = ModelUtil.loadKeypair(
-        btcWithdrawalConfig.btcConsensusCredential.pubkeyPath,
-        btcWithdrawalConfig.btcConsensusCredential.privkeyPath
-    ).fold({ keypair -> keypair }, { ex -> throw ex })
+    private val btcConsensusKeyPair = Utils.parseHexKeypair(
+        btcWithdrawalConfig.btcConsensusCredential.pubkey,
+        btcWithdrawalConfig.btcConsensusCredential.privkey
+    )
 
     private val btcConsensusCredential =
         IrohaCredential(btcWithdrawalConfig.btcConsensusCredential.accountId, btcConsensusKeyPair)

@@ -14,9 +14,9 @@ import com.d3.commons.config.loadLocalConfigs
 import com.d3.commons.model.IrohaCredential
 import com.d3.commons.provider.TriggerProvider
 import com.d3.commons.sidechain.iroha.consumer.IrohaConsumerImpl
-import com.d3.commons.sidechain.iroha.util.ModelUtil
 import com.d3.commons.sidechain.iroha.util.impl.IrohaQueryHelperImpl
 import jp.co.soramitsu.iroha.java.IrohaAPI
+import jp.co.soramitsu.iroha.java.Utils
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
@@ -31,12 +31,10 @@ val btcAddressGenerationTriggerConfig =
 class BtcAddressGenerationTriggerAppConfiguration {
 
     private val registrationKeyPair =
-        ModelUtil.loadKeypair(
-            btcAddressGenerationTriggerConfig.registrationAccount.pubkeyPath,
-            btcAddressGenerationTriggerConfig.registrationAccount.privkeyPath
-        ).fold({ keypair ->
-            keypair
-        }, { ex -> throw ex })
+        Utils.parseHexKeypair(
+            btcAddressGenerationTriggerConfig.registrationAccount.pubkey,
+            btcAddressGenerationTriggerConfig.registrationAccount.privkey
+        )
 
     private val registrationCredential =
         IrohaCredential(

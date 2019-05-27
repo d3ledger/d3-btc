@@ -5,6 +5,7 @@
 
 package integration.btc.environment
 
+import com.d3.btc.config.BitcoinConfig
 import com.d3.btc.deposit.config.BTC_DEPOSIT_SERVICE_NAME
 import com.d3.btc.deposit.config.BtcDepositConfig
 import com.d3.btc.deposit.init.BtcNotaryInitialization
@@ -17,19 +18,18 @@ import com.d3.btc.provider.BtcRegisteredAddressesProvider
 import com.d3.btc.provider.network.BtcRegTestConfigProvider
 import com.d3.btc.wallet.WalletInitializer
 import com.d3.btc.wallet.loadAutoSaveWallet
-import com.d3.btc.config.BitcoinConfig
 import com.d3.commons.model.IrohaCredential
 import com.d3.commons.notary.NotaryImpl
 import com.d3.commons.sidechain.SideChainEvent
 import com.d3.commons.sidechain.iroha.IrohaChainListener
 import com.d3.commons.sidechain.iroha.consumer.MultiSigIrohaConsumer
-import com.d3.commons.sidechain.iroha.util.ModelUtil
 import com.d3.commons.sidechain.iroha.util.impl.IrohaQueryHelperImpl
 import com.d3.commons.util.createPrettySingleThreadPool
 import integration.helper.BtcIntegrationHelperUtil
 import io.reactivex.Observable
 import io.reactivex.subjects.PublishSubject
 import jp.co.soramitsu.iroha.java.IrohaAPI
+import jp.co.soramitsu.iroha.java.Utils
 import org.bitcoinj.wallet.Wallet
 import java.io.Closeable
 import java.io.File
@@ -45,10 +45,10 @@ class BtcNotaryTestEnvironment(
     ),
     notaryCredential: IrohaCredential = IrohaCredential(
         notaryConfig.notaryCredential.accountId,
-        ModelUtil.loadKeypair(
-            notaryConfig.notaryCredential.pubkeyPath,
-            notaryConfig.notaryCredential.privkeyPath
-        ).get()
+        Utils.parseHexKeypair(
+            notaryConfig.notaryCredential.pubkey,
+            notaryConfig.notaryCredential.privkey
+        )
     )
 ) : Closeable {
 

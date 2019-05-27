@@ -5,11 +5,11 @@
 
 package integration.helper
 
+import com.d3.btc.config.BitcoinConfig
 import com.d3.btc.deposit.config.BtcDepositConfig
 import com.d3.btc.generation.config.BtcAddressGenerationConfig
 import com.d3.btc.registration.config.BtcRegistrationConfig
 import com.d3.btc.withdrawal.config.BtcWithdrawalConfig
-import com.d3.btc.config.BitcoinConfig
 import com.d3.commons.config.loadLocalConfigs
 import com.d3.commons.model.IrohaCredential
 import org.bitcoinj.params.RegTestParams
@@ -50,13 +50,13 @@ class BtcConfigHelper(
             override val notaryListStorageAccount = accountHelper.notaryListStorageAccount.accountId
             override val notaryListSetterAccount = accountHelper.notaryAccount.accountId
             override val mstRegistrationAccount =
-                accountHelper.createCredentialConfig(accountHelper.mstRegistrationAccount)
+                accountHelper.createCredentialRawConfig(accountHelper.mstRegistrationAccount)
             override val pubKeyTriggerAccount = btcPkPreGenConfig.pubKeyTriggerAccount
             override val notaryAccount = accountHelper.notaryAccount.accountId
             override val iroha = createIrohaConfig()
             override val btcKeysWalletPath = createWalletFile("keys.$walletNamePostfix")
             override val registrationAccount =
-                accountHelper.createCredentialConfig(accountHelper.registrationAccount)
+                accountHelper.createCredentialRawConfig(accountHelper.registrationAccount)
         }
     }
 
@@ -74,25 +74,25 @@ class BtcConfigHelper(
             ).get()
         return object : BtcWithdrawalConfig {
             override val btcConsensusCredential =
-                accountHelper.createCredentialConfig(accountHelper.btcConsensusAccount)
+                accountHelper.createCredentialRawConfig(accountHelper.btcConsensusAccount)
             override val irohaBlockQueue = testName
             override val btcKeysWalletPath = createWalletFile("keys.$testName")
             override val btcTransfersWalletPath = createWalletFile("transfers.$testName")
             override val notaryListStorageAccount = accountHelper.notaryListStorageAccount.accountId
             override val notaryListSetterAccount = accountHelper.notaryAccount.accountId
             override val signatureCollectorCredential =
-                accountHelper.createCredentialConfig(accountHelper.btcWithdrawalSignatureCollectorAccount)
+                accountHelper.createCredentialRawConfig(accountHelper.btcWithdrawalSignatureCollectorAccount)
             override val changeAddressesStorageAccount =
                 accountHelper.changeAddressesStorageAccount.accountId
             override val registrationCredential =
-                accountHelper.createCredentialConfig(accountHelper.registrationAccount)
+                accountHelper.createCredentialRawConfig(accountHelper.registrationAccount)
             override val mstRegistrationAccount = accountHelper.mstRegistrationAccount.accountId
             override val bitcoin = createBitcoinConfig(btcWithdrawalConfig.bitcoin, testName)
             override val notaryCredential =
-                accountHelper.createCredentialConfig(accountHelper.notaryAccount)
+                accountHelper.createCredentialRawConfig(accountHelper.notaryAccount)
             override val healthCheckPort = btcWithdrawalConfig.healthCheckPort
             override val withdrawalCredential =
-                accountHelper.createCredentialConfig(accountHelper.btcWithdrawalAccount)
+                accountHelper.createCredentialRawConfig(accountHelper.btcWithdrawalAccount)
             override val iroha = btcWithdrawalConfig.iroha
         }
     }
@@ -135,7 +135,7 @@ class BtcConfigHelper(
             override val iroha = createIrohaConfig()
             override val bitcoin = createBitcoinConfig(btcDepositConfig.bitcoin, testName)
             override val notaryCredential =
-                accountHelper.createCredentialConfig(notaryIrohaCredential)
+                accountHelper.createCredentialRawConfig(notaryIrohaCredential)
         }
     }
 
@@ -174,7 +174,7 @@ class BtcConfigHelper(
             override val mstRegistrationAccount = accountHelper.mstRegistrationAccount.accountId
             override val port = portCounter.incrementAndGet()
             override val registrationCredential =
-                accountHelper.createCredentialConfig(accountHelper.registrationAccount)
+                accountHelper.createCredentialRawConfig(accountHelper.registrationAccount)
             override val iroha = createIrohaConfig()
         }
     }
