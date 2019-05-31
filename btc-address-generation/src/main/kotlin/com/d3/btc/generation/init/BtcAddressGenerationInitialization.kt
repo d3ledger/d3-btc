@@ -95,18 +95,16 @@ class BtcAddressGenerationInitialization(
             )
         ).subscribe({ block ->
             getCreateAccountCommands(block).forEach { command ->
-                if (isNewClientRegistered(command)) {
-                    // generate new multisignature address if new client has been registered recently
-                    addressGenerationTrigger.startFreeAddressGenerationIfNeeded(
-                        btcAddressGenerationConfig.threshold,
-                        btcAddressGenerationConfig.nodeId
-                    ).fold(
-                        { "Free BTC address generation was triggered" },
-                        { ex -> logger.error("Cannot trigger address generation", ex) })
+                if (isNewClientRegistered(command.createAccount)) {
+                    logger.info("New account has been created. Try to generate more addresses.")
+                    generateAddressesIfNeeded()
                 }
             }
             getSetDetailCommands(block).forEach { command ->
-                if (isAddressGenerationTriggered(command)) {
+                if (isBtcAddressRegistered(command.setAccountDetail)) {
+                    logger.info("BTC address has been registered. Try to generate more addresses.")
+                    generateAddressesIfNeeded()
+                } else if (isAddressGenerationTriggered(command)) {
                     //add new public key to session account, if trigger account was changed
                     val sessionAccountName = command.setAccountDetail.key
                     onGenerateKey(sessionAccountName).fold(
@@ -137,10 +135,27 @@ class BtcAddressGenerationInitialization(
         })
     }
 
+    /**
+     * Generates Bitcoin addresses if there is a need to do that
+     */
+    private fun generateAddressesIfNeeded() {
+        addressGenerationTrigger.startFreeAddressGenerationIfNeeded(
+            btcAddressGenerationConfig.threshold,
+            btcAddressGenerationConfig.nodeId
+        ).fold(
+            { "Free BTC address generation was triggered" },
+            { ex -> logger.error("Cannot trigger address generation", ex) })
+    }
+
     // Checks if new client was registered
-    private fun isNewClientRegistered(command: Commands.Command): Boolean {
-        val createAccount = command.createAccount
-        return createAccount.domainId == CLIENT_DOMAIN
+    private fun isNewClientRegistered(createAccountCommand: Commands.CreateAccount): Boolean {
+        return createAccountCommand.domainId == CLIENT_DOMAIN
+    }
+
+    // Check if btc address was registered
+    private fun isBtcAddressRegistered(setAccountDetailCommand: Commands.SetAccountDetail): Boolean {
+        return setAccountDetailCommand.accountId.endsWith(CLIENT_DOMAIN)
+                && setAccountDetailCommand.key == BTC_CURRENCY_NAME_KEY
     }
 
     // Checks if address generation account was triggered
