@@ -24,7 +24,7 @@ services:
       WAIT_BEFORE_HOSTS: 10
       WAIT_HOSTS_TIMEOUT: 60
     volumes:
-      - ../deploy/bitcoin:/opt/notary/deploy/bitcoin
+      - ../deploy/bitcoin:/deploy/bitcoin
     depends_on:
       - d3-btc-node0
       - d3-btc-address-generation
@@ -37,12 +37,8 @@ services:
     container_name: d3-btc-address-generation
     ports:
       - 7071:7071
-    environment:
-      WAIT_HOSTS: d3-iroha:50051
-      WAIT_BEFORE_HOSTS: 10
-      WAIT_HOSTS_TIMEOUT: 60
     volumes:
-      - ../deploy/bitcoin:/opt/notary/deploy/bitcoin
+      - ../deploy/bitcoin:/deploy/bitcoin
     networks:
       - d3-network
 
