@@ -100,6 +100,7 @@ class NewSignatureEventHandler(
                 })
 
         }, { ex ->
+            transactionHelper.unregisterUnspents(originalHash)
             btcRollbackService.rollback(
                 withdrawalCommand.sourceAccountId,
                 withdrawalCommand.amountSat,
