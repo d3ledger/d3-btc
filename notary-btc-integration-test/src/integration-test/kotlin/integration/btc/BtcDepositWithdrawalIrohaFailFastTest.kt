@@ -12,24 +12,18 @@ import org.testcontainers.containers.BindMode
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class BtcDepositWithdrawalIrohaFailFastTest {
     private val containerHelper = ContainerHelper()
-    private val dockerfile = "${containerHelper.userDir}/docker/dockerfile"
-    private val jarFile = "${containerHelper.userDir}/btc-dw-bridge/build/libs/btc-dw-bridge-all.jar"
+    private val dockerfile = "${containerHelper.userDir}/btc-dw-bridge/build/docker/Dockerfile"
+    private val contextFolder = "${containerHelper.userDir}/btc-dw-bridge/build/docker"
 
     // Create deposit-withdrawal container
-    private val depositWithdrawalContainer = containerHelper.createContainer(jarFile, dockerfile)
+    private val depositWithdrawalContainer = containerHelper.createSoraPluginContainer(contextFolder, dockerfile)
 
     @BeforeAll
     fun startUp() {
         // Mount Bitcoin wallet
         depositWithdrawalContainer.addFileSystemBind(
             "${containerHelper.userDir}/deploy/bitcoin",
-            "/opt/notary/deploy/bitcoin",
-            BindMode.READ_WRITE
-        )
-        // Mount Iroha keys
-        depositWithdrawalContainer.addFileSystemBind(
-            "${containerHelper.userDir}/deploy/iroha/keys",
-            "/opt/notary/deploy/iroha/keys",
+            "/deploy/bitcoin",
             BindMode.READ_WRITE
         )
         // Start Iroha

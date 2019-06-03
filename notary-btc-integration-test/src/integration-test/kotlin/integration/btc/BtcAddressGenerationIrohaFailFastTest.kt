@@ -17,23 +17,17 @@ import org.testcontainers.containers.BindMode
 class BtcAddressGenerationIrohaFailFastTest {
 
     private val containerHelper = ContainerHelper()
-    private val dockerfile = "${containerHelper.userDir}/docker/dockerfile"
-    private val jarFile = "${containerHelper.userDir}/btc-address-generation/build/libs/btc-address-generation-all.jar"
+    private val dockerfile = "${containerHelper.userDir}/btc-address-generation/build/docker/Dockerfile"
+    private val contextFolder = "${containerHelper.userDir}/btc-address-generation/build/docker/"
     // Create address generation container
-    private val addressGenerationContainer = containerHelper.createContainer(jarFile, dockerfile)
+    private val addressGenerationContainer = containerHelper.createSoraPluginContainer(contextFolder, dockerfile)
 
     @BeforeAll
     fun startUp() {
         // Mount Bitcoin wallet
         addressGenerationContainer.addFileSystemBind(
             "${containerHelper.userDir}/deploy/bitcoin",
-            "/opt/notary/deploy/bitcoin",
-            BindMode.READ_WRITE
-        )
-        // Mount Iroha keys
-        addressGenerationContainer.addFileSystemBind(
-            "${containerHelper.userDir}/deploy/iroha/keys",
-            "/opt/notary/deploy/iroha/keys",
+            "/deploy/bitcoin",
             BindMode.READ_WRITE
         )
         // Start Iroha
