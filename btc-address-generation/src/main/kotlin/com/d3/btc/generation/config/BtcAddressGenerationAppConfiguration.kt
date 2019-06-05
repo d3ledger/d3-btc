@@ -7,6 +7,8 @@ package com.d3.btc.generation.config
 
 import com.d3.btc.generation.BTC_ADDRESS_GENERATION_SERVICE_NAME
 import com.d3.btc.provider.BtcChangeAddressProvider
+import com.d3.btc.provider.network.BtcNetworkConfigProvider
+import com.d3.btc.wallet.createWalletIfAbsent
 import com.d3.commons.config.loadLocalConfigs
 import com.d3.commons.model.IrohaCredential
 import com.d3.commons.provider.NotaryPeerListProvider
@@ -96,7 +98,11 @@ class BtcAddressGenerationAppConfiguration {
     fun btcAddressGenerationConfig() = btcAddressGenerationConfig
 
     @Bean
-    fun keysWallet() = Wallet.loadFromFile(File(btcAddressGenerationConfig.btcKeysWalletPath))
+    fun keysWallet(networkProvider: BtcNetworkConfigProvider): Wallet {
+        val walletPath = btcAddressGenerationConfig.btcKeysWalletPath
+        createWalletIfAbsent(walletPath, networkProvider)
+        return Wallet.loadFromFile(File(walletPath))!!
+    }
 
     @Bean
     fun notaryPeerListProvider(): NotaryPeerListProvider {
