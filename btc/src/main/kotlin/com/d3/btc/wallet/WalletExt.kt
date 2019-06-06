@@ -6,6 +6,7 @@
 package com.d3.btc.wallet
 
 import com.d3.btc.model.BtcAddress
+import com.d3.btc.provider.network.BtcNetworkConfigProvider
 import com.github.kittinunf.result.Result
 import mu.KLogging
 import org.bitcoinj.core.Address
@@ -95,6 +96,24 @@ fun Wallet.addWatchedAddresses(addresses: List<BtcAddress>) {
         } else {
             logger.warn("Address $address was not added to wallet")
         }
+    }
+}
+
+/**
+ * Creates new wallet if no wallet with file path [walletPath] exists
+ * @param walletPath - path of wallet to create
+ * @param networkProvider - Bitcoin network provider
+ */
+fun createWalletIfAbsent(walletPath: String, networkProvider: BtcNetworkConfigProvider) {
+    if (!File(walletPath).exists()) {
+        //Create parent folder
+        val parentFolder = File(walletPath).parentFile
+        if (!parentFolder.exists()) {
+            parentFolder.mkdirs()
+        }
+        logger.warn("Wallet doesn't exist($walletPath). Creating new one.")
+        Wallet(networkProvider.getConfig()).saveToFile(File(walletPath))
+        logger.info("New wallet file has been created($walletPath)")
     }
 }
 

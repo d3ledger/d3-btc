@@ -104,6 +104,7 @@ deploy/bitcoin/regtest/blocks/
 deploy/bitcoin/mainnet/
 deploy/bitcoin/regtest/keys.d3.wallet
 deploy/bitcoin/regtest/transfers.d3.wallet
+notary-btc-integration-test/deploy/bitcoin/regtest/test wallets/
 
 # Chain-adapter files
 deploy/chain-adapter/
