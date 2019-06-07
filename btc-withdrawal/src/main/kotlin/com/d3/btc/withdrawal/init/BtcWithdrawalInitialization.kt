@@ -92,7 +92,10 @@ class BtcWithdrawalInitialization(
                 observable.subscribe { (block, ack) ->
                     safeApplyAck({ handleIrohaBlock(block) }, { ack() })
                 }
-            }.flatMap { irohaChainListener.listen() }
+            }.flatMap {
+                logger.info("Start listening RMQ Iroha blocks")
+                irohaChainListener.listen()
+            }
     }
 
     /**
