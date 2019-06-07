@@ -64,7 +64,8 @@ class BtcWithdrawalInitialization(
             BTC_WITHDRAWAL_SERVICE_NAME,
             "rmq-consumer"
         ),
-        autoAck = false
+        //TODO sometimes consumers refuse to read messages from RMQ. Need more investigation. Temporary fix.
+        autoAck = true
     )
 
     fun init(): Result<Unit, Exception> {
