@@ -10,6 +10,7 @@ import com.d3.btc.handler.NewBtcClientRegistrationHandler
 import com.d3.btc.healthcheck.HealthyService
 import com.d3.btc.helper.network.addPeerConnectionStatusListener
 import com.d3.btc.helper.network.startChainDownload
+import com.d3.btc.peer.SharedPeerGroup
 import com.d3.btc.provider.BtcChangeAddressProvider
 import com.d3.btc.provider.network.BtcNetworkConfigProvider
 import com.d3.btc.wallet.checkWalletNetwork
@@ -46,7 +47,7 @@ import java.io.File
 @Component
 class BtcWithdrawalInitialization(
     @Autowired private val btcWithdrawalConfig: BtcWithdrawalConfig,
-    @Autowired private val peerGroup: PeerGroup,
+    @Autowired private val peerGroup: SharedPeerGroup,
     @Autowired private val transferWallet: Wallet,
     @Autowired private val btcChangeAddressProvider: BtcChangeAddressProvider,
     @Autowired private val btcNetworkConfigProvider: BtcNetworkConfigProvider,

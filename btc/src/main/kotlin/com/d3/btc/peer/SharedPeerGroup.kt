@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 import java.net.InetAddress
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
@@ -44,6 +45,7 @@ class SharedPeerGroup(
         }
     }
 
+    private val downloadLock = CountDownLatch(1)
     private val started = AtomicBoolean()
     private val stopped = AtomicBoolean()
 
@@ -58,10 +60,23 @@ class SharedPeerGroup(
         if (started.compareAndSet(false, true)) {
             // Initialize wallet only once
             walletInitializer.initializeWallet(wallet)
-            return super.startAsync()
+            val result = super.startAsync()
+            // Start downloading blockchain in a separate thread
+            Thread {
+                super.downloadBlockChain()
+                downloadLock.countDown()
+            }.start()
+            return result
         }
         logger.warn { "Cannot start peer group, because it was started previously." }
         return null
+    }
+
+    /**
+     * Blocks thread until blockchain is entirely downloaded
+     */
+    fun awaitDownload() {
+        downloadLock.await()
     }
 
     override fun stopAsync(): ListenableFuture<*>? {
@@ -72,12 +87,6 @@ class SharedPeerGroup(
         }
         logger.warn { "Cannot stop peer group, because it was stopped previously" }
         return null
-    }
-
-    override fun downloadBlockChain() {
-        if (started.get()) {
-            super.downloadBlockChain()
-        }
     }
 
     /**
