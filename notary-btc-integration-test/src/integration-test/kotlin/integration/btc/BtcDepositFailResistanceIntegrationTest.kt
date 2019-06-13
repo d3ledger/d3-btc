@@ -122,7 +122,7 @@ class BtcDepositFailResistanceIntegrationTest {
         //Creates peer group
         val peerGroup = environment.createPeerGroup(transfersWallet)
         peerGroup.startAsync()
-        peerGroup.downloadBlockChain()
+        peerGroup.awaitDownload()
         //Send coins and confirm it with exactly one block
         integrationHelper.sendBtc(
             depositAddress,

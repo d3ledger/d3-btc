@@ -5,6 +5,7 @@
 
 package com.d3.btc.helper.network
 
+import com.d3.btc.peer.SharedPeerGroup
 import mu.KLogging
 import org.bitcoinj.core.BlockChain
 import org.bitcoinj.core.Context
@@ -19,10 +20,11 @@ private val logger = KLogging().logger
 /**
  * Starts bitcoin blockchain downloading process
  */
-fun startChainDownload(peerGroup: PeerGroup) {
-    logger.info { "Start bitcoin blockchain download" }
+fun startChainDownload(peerGroup: SharedPeerGroup) {
+    logger.info("Start blockchain download")
     peerGroup.startAsync()
-    peerGroup.downloadBlockChain()
+    peerGroup.awaitDownload()
+    logger.info("Done downloading blockchain")
 }
 
 /**
