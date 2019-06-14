@@ -10,6 +10,8 @@ import com.d3.commons.config.IrohaConfig
 
 interface BtcDWBridgeConfig {
 
+    val expansionTriggerAccount: String
+
     val bitcoin: BitcoinConfig
 
     val iroha: IrohaConfig

@@ -17,6 +17,7 @@ import com.d3.btc.wallet.WalletInitializer
 import com.d3.btc.wallet.loadAutoSaveWallet
 import com.d3.btc.withdrawal.config.BTC_WITHDRAWAL_SERVICE_NAME
 import com.d3.btc.withdrawal.config.BtcWithdrawalConfig
+import com.d3.btc.withdrawal.expansion.WithdrawalServiceExpansion
 import com.d3.btc.withdrawal.handler.NewChangeAddressHandler
 import com.d3.btc.withdrawal.handler.NewConsensusDataHandler
 import com.d3.btc.withdrawal.handler.NewSignatureEventHandler
@@ -29,11 +30,11 @@ import com.d3.btc.withdrawal.statistics.WithdrawalStatistics
 import com.d3.btc.withdrawal.transaction.*
 import com.d3.commons.config.RMQConfig
 import com.d3.commons.config.loadRawLocalConfigs
+import com.d3.commons.expansion.ServiceExpansion
 import com.d3.commons.model.IrohaCredential
 import com.d3.commons.provider.NotaryPeerListProviderImpl
 import com.d3.commons.sidechain.iroha.consumer.IrohaConsumerImpl
 import com.d3.commons.sidechain.iroha.consumer.MultiSigIrohaConsumer
-import com.d3.commons.sidechain.iroha.util.ModelUtil
 import com.d3.commons.util.createPrettySingleThreadPool
 import com.rabbitmq.client.ConnectionFactory
 import integration.helper.BtcIntegrationHelperUtil
@@ -56,7 +57,7 @@ class BtcWithdrawalTestEnvironment(
     val btcWithdrawalConfig: BtcWithdrawalConfig = integrationHelper.configHelper.createBtcWithdrawalConfig(
         testName
     ),
-    withdrawalCredential: IrohaCredential =
+    private val withdrawalCredential: IrohaCredential =
         IrohaCredential(
             btcWithdrawalConfig.withdrawalCredential.accountId,
             Utils.parseHexKeypair(
@@ -250,6 +251,10 @@ class BtcWithdrawalTestEnvironment(
             newTransferHandler,
             newChangeAddressHandler,
             newConsensusDataHandler,
+            WithdrawalServiceExpansion(
+                ServiceExpansion(integrationHelper.accountHelper.expansionTriggerAccount.accountId, irohaApi),
+                withdrawalCredential
+            ),
             rmqConfig
         )
     }

@@ -7,6 +7,7 @@ package com.d3.btc.deposit.init
 
 import com.d3.btc.deposit.config.BTC_DEPOSIT_SERVICE_NAME
 import com.d3.btc.deposit.config.BtcDepositConfig
+import com.d3.btc.deposit.expansion.DepositServiceExpansion
 import com.d3.btc.deposit.listener.BitcoinBlockChainDepositListener
 import com.d3.btc.deposit.service.BtcWalletListenerRestartService
 import com.d3.btc.healthcheck.HealthyService
@@ -31,7 +32,6 @@ import org.bitcoinj.core.Address
 import org.bitcoinj.core.PeerGroup
 import org.bitcoinj.utils.BriefLogFormatter
 import org.bitcoinj.wallet.Wallet
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 import java.io.Closeable
@@ -40,19 +40,20 @@ import java.util.concurrent.ExecutorService
 
 @Component
 class BtcNotaryInitialization(
-    @Autowired private val peerGroup: SharedPeerGroup,
-    @Autowired private val transferWallet: Wallet,
-    @Autowired private val btcDepositConfig: BtcDepositConfig,
-    @Autowired private val notary: NotaryImpl,
-    @Autowired private val btcRegisteredAddressesProvider: BtcRegisteredAddressesProvider,
-    @Autowired private val btcEventsSource: PublishSubject<SideChainEvent.PrimaryBlockChainEvent>,
+    private val peerGroup: SharedPeerGroup,
+    private val transferWallet: Wallet,
+    private val btcDepositConfig: BtcDepositConfig,
+    private val notary: NotaryImpl,
+    private val btcRegisteredAddressesProvider: BtcRegisteredAddressesProvider,
+    private val btcEventsSource: PublishSubject<SideChainEvent.PrimaryBlockChainEvent>,
     @Qualifier("depositIrohaChainListener")
-    @Autowired private val irohaChainListener: IrohaChainListener,
-    @Autowired private val newBtcClientRegistrationListener: NewBtcClientRegistrationListener,
-    @Autowired private val btcWalletListenerRestartService: BtcWalletListenerRestartService,
+    private val irohaChainListener: IrohaChainListener,
+    private val newBtcClientRegistrationListener: NewBtcClientRegistrationListener,
+    private val btcWalletListenerRestartService: BtcWalletListenerRestartService,
     @Qualifier("confidenceListenerExecutorService")
-    @Autowired private val confidenceListenerExecutorService: ExecutorService,
-    @Autowired private val btcNetworkConfigProvider: BtcNetworkConfigProvider
+    private val confidenceListenerExecutorService: ExecutorService,
+    private val btcNetworkConfigProvider: BtcNetworkConfigProvider,
+    private val depositServiceExpansion: DepositServiceExpansion
 ) : HealthyService(), Closeable {
 
     // Executor that will be used to execute Bitcoin deposit listener logic
@@ -83,6 +84,10 @@ class BtcNotaryInitialization(
         }.flatMap {
             irohaChainListener.getBlockObservable()
         }.map { irohaObservable ->
+            irohaObservable.subscribe { block ->
+                // Expand the deposit service if there is a need to do so
+                depositServiceExpansion.expand(block)
+            }
             newBtcClientRegistrationListener.listenToRegisteredClients(
                 transferWallet, irohaObservable
             ) {

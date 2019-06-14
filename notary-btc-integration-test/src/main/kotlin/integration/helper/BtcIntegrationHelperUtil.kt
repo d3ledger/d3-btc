@@ -5,6 +5,7 @@
 
 package integration.helper
 
+import com.d3.btc.config.BitcoinConfig
 import com.d3.btc.helper.address.createMsAddress
 import com.d3.btc.helper.currency.satToBtc
 import com.d3.btc.model.AddressInfo
@@ -16,7 +17,6 @@ import com.d3.btc.provider.address.BtcAddressesProvider
 import com.d3.btc.provider.network.BtcNetworkConfigProvider
 import com.d3.btc.registration.strategy.BtcRegistrationStrategyImpl
 import com.d3.btc.wallet.WalletInitializer
-import com.d3.btc.config.BitcoinConfig
 import com.d3.commons.notary.IrohaCommand
 import com.d3.commons.notary.IrohaOrderedBatch
 import com.d3.commons.notary.IrohaTransaction
@@ -28,13 +28,13 @@ import com.github.jleskovar.btcrpc.BitcoinRpcClientFactory
 import com.github.kittinunf.result.Result
 import com.github.kittinunf.result.failure
 import com.github.kittinunf.result.map
+import jp.co.soramitsu.bootstrap.changelog.ExpansionDetails
+import jp.co.soramitsu.bootstrap.changelog.ExpansionUtils
 import mu.KLogging
 import org.bitcoinj.core.Address
 import org.bitcoinj.crypto.DeterministicKey
 import org.bitcoinj.params.RegTestParams
 import org.bitcoinj.wallet.Wallet
-import org.testcontainers.containers.GenericContainer
-import org.testcontainers.images.builder.ImageFromDockerfile
 import java.io.File
 import java.math.BigDecimal
 import java.security.KeyPair
@@ -339,15 +339,33 @@ class BtcIntegrationHelperUtil(peers: Int = 1) : IrohaIntegrationHelperUtil(peer
     }
 
     /**
+     * Triggers expansion process
+     * @param accountId - account to expand
+     * @param publicKey - new public key
+     * @param quorum - new quorum
+     */
+    fun triggerExpansion(
+        accountId: String,
+        publicKey: String,
+        quorum: Int
+    ) {
+        val expansionDetails = ExpansionDetails()
+        expansionDetails.accountIdToExpand = accountId
+        expansionDetails.publicKey = publicKey
+        expansionDetails.quorum = quorum
+        IrohaConsumerImpl(
+            accountHelper.superuserAccount,
+            irohaAPI
+        ).send(
+            ExpansionUtils.createExpansionTriggerTx(
+                expansionDetails,
+                accountHelper.expansionTriggerAccount.accountId
+            )
+        ).failure { ex -> throw ex }
+    }
+
+    /**
      * Logger
      */
     companion object : KLogging()
 }
-
-/**
- * The GenericContainer class is not very friendly to Kotlin.
- * So the following class was created as a workaround.
- */
-class KGenericContainerImage(image: ImageFromDockerfile) : GenericContainer<KGenericContainerImage>(image)
-
-class KGenericContainer(imageName: String) : GenericContainer<KGenericContainer>(imageName)

@@ -42,6 +42,7 @@ class BtcConfigHelper(
             ).get()
 
         return object : BtcAddressGenerationConfig {
+            override val expansionTriggerAccount = accountHelper.expansionTriggerAccount.accountId
             override val threshold = initAddresses
             override val nodeId = NODE_ID
             override val changeAddressesStorageAccount =
