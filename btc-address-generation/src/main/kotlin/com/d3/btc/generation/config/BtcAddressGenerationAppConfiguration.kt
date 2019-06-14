@@ -10,6 +10,7 @@ import com.d3.btc.provider.BtcChangeAddressProvider
 import com.d3.btc.provider.network.BtcNetworkConfigProvider
 import com.d3.btc.wallet.createWalletIfAbsent
 import com.d3.commons.config.loadLocalConfigs
+import com.d3.commons.expansion.ServiceExpansion
 import com.d3.commons.model.IrohaCredential
 import com.d3.commons.provider.NotaryPeerListProvider
 import com.d3.commons.provider.NotaryPeerListProviderImpl
@@ -59,6 +60,9 @@ class BtcAddressGenerationAppConfiguration {
             btcAddressGenerationConfig.mstRegistrationAccount.accountId,
             mstRegistrationKeyPair
         )
+
+    @Bean
+    fun mstRegistrationCredential() = mstRegistrationCredential
 
     @Bean
     fun generationIrohaAPI(): IrohaAPI {
@@ -142,4 +146,8 @@ class BtcAddressGenerationAppConfiguration {
             btcAddressGenerationConfig.changeAddressesStorageAccount
         )
     }
+
+    @Bean
+    fun serviceExpansion() =
+        ServiceExpansion(btcAddressGenerationConfig.expansionTriggerAccount, generationIrohaAPI())
 }

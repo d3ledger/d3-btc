@@ -7,6 +7,7 @@ package com.d3.btc.generation.init
 
 import com.d3.btc.generation.BTC_ADDRESS_GENERATION_SERVICE_NAME
 import com.d3.btc.generation.config.BtcAddressGenerationConfig
+import com.d3.btc.generation.expansion.AddressGenerationServiceExpansion
 import com.d3.btc.generation.trigger.AddressGenerationTrigger
 import com.d3.btc.healthcheck.HealthyService
 import com.d3.btc.model.BtcAddressType
@@ -34,7 +35,6 @@ import iroha.protocol.BlockOuterClass
 import iroha.protocol.Commands
 import mu.KLogging
 import org.bitcoinj.wallet.Wallet
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 
@@ -43,14 +43,15 @@ import org.springframework.stereotype.Component
  */
 @Component
 class BtcAddressGenerationInitialization(
-    @Autowired private val keysWallet: Wallet,
+    private val keysWallet: Wallet,
     @Qualifier("registrationQueryHelper")
-    @Autowired private val registrationQueryHelper: IrohaQueryHelper,
-    @Autowired private val btcAddressGenerationConfig: BtcAddressGenerationConfig,
-    @Autowired private val btcPublicKeyProvider: BtcPublicKeyProvider,
-    @Autowired private val irohaChainListener: IrohaChainListener,
-    @Autowired private val addressGenerationTrigger: AddressGenerationTrigger,
-    @Autowired private val btcNetworkConfigProvider: BtcNetworkConfigProvider
+    private val registrationQueryHelper: IrohaQueryHelper,
+    private val btcAddressGenerationConfig: BtcAddressGenerationConfig,
+    private val btcPublicKeyProvider: BtcPublicKeyProvider,
+    private val irohaChainListener: IrohaChainListener,
+    private val addressGenerationTrigger: AddressGenerationTrigger,
+    private val btcNetworkConfigProvider: BtcNetworkConfigProvider,
+    private val addressGenerationServiceExpansion: AddressGenerationServiceExpansion
 ) : HealthyService() {
 
     /**
@@ -94,6 +95,9 @@ class BtcAddressGenerationInitialization(
                 )
             )
         ).subscribe({ block ->
+            // Expand the address generation service if there a need to do so
+            addressGenerationServiceExpansion.expand(block)
+
             getCreateAccountCommands(block).forEach { command ->
                 if (isNewClientRegistered(command.createAccount)) {
                     logger.info("New account has been created. Try to generate more addresses.")

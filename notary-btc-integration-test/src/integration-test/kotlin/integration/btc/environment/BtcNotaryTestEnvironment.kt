@@ -8,6 +8,7 @@ package integration.btc.environment
 import com.d3.btc.config.BitcoinConfig
 import com.d3.btc.deposit.config.BTC_DEPOSIT_SERVICE_NAME
 import com.d3.btc.deposit.config.BtcDepositConfig
+import com.d3.btc.deposit.expansion.DepositServiceExpansion
 import com.d3.btc.deposit.init.BtcNotaryInitialization
 import com.d3.btc.deposit.service.BtcWalletListenerRestartService
 import com.d3.btc.handler.NewBtcClientRegistrationHandler
@@ -18,6 +19,7 @@ import com.d3.btc.provider.BtcRegisteredAddressesProvider
 import com.d3.btc.provider.network.BtcRegTestConfigProvider
 import com.d3.btc.wallet.WalletInitializer
 import com.d3.btc.wallet.loadAutoSaveWallet
+import com.d3.commons.expansion.ServiceExpansion
 import com.d3.commons.model.IrohaCredential
 import com.d3.commons.notary.NotaryImpl
 import com.d3.commons.sidechain.SideChainEvent
@@ -43,7 +45,7 @@ class BtcNotaryTestEnvironment(
     val notaryConfig: BtcDepositConfig = integrationHelper.configHelper.createBtcDepositConfig(
         testName
     ),
-    notaryCredential: IrohaCredential = IrohaCredential(
+    private val notaryCredential: IrohaCredential = IrohaCredential(
         notaryConfig.notaryCredential.accountId,
         Utils.parseHexKeypair(
             notaryConfig.notaryCredential.pubkey,
@@ -144,7 +146,13 @@ class BtcNotaryTestEnvironment(
             newBtcClientRegistrationListener,
             btcWalletListenerRestartService,
             confidenceExecutorService,
-            btcNetworkConfigProvider
+            btcNetworkConfigProvider,
+            DepositServiceExpansion(
+                ServiceExpansion(
+                    integrationHelper.accountHelper.expansionTriggerAccount.accountId,
+                    irohaAPI
+                ), notaryCredential
+            )
         )
     }
 

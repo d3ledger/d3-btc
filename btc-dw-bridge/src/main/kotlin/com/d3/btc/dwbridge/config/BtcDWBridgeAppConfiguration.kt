@@ -20,6 +20,7 @@ import com.d3.btc.withdrawal.statistics.WithdrawalStatistics
 import com.d3.commons.config.RMQConfig
 import com.d3.commons.config.loadLocalConfigs
 import com.d3.commons.config.loadRawLocalConfigs
+import com.d3.commons.expansion.ServiceExpansion
 import com.d3.commons.model.IrohaCredential
 import com.d3.commons.notary.NotaryImpl
 import com.d3.commons.provider.NotaryPeerListProviderImpl
@@ -79,6 +80,9 @@ class BtcDWBridgeAppConfiguration {
 
     private val notaryCredential =
         IrohaCredential(depositConfig.notaryCredential.accountId, notaryKeypair)
+
+    @Bean
+    fun notaryCredential() = notaryCredential
 
     @Bean
     fun consensusIrohaCredential() = btcConsensusCredential
@@ -226,4 +230,8 @@ class BtcDWBridgeAppConfiguration {
     @Bean
     fun walletInitializer() =
         WalletInitializer(btcRegisteredAddressesProvider(), btcChangeAddressProvider())
+
+    @Bean
+    fun serviceExpansion() =
+        ServiceExpansion(dwBridgeConfig.expansionTriggerAccount, irohaAPI())
 }

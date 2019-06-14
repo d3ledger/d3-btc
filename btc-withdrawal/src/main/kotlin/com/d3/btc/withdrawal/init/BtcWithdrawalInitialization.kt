@@ -16,6 +16,7 @@ import com.d3.btc.provider.network.BtcNetworkConfigProvider
 import com.d3.btc.wallet.checkWalletNetwork
 import com.d3.btc.withdrawal.config.BTC_WITHDRAWAL_SERVICE_NAME
 import com.d3.btc.withdrawal.config.BtcWithdrawalConfig
+import com.d3.btc.withdrawal.expansion.WithdrawalServiceExpansion
 import com.d3.btc.withdrawal.handler.NewChangeAddressHandler
 import com.d3.btc.withdrawal.handler.NewConsensusDataHandler
 import com.d3.btc.withdrawal.handler.NewSignatureEventHandler
@@ -36,7 +37,6 @@ import mu.KLogging
 import org.bitcoinj.core.PeerGroup
 import org.bitcoinj.utils.BriefLogFormatter
 import org.bitcoinj.wallet.Wallet
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import java.io.Closeable
 import java.io.File
@@ -46,17 +46,18 @@ import java.io.File
  */
 @Component
 class BtcWithdrawalInitialization(
-    @Autowired private val btcWithdrawalConfig: BtcWithdrawalConfig,
-    @Autowired private val peerGroup: SharedPeerGroup,
-    @Autowired private val transferWallet: Wallet,
-    @Autowired private val btcChangeAddressProvider: BtcChangeAddressProvider,
-    @Autowired private val btcNetworkConfigProvider: BtcNetworkConfigProvider,
-    @Autowired private val newSignatureEventHandler: NewSignatureEventHandler,
-    @Autowired private val newBtcClientRegistrationHandler: NewBtcClientRegistrationHandler,
-    @Autowired private val newTransferHandler: NewTransferHandler,
-    @Autowired private val newChangeAddressHandler: NewChangeAddressHandler,
-    @Autowired private val newConsensusDataHandler: NewConsensusDataHandler,
-    @Autowired private val rmqConfig: RMQConfig
+    private val btcWithdrawalConfig: BtcWithdrawalConfig,
+    private val peerGroup: SharedPeerGroup,
+    private val transferWallet: Wallet,
+    private val btcChangeAddressProvider: BtcChangeAddressProvider,
+    private val btcNetworkConfigProvider: BtcNetworkConfigProvider,
+    private val newSignatureEventHandler: NewSignatureEventHandler,
+    private val newBtcClientRegistrationHandler: NewBtcClientRegistrationHandler,
+    private val newTransferHandler: NewTransferHandler,
+    private val newChangeAddressHandler: NewChangeAddressHandler,
+    private val newConsensusDataHandler: NewConsensusDataHandler,
+    private val withdrawalServiceExpansion: WithdrawalServiceExpansion,
+    private val rmqConfig: RMQConfig
 ) : HealthyService(), Closeable {
 
     private val irohaChainListener = ReliableIrohaChainListener(
@@ -104,6 +105,8 @@ class BtcWithdrawalInitialization(
      * @param block - Iroha block
      */
     private fun handleIrohaBlock(block: BlockOuterClass.Block) {
+        // Expand the withdrawal service if there is a need to do so
+        withdrawalServiceExpansion.expand(block)
         // Handle transfer commands
         getTransferCommands(block).forEach { command ->
             newTransferHandler.handleTransferCommand(

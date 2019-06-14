@@ -7,6 +7,7 @@ package integration.btc.environment
 
 import com.d3.btc.generation.BTC_ADDRESS_GENERATION_SERVICE_NAME
 import com.d3.btc.generation.config.BtcAddressGenerationConfig
+import com.d3.btc.generation.expansion.AddressGenerationServiceExpansion
 import com.d3.btc.generation.init.BtcAddressGenerationInitialization
 import com.d3.btc.generation.trigger.AddressGenerationTrigger
 import com.d3.btc.provider.BtcChangeAddressProvider
@@ -16,6 +17,7 @@ import com.d3.btc.provider.address.BtcAddressesProvider
 import com.d3.btc.provider.generation.BtcPublicKeyProvider
 import com.d3.btc.provider.generation.BtcSessionProvider
 import com.d3.btc.provider.network.BtcRegTestConfigProvider
+import com.d3.commons.expansion.ServiceExpansion
 import com.d3.commons.model.IrohaCredential
 import com.d3.commons.provider.NotaryPeerListProviderImpl
 import com.d3.commons.provider.TriggerProvider
@@ -172,7 +174,13 @@ class BtcAddressGenerationTestEnvironment(
         btcPublicKeyProvider(),
         irohaListener,
         addressGenerationTrigger,
-        btcNetworkConfigProvider
+        btcNetworkConfigProvider,
+        AddressGenerationServiceExpansion(
+            ServiceExpansion(
+                integrationHelper.accountHelper.expansionTriggerAccount.accountId,
+                irohaApi
+            ), mstRegistrationCredential
+        )
     )
 
     /**
