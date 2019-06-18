@@ -169,6 +169,7 @@ class BtcIntegrationHelperUtil(peers: Int = 1) : IrohaIntegrationHelperUtil(peer
             wallet,
             blockStoragePath,
             hosts,
+            null,
             walletInitializer
         )
     }

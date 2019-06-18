@@ -12,6 +12,7 @@ import com.google.common.util.concurrent.ListenableFuture
 import mu.KLogging
 import org.bitcoinj.core.PeerGroup
 import org.bitcoinj.core.Sha256Hash
+import org.bitcoinj.net.discovery.DnsDiscovery
 import org.bitcoinj.wallet.Wallet
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
@@ -21,17 +22,19 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
- * This is a peer group implementation that can be used in multiple services simultaneously with no fear of get exception while calling 'startAsync()' or 'stopAsync()' twice
+ * This is a peer group implementation that can be used in multiple services simultaneously with no fear of getting exception while calling 'startAsync()' or 'stopAsync()' twice
  */
 @Component
 class SharedPeerGroup(
-    @Autowired btcNetworkConfigProvider: BtcNetworkConfigProvider,
-    @Autowired private val wallet: Wallet,
+    btcNetworkConfigProvider: BtcNetworkConfigProvider,
+    private val wallet: Wallet,
     @Qualifier("blockStoragePath")
-    @Autowired blockStoragePath: String,
+    blockStoragePath: String,
     @Qualifier("btcHosts")
-    @Autowired hosts: List<String>,
-    @Autowired private val walletInitializer: WalletInitializer
+    hosts: List<String>,
+    @Qualifier("dnsSeed")
+    private val dnsSeed: String?,
+    private val walletInitializer: WalletInitializer
 ) :
     PeerGroup(
         btcNetworkConfigProvider.getConfig(),
@@ -42,6 +45,12 @@ class SharedPeerGroup(
         hosts.forEach { host ->
             this.addAddress(InetAddress.getByName(host))
             logger.info { "$host was added to peer group" }
+        }
+        dnsSeed?.let {
+            logger.info("Peer discovery has been configured. DNS seed is $it")
+            this.addPeerDiscovery(
+                DnsDiscovery.DnsSeedDiscovery(btcNetworkConfigProvider.getConfig(), it)
+            )
         }
     }
 
