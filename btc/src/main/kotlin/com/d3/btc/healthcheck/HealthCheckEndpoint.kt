@@ -8,6 +8,8 @@ package com.d3.btc.healthcheck
 import io.ktor.application.call
 import io.ktor.application.install
 import io.ktor.features.CORS
+import io.ktor.features.ContentNegotiation
+import io.ktor.gson.gson
 import io.ktor.http.HttpStatusCode
 import io.ktor.response.respond
 import io.ktor.routing.get
@@ -37,10 +39,17 @@ class HealthCheckEndpoint(
             {
                 anyHost()
             }
+            install(ContentNegotiation) {
+                gson()
+            }
             routing {
-                get("/health") {
+                get("/actuator/health") {
                     val (message, status) = getHealth()
-                    call.respond(status, message)
+                    call.respond(
+                        status, mapOf(
+                            "status" to message
+                        )
+                    )
                 }
             }
         }

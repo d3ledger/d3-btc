@@ -10,7 +10,7 @@ Bitcoin Deposit service(or simply `btc-deposit`) is here to listen to Bitcoin bl
 ### Configuration overview (deposit.properties)
 * `btc-deposit.registrationAccount` - this account stores registered Bitcoin addresses associated with D3 clients. This information is used to check if a Bitcoin transaction is related to our clients.
 
-* `btc-deposit.healthCheckPort` - port of health check endpoint. A health check is available on `http://host:healthCheckPort/health`. This service checks if `btc-deposit` is connected to one Bitcoin peer at least.
+* `btc-deposit.healthCheckPort` - port of health check endpoint. A health check is available on `http://host:healthCheckPort/actuator/health`. This service checks if `btc-deposit` is connected to one Bitcoin peer at least.
 
 * `btc-deposit.btcTransferWalletPath` - a path of wallet file where deposit transactions are stored. We need this wallet to use deposit transactions as UTXO (Unspent Transaction Output) in the withdrawal service.
 
