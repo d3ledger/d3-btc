@@ -17,7 +17,7 @@ Bitcoin Address Generation service(or simply `btc-address-generation`) is used t
 * `btc-address-generation.btcKeysWalletPath` - path to wallet file where key pairs will be stored.
 * `btc-address-generation.notaryAccount` -  Iroha account that is responsible for Bitcoin MultiSig addresses storage. Addresses are stored in this account details. Probably, this is not a very good candidate for that purpose.
 * `btc-address-generation.changeAddressesStorageAccount` -  Iroha account that is responsible for change addresses storage. Addresses are stored in this account details.
-* `btc-address-generation.healthCheckPort` - port of health check endpoint. A health check is available on `http://host:healthCheckPort/health`. This service checks if `btc-address-generation` is able to listen to Iroha blocks.
+* `btc-address-generation.healthCheckPort` - port of health check endpoint. A health check is available on `http://host:healthCheckPort/actuator/health`. This service checks if `btc-address-generation` is able to listen to Iroha blocks.
 * `btc-address-generation.threshold` - a number of MultiSig addresses that must be created in advance.
 * `btc-address-generation.nodeId` - identifier of Notary node. This identifier must correlate to an identifier that is set in `btc-registration` configuration file on the same node. This value must be different on different nodes. We use this identifier as a mechanism of synchronization issues resistance.
 

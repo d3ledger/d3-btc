@@ -18,7 +18,7 @@ Assets will be rolled back to the initiator of transfer in case of error or fail
 * `btc-withdrawal.irohaBlockQueue` - RabbitMQ queue name that `chain-adapter` uses to deliver Iroha blocks
 * `btc-withdrawal.btcTransfersWalletPath` - a path to wallet file where UTXOs from `btc-deposit` service are stored. 
 * `btc-withdrawal.btcKeysWalletPath` - a path to wallet file full of Bitcoin MultiSig addresses private keys. The wallet is used to sign Bitcoin withdrawal transactions.
-* `btc-withdrawal.healthCheckPort` - port of health check endpoint. A health check is available on `http://host:healthCheckPort/health`. This service checks if `btc-withdrawal` is connected to one Bitcoin peer at least. 
+* `btc-withdrawal.healthCheckPort` - port of health check endpoint. A health check is available on `http://host:healthCheckPort/actuator/health`. This service checks if `btc-withdrawal` is connected to one Bitcoin peer at least. 
 * `btc-withdrawal.mstRegistrationAccount` - an account that creates all the Bitcoin MultiSig addresses in D3. Used to get Bitcoin change address.
 * `btc-withdrawal.bitcoin.blockStoragePath` - a path to Bitcoin blockchain storage.  Only headers are stored. Typically this folder consumes very little amount of disk space (approximately 50-60mb on MainNet).
 * `btc-withdrawal.bitcoin.confidenceLevel` - the minimum depth of deposit transaction in Bitcoin blockchain to be considered as available to spend.
