@@ -234,4 +234,7 @@ class BtcDWBridgeAppConfiguration {
     @Bean
     fun serviceExpansion() =
         ServiceExpansion(dwBridgeConfig.expansionTriggerAccount, irohaAPI())
+
+    @Bean
+    fun dnsSeed() = dwBridgeConfig.dnsSeedAddress
 }
