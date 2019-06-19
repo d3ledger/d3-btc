@@ -55,7 +55,16 @@ pipeline {
             sh "gradle dockerfileCreate"
             sh "gradle compileIntegrationTestKotlin --info"
             sh "gradle integrationTest --info"
+            sh "gradle d3TestReport"
           }
+          publishHTML (target: [
+                        allowMissing: false,
+                        alwaysLinkToLastBuild: false,
+                        keepAll: true,
+                        reportDir: 'build/reports',
+                        reportFiles: 'd3-test-report.html',
+                        reportName: "D3 test report"
+                      ])
         }
       }
       post {
