@@ -6,6 +6,8 @@ buildscript {
     repositories {
         mavenCentral()
         jcenter()
+        // gradle plugins repository
+        gradlePluginPortal()
     }
     configurations.maybeCreate("pitest")
     dependencies {
@@ -17,11 +19,19 @@ buildscript {
     }
 }
 
+plugins {
+    id "com.github.dolgopolovwork.testreport" version "1"
+}
+
 group = 'd3'
 version = '1.0-SNAPSHOT'
 
 apply plugin: 'info.solidsoft.pitest'
 apply plugin: 'com.github.johnrengelman.shadow'
+
+testReport {
+    testFolders = Arrays.asList("notary-btc-integration-test")
+}
 
 allprojects {
     apply plugin: 'java'
