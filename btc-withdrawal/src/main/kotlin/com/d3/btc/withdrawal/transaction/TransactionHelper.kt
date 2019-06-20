@@ -9,6 +9,7 @@ import com.d3.btc.fee.BYTES_PER_INPUT
 import com.d3.btc.fee.CurrentFeeRate
 import com.d3.btc.fee.getTxFee
 import com.d3.btc.helper.address.outPutToBase58Address
+import com.d3.btc.helper.output.info
 import com.d3.btc.peer.SharedPeerGroup
 import com.d3.btc.provider.BtcChangeAddressProvider
 import com.d3.btc.provider.BtcRegisteredAddressesProvider
@@ -190,6 +191,7 @@ class TransactionHelper(
         confidenceLevel: Int,
         recursivelyCollectedUnspents: MutableList<TransactionOutput>
     ): List<TransactionOutput> {
+        logger.info("All unspents\n${transfersWallet.unspents.map { unspent -> unspent.info() }}")
         val unspents = ArrayList(getAvailableUnspents(
             transfersWallet.unspents,
             availableHeight,
@@ -200,12 +202,7 @@ class TransactionHelper(
         if (unspents.isEmpty()) {
             throw IllegalStateException("Out of unspents")
         }
-        logger.info("Got unspents\n${unspents.map { unspent ->
-            Pair(
-                outPutToBase58Address(unspent),
-                unspent.value
-            )
-        }}")
+        logger.info("Filtered unspents\n${unspents.map { unspent -> unspent.info() }}")
 
         /*
         Wallet stores unspents in a HashSet. Order of a HashSet depends on several factors: current array size and etc.
@@ -268,6 +265,7 @@ class TransactionHelper(
         confidenceLevel: Int,
         availableAddresses: Set<String>
     ): List<TransactionOutput> {
+        logger.info("Used unspents\n${usedOutputs.values.flatten().map { unspent -> unspent.info() }}")
         return unspents.filter { unspent ->
             // It's senseless to use 'dusty' transaction, because its fee will be higher than its value
             !isDust(unspent.value.value) &&
