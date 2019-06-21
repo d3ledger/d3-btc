@@ -45,6 +45,7 @@ class BtcNotaryTestEnvironment(
     val notaryConfig: BtcDepositConfig = integrationHelper.configHelper.createBtcDepositConfig(
         testName
     ),
+    val bitcoinConfig: BitcoinConfig = integrationHelper.configHelper.createBitcoinConfig(testName),
     private val notaryCredential: IrohaCredential = IrohaCredential(
         notaryConfig.notaryCredential.accountId,
         Utils.parseHexKeypair(
@@ -104,8 +105,8 @@ class BtcNotaryTestEnvironment(
         return integrationHelper.getPeerGroup(
             transferWallet,
             btcNetworkConfigProvider,
-            notaryConfig.bitcoin.blockStoragePath,
-            BitcoinConfig.extractHosts(notaryConfig.bitcoin),
+            bitcoinConfig.blockStoragePath,
+            BitcoinConfig.extractHosts(bitcoinConfig),
             walletInitializer
         )
     }
@@ -126,7 +127,7 @@ class BtcNotaryTestEnvironment(
 
     private val btcWalletListenerRestartService by lazy {
         BtcWalletListenerRestartService(
-            notaryConfig,
+            bitcoinConfig,
             confidenceExecutorService,
             peerGroup,
             btcEventsSource,
@@ -139,6 +140,7 @@ class BtcNotaryTestEnvironment(
             peerGroup,
             transferWallet,
             notaryConfig,
+            bitcoinConfig,
             notary,
             btcRegisteredAddressesProvider,
             btcEventsSource,
@@ -162,7 +164,7 @@ class BtcNotaryTestEnvironment(
         confidenceExecutorService.shutdownNow()
         irohaChainListener.close()
         //Clear bitcoin blockchain folder
-        File(notaryConfig.bitcoin.blockStoragePath).deleteRecursively()
+        File(bitcoinConfig.blockStoragePath).deleteRecursively()
         btcNotaryInitialization.close()
     }
 }

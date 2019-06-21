@@ -37,7 +37,7 @@ class BtcWithdrawalExpansionTest {
 
     @BeforeAll
     fun setUp() {
-        val blockStorageFolder = File(environment.btcWithdrawalConfig.bitcoin.blockStoragePath)
+        val blockStorageFolder = File(environment.bitcoinConfig.blockStoragePath)
         //Clear bitcoin blockchain folder
         blockStorageFolder.deleteRecursively()
         //Recreate folder

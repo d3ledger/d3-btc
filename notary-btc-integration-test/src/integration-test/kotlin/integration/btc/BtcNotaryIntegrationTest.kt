@@ -37,7 +37,7 @@ class BtcNotaryIntegrationTest {
 
     init {
         registrationServiceEnvironment.registrationInitialization.init()
-        val blockStorageFolder = File(environment.notaryConfig.bitcoin.blockStoragePath)
+        val blockStorageFolder = File(environment.bitcoinConfig.blockStoragePath)
         //Clear bitcoin blockchain folder
         blockStorageFolder.deleteRecursively()
         //Recreate folder
@@ -168,7 +168,7 @@ class BtcNotaryIntegrationTest {
         sendBtcThreads.forEach { thread ->
             thread.join()
         }
-        integrationHelper.generateBtcBlocks(environment.notaryConfig.bitcoin.confidenceLevel)
+        integrationHelper.generateBtcBlocks(environment.bitcoinConfig.confidenceLevel)
         Thread.sleep(15_000)
         val newBalance = integrationHelper.getIrohaAccountBalance(testClient, BTC_ASSET)
         assertEquals(
@@ -210,7 +210,7 @@ class BtcNotaryIntegrationTest {
         integrationHelper.sendBtc(
             btcAddress,
             btcAmount,
-            environment.notaryConfig.bitcoin.confidenceLevel - 1
+            environment.bitcoinConfig.confidenceLevel - 1
         )
         Thread.sleep(DEPOSIT_WAIT_MILLIS)
         val newBalance = integrationHelper.getIrohaAccountBalance(testClient, BTC_ASSET)
@@ -250,7 +250,7 @@ class BtcNotaryIntegrationTest {
         val btcAmount = 1
         integrationHelper.sendBtc(btcAddress, btcAmount, 0)
         Thread.sleep(DEPOSIT_WAIT_MILLIS)
-        for (confirmation in 1..environment.notaryConfig.bitcoin.confidenceLevel) {
+        for (confirmation in 1..environment.bitcoinConfig.confidenceLevel) {
             Thread.sleep(150)
             integrationHelper.generateBtcBlocks(1)
         }

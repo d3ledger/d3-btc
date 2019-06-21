@@ -67,7 +67,7 @@ class BtcFullPipelineTest {
 
         // Run notary
         GlobalScope.launch {
-            val blockStorageFolder = File(notaryEnvironment.notaryConfig.bitcoin.blockStoragePath)
+            val blockStorageFolder = File(notaryEnvironment.bitcoinConfig.blockStoragePath)
             //Clear bitcoin blockchain folder
             blockStorageFolder.deleteRecursively()
             //Recreate folder
@@ -80,9 +80,9 @@ class BtcFullPipelineTest {
 
         // Run withdrawal
         GlobalScope.launch {
-            File(withdrawalEnvironment.btcWithdrawalConfig.bitcoin.blockStoragePath).mkdirs()
+            File(withdrawalEnvironment.bitcoinConfig.blockStoragePath).mkdirs()
             val blockStorageFolder =
-                File(withdrawalEnvironment.btcWithdrawalConfig.bitcoin.blockStoragePath)
+                File(withdrawalEnvironment.bitcoinConfig.blockStoragePath)
             //Clear bitcoin blockchain folder
             blockStorageFolder.deleteRecursively()
             //Recreate folder
@@ -125,7 +125,7 @@ class BtcFullPipelineTest {
         integrationHelper.sendBtc(
             srcBtcAddress,
             1,
-            notaryEnvironment.notaryConfig.bitcoin.confidenceLevel
+            notaryEnvironment.bitcoinConfig.confidenceLevel
         )
         Thread.sleep(DEPOSIT_WAIT_MILLIS)
 
@@ -140,7 +140,7 @@ class BtcFullPipelineTest {
             amount.toPlainString()
         )
         Thread.sleep(WITHDRAWAL_WAIT_MILLIS)
-        integrationHelper.generateBtcBlocks(notaryEnvironment.notaryConfig.bitcoin.confidenceLevel)
+        integrationHelper.generateBtcBlocks(notaryEnvironment.bitcoinConfig.confidenceLevel)
         Thread.sleep(DEPOSIT_WAIT_MILLIS)
         assertEquals(
             amount.toPlainString(),
@@ -195,7 +195,7 @@ class BtcFullPipelineTest {
         sendBtcThreads.forEach { thread ->
             thread.join()
         }
-        integrationHelper.generateBtcBlocks(notaryEnvironment.notaryConfig.bitcoin.confidenceLevel)
+        integrationHelper.generateBtcBlocks(notaryEnvironment.bitcoinConfig.confidenceLevel)
         Thread.sleep(DEPOSIT_WAIT_MILLIS * totalTransfers)
         val createdTime = System.currentTimeMillis()
         // Send 10000 SAT from source to destination multiple times
@@ -218,7 +218,7 @@ class BtcFullPipelineTest {
             }.start()
         }
         Thread.sleep(WITHDRAWAL_WAIT_MILLIS * totalTransfers)
-        integrationHelper.generateBtcBlocks(notaryEnvironment.notaryConfig.bitcoin.confidenceLevel)
+        integrationHelper.generateBtcBlocks(notaryEnvironment.bitcoinConfig.confidenceLevel)
         Thread.sleep(DEPOSIT_WAIT_MILLIS * totalTransfers)
         assertEquals(
             amount.multiply(BigDecimal(totalTransfers)).toPlainString(),

@@ -50,10 +50,11 @@ import java.util.concurrent.ConcurrentHashMap
  */
 class BtcWithdrawalTestEnvironment(
     private val integrationHelper: BtcIntegrationHelperUtil,
-    testName: String = "default_test_name",
+    testName: String = "",
     val btcWithdrawalConfig: BtcWithdrawalConfig = integrationHelper.configHelper.createBtcWithdrawalConfig(
         testName
     ),
+    val bitcoinConfig: BitcoinConfig = integrationHelper.configHelper.createBitcoinConfig(testName),
     private val withdrawalCredential: IrohaCredential =
         IrohaCredential(
             btcWithdrawalConfig.withdrawalCredential.accountId,
@@ -145,7 +146,7 @@ class BtcWithdrawalTestEnvironment(
     val btcRegisteredAddressesProvider = BtcRegisteredAddressesProvider(
         integrationHelper.queryHelper,
         btcWithdrawalConfig.registrationCredential.accountId,
-        btcWithdrawalConfig.notaryCredential.accountId
+        integrationHelper.accountHelper.notaryAccount.accountId
     )
 
     private val btcNetworkConfigProvider = BtcRegTestConfigProvider()
@@ -164,8 +165,8 @@ class BtcWithdrawalTestEnvironment(
         integrationHelper.getPeerGroup(
             transferWallet,
             btcNetworkConfigProvider,
-            btcWithdrawalConfig.bitcoin.blockStoragePath,
-            BitcoinConfig.extractHosts(btcWithdrawalConfig.bitcoin),
+            bitcoinConfig.blockStoragePath,
+            BitcoinConfig.extractHosts(bitcoinConfig),
             walletInitializer
         )
     }
@@ -212,7 +213,7 @@ class BtcWithdrawalTestEnvironment(
         btcConsensusIrohaConsumer,
         notaryPeerListProvider,
         transactionHelper,
-        btcWithdrawalConfig
+        bitcoinConfig
     )
     private val newChangeAddressHandler
             by lazy { NewChangeAddressHandler(transferWallet, btcNetworkConfigProvider) }
@@ -226,7 +227,7 @@ class BtcWithdrawalTestEnvironment(
         )
     val withdrawalTransferService = WithdrawalTransferService(
         withdrawalStatistics,
-        btcWithdrawalConfig,
+        bitcoinConfig,
         transactionCreator,
         transactionHelper,
         btcRollbackService
@@ -313,7 +314,7 @@ class BtcWithdrawalTestEnvironment(
         irohaApi.close()
         integrationHelper.close()
         executor.shutdownNow()
-        File(btcWithdrawalConfig.bitcoin.blockStoragePath).deleteRecursively()
+        File(bitcoinConfig.blockStoragePath).deleteRecursively()
         btcWithdrawalInitialization.close()
     }
 }

@@ -5,7 +5,7 @@
 
 package com.d3.btc.deposit.service
 
-import com.d3.btc.deposit.config.BtcDepositConfig
+import com.d3.btc.config.BitcoinConfig
 import com.d3.btc.deposit.handler.BtcDepositTxHandler
 import com.d3.btc.deposit.listener.BtcConfirmedTxListener
 import com.d3.btc.model.BtcAddress
@@ -19,7 +19,6 @@ import mu.KLogging
 import org.bitcoinj.core.StoredBlock
 import org.bitcoinj.core.Transaction
 import org.bitcoinj.wallet.Wallet
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import java.util.concurrent.ExecutorService
 
@@ -28,11 +27,11 @@ import java.util.concurrent.ExecutorService
  */
 @Component
 class BtcWalletListenerRestartService(
-    @Autowired private val btcDepositConfig: BtcDepositConfig,
-    @Autowired private val confidenceListenerExecutorService: ExecutorService,
-    @Autowired private val peerGroup: SharedPeerGroup,
-    @Autowired private val btcEventsSource: PublishSubject<SideChainEvent.PrimaryBlockChainEvent>,
-    @Autowired private val btcRegisteredAddressesProvider: BtcRegisteredAddressesProvider
+    private val bitcoinConfig: BitcoinConfig,
+    private val confidenceListenerExecutorService: ExecutorService,
+    private val peerGroup: SharedPeerGroup,
+    private val btcEventsSource: PublishSubject<SideChainEvent.PrimaryBlockChainEvent>,
+    private val btcRegisteredAddressesProvider: BtcRegisteredAddressesProvider
 ) {
 
     /**
@@ -48,7 +47,7 @@ class BtcWalletListenerRestartService(
             transferWallet.walletTransactions
                 .filter { walletTransaction ->
                     val txDepth = walletTransaction.transaction.confidence.depthInBlocks
-                    txDepth < btcDepositConfig.bitcoin.confidenceLevel
+                    txDepth < bitcoinConfig.confidenceLevel
                 }
                 .map { walletTransaction ->
                     walletTransaction.transaction
@@ -103,7 +102,7 @@ class BtcWalletListenerRestartService(
     )
             : BtcConfirmedTxListener {
         return BtcConfirmedTxListener(
-            btcDepositConfig.bitcoin.confidenceLevel,
+            bitcoinConfig.confidenceLevel,
             unconfirmedTx,
             block.header.time,
             BtcDepositTxHandler(

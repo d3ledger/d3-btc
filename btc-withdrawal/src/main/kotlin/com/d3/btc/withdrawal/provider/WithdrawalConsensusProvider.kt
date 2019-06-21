@@ -5,7 +5,7 @@
 
 package com.d3.btc.withdrawal.provider
 
-import com.d3.btc.withdrawal.config.BtcWithdrawalConfig
+import com.d3.btc.config.BitcoinConfig
 import com.d3.btc.withdrawal.transaction.TransactionHelper
 import com.d3.btc.withdrawal.transaction.WithdrawalDetails
 import com.d3.btc.withdrawal.transaction.consensus.ConsensusDataStorage
@@ -35,7 +35,7 @@ class WithdrawalConsensusProvider(
     private val consensusIrohaConsumer: IrohaConsumer,
     private val peerListProvider: NotaryPeerListProvider,
     private val transactionHelper: TransactionHelper,
-    private val btcWithdrawalConfig: BtcWithdrawalConfig
+    private val bitcoinConfig: BitcoinConfig
 ) {
     /**
      * Creates consensus data and saves it in Iroha
@@ -47,7 +47,7 @@ class WithdrawalConsensusProvider(
         val consensusAccountName = withdrawalDetails.irohaFriendlyHashCode()
         val consensusAccountId = "$consensusAccountName@$BTC_CONSENSUS_DOMAIN"
         return transactionHelper.getAvailableUTXOHeight(
-            btcWithdrawalConfig.bitcoin.confidenceLevel,
+            bitcoinConfig.confidenceLevel,
             withdrawalDetails.withdrawalTime
         ).map { availableHeight ->
             val withdrawalConsensus =

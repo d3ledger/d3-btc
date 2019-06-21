@@ -5,15 +5,12 @@
 
 package com.d3.btc.withdrawal.config
 
-import com.d3.btc.config.BitcoinConfig
 import com.d3.commons.config.IrohaConfig
 import com.d3.commons.config.IrohaCredentialRawConfig
 
 const val BTC_WITHDRAWAL_SERVICE_NAME = "btc-withdrawal"
 
 interface BtcWithdrawalConfig {
-    // Web port for health check service
-    val healthCheckPort: Int
     // Account that handles withdrawal events
     val withdrawalCredential: IrohaCredentialRawConfig
     // Account that stores Bitcoin transaction signatures
@@ -28,10 +25,6 @@ interface BtcWithdrawalConfig {
     val changeAddressesStorageAccount: String
     // Iroha configurations
     val iroha: IrohaConfig
-    // Bitcoin configurations
-    val bitcoin: BitcoinConfig
-    // Credentials of notary account
-    val notaryCredential: IrohaCredentialRawConfig
     // Account that stores notaries
     val notaryListStorageAccount: String
     // Account that saves notaries into notary storage account

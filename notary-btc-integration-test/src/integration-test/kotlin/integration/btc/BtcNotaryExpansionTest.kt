@@ -36,7 +36,7 @@ class BtcNotaryExpansionTest {
 
     init {
         registrationServiceEnvironment.registrationInitialization.init()
-        val blockStorageFolder = File(environment.notaryConfig.bitcoin.blockStoragePath)
+        val blockStorageFolder = File(environment.bitcoinConfig.blockStoragePath)
         //Clear bitcoin blockchain folder
         blockStorageFolder.deleteRecursively()
         //Recreate folder

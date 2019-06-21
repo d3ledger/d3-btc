@@ -217,6 +217,9 @@ class BtcDWBridgeAppConfiguration {
     fun blockStoragePath() = dwBridgeConfig.bitcoin.blockStoragePath
 
     @Bean
+    fun bitcoinConfig() = dwBridgeConfig.bitcoin
+
+    @Bean
     fun btcHosts() = extractHosts(dwBridgeConfig.bitcoin)
 
     @Bean
