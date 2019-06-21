@@ -8,7 +8,6 @@
 package com.d3.btc.endpoints
 
 import com.d3.btc.cli.BtcNodeRpcConfig
-import com.d3.commons.config.loadLocalConfigs
 import com.d3.commons.config.loadRawLocalConfigs
 import com.d3.commons.notary.endpoint.ServerInitializationBundle
 import com.github.jleskovar.btcrpc.BitcoinRpcClientFactory
@@ -30,34 +29,32 @@ private val endpointConfig =
  * Main entry point of Testing endpoints deployment module
  */
 fun main(args: Array<String>) {
-    loadLocalConfigs("btc-node-rpc", BtcNodeRpcConfig::class.java, "node-rpc.properties")
-        .map { btcNodeRpcConfig ->
-            BitcoinRpcClientFactory.createClient(
-                user = btcNodeRpcConfig.user,
-                password = btcNodeRpcConfig.password,
-                host = btcNodeRpcConfig.host,
-                port = btcNodeRpcConfig.port,
-                secure = false
+    Result.of {
+        loadRawLocalConfigs("btc-node-rpc", BtcNodeRpcConfig::class.java, "node-rpc.properties")
+    }.map { btcNodeRpcConfig ->
+        BitcoinRpcClientFactory.createClient(
+            user = btcNodeRpcConfig.user,
+            password = btcNodeRpcConfig.password,
+            host = btcNodeRpcConfig.host,
+            port = btcNodeRpcConfig.port,
+            secure = false
+        )
+    }.fanout {
+        Result.of {
+            ServerInitializationBundle(
+                endpointConfig.port,
+                ENDPOINT_BITCOIN
             )
         }
-        .fanout {
-            Result.of {
-                ServerInitializationBundle(
-                    endpointConfig.port,
-                    ENDPOINT_BITCOIN
-                )
-            }
-        }
-        .map { (deployHelper, bundle) ->
-            TestingEndpoint(
-                bundle,
-                deployHelper,
-                IrohaAPI(endpointConfig.iroha.hostname, endpointConfig.iroha.port),
-                endpointConfig.notaryIrohaAccount
-            )
-        }
-        .failure { ex ->
-            logger.error("Cannot run testing endpoints service", ex)
-            System.exit(1)
-        }
+    }.map { (deployHelper, bundle) ->
+        TestingEndpoint(
+            bundle,
+            deployHelper,
+            IrohaAPI(endpointConfig.iroha.hostname, endpointConfig.iroha.port),
+            endpointConfig.notaryIrohaAccount
+        )
+    }.failure { ex ->
+        logger.error("Cannot run testing endpoints service", ex)
+        System.exit(1)
+    }
 }
