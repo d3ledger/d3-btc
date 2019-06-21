@@ -94,7 +94,8 @@
                     "can_receive",
                     "can_get_all_txs",
                     "can_add_signatory",
-                    "can_set_quorum"
+                    "can_set_quorum",
+                    "can_set_detail"
                   ]
                 }
               },
@@ -512,6 +513,13 @@
               {
                 "createAccount": {
                   "accountName": "btc_change_addresses",
+                  "domainId": "notary",
+                  "publicKey": "0000000000000000000000000000000000000000000000000000000000000000"
+                }
+              },
+              {
+                "createAccount": {
+                  "accountName": "btc_tx_storage",
                   "domainId": "notary",
                   "publicKey": "0000000000000000000000000000000000000000000000000000000000000000"
                 }

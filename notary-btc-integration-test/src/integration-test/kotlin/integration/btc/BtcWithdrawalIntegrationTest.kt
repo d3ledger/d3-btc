@@ -27,9 +27,8 @@ import org.junit.jupiter.api.Assertions.assertNotNull
 import java.io.File
 import java.math.BigDecimal
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 
-const val WITHDRAWAL_WAIT_MILLIS = 15_000L
+const val WITHDRAWAL_WAIT_MILLIS = 20_000L
 private const val TOTAL_TESTS = 14
 private const val FAILED_WITHDRAW_AMOUNT = 6666L
 private const val FAILED_BROADCAST_AMOUNT = 7777L
@@ -154,7 +153,6 @@ class BtcWithdrawalIntegrationTest {
                 BigDecimal(integrationHelper.getIrohaAccountBalance(testClientSrc, BTC_ASSET))
             )
         )
-        assertFalse(environment.unsignedTransactions.isUnsigned(createdWithdrawalTx))
         assertEquals(2, environment.getLastCreatedTx().outputs.size)
         assertNotNull(environment.getLastCreatedTx().outputs.firstOrNull { transactionOutput ->
             outPutToBase58Address(
@@ -367,7 +365,6 @@ class BtcWithdrawalIntegrationTest {
         }, { ex -> fail(ex) })
         environment.transactionHelper.addToBlackList(btcAddressSrc)
         environment.transactionHelper.addToBlackList(btcAddressDest)
-        assertFalse(environment.unsignedTransactions.isUnsigned(createdWithdrawalTx))
         assertEquals(
             0,
             BigDecimal.ZERO.compareTo(
@@ -561,7 +558,6 @@ class BtcWithdrawalIntegrationTest {
         })
         environment.transactionHelper.addToBlackList(btcAddressSrc)
         environment.transactionHelper.addToBlackList(btcAddressDest)
-        assertFalse(environment.unsignedTransactions.isUnsigned(createdWithdrawalTx))
     }
 
     /**
@@ -622,7 +618,6 @@ class BtcWithdrawalIntegrationTest {
         environment.transactionHelper.addToBlackList(btcAddressSrc)
         environment.transactionHelper.addToBlackList(btcAddressDest)
         val createdWithdrawalTx = environment.getLastCreatedTxHash()
-        assertFalse(environment.unsignedTransactions.isUnsigned(createdWithdrawalTx))
     }
 
     /**
@@ -686,7 +681,6 @@ class BtcWithdrawalIntegrationTest {
                 transactionOutput
             ) == changeAddress.toBase58()
         })
-        assertFalse(environment.unsignedTransactions.isUnsigned(createdWithdrawalTx))
         integrationHelper.addIrohaAssetTo(testClientSrc, BTC_ASSET, amount)
         val initialSrcBalance = integrationHelper.getIrohaAccountBalance(testClientSrc, BTC_ASSET)
         integrationHelper.transferAssetIrohaFromClient(

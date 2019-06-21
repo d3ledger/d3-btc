@@ -139,7 +139,6 @@ class BtcWithdrawalFailResistanceIntegrationTest {
                 BigDecimal(integrationHelper.getIrohaAccountBalance(testClientSrc, BTC_ASSET))
             )
         )
-        assertFalse(environment.unsignedTransactions.isUnsigned(createdWithdrawalTx))
         assertEquals(2, environment.getLastCreatedTx().outputs.size)
         assertNotNull(environment.getLastCreatedTx().outputs.firstOrNull { transactionOutput ->
             outPutToBase58Address(

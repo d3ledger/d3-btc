@@ -74,6 +74,7 @@ class BtcConfigHelper(
                 "withdrawal.properties"
             ).get()
         return object : BtcWithdrawalConfig {
+            override val txStorageAccount = accountHelper.testCredential.accountId
             override val btcConsensusCredential =
                 accountHelper.createCredentialRawConfig(accountHelper.btcConsensusAccount)
             override val irohaBlockQueue = testName
