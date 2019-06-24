@@ -71,7 +71,7 @@ class TestingEndpoint(
                     val testWithdrawal = call.receive(TestWithdrawal::class)
                     TestingEndpoint.logger.info { "Testing withdrawal invoked with parameters:${testWithdrawal.address}, ${testWithdrawal.amount}" }
                     withdrawBtc(testWithdrawal).fold({
-                        TestingEndpoint.logger.info { "Ether was withdrawn successfully" }
+                        TestingEndpoint.logger.info { "Bitcoins were withdrawn successfully" }
                         call.respondText("", status = HttpStatusCode.NoContent)
                     },
                         { ex -> call.respondText(ex.message!!, status = HttpStatusCode.BadRequest) }
@@ -81,7 +81,7 @@ class TestingEndpoint(
                     val testTransfer = call.receive(TestTransfer::class)
                     TestingEndpoint.logger.info { "Testing transfer invoked with parameters:${testTransfer.destAccountId}, ${testTransfer.amount}" }
                     transferBtc(testTransfer).fold({
-                        TestingEndpoint.logger.info { "Ether was transferred successfully" }
+                        TestingEndpoint.logger.info { "Bitcoins were transferred successfully" }
                         call.respondText("", status = HttpStatusCode.NoContent)
                     },
                         { ex -> call.respondText(ex.message!!, status = HttpStatusCode.BadRequest) }
