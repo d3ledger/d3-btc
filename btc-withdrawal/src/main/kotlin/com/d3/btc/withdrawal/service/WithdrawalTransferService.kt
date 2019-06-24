@@ -8,13 +8,14 @@ package com.d3.btc.withdrawal.service
 import com.d3.btc.monitoring.Monitoring
 import com.d3.btc.withdrawal.config.BtcWithdrawalConfig
 import com.d3.btc.withdrawal.statistics.WithdrawalStatistics
-import com.d3.btc.withdrawal.transaction.*
+import com.d3.btc.withdrawal.transaction.TransactionCreator
+import com.d3.btc.withdrawal.transaction.TransactionHelper
+import com.d3.btc.withdrawal.transaction.WithdrawalDetails
 import com.d3.btc.withdrawal.transaction.consensus.WithdrawalConsensus
 import com.github.kittinunf.result.failure
 import com.github.kittinunf.result.map
 import mu.KLogging
 import org.bitcoinj.core.Transaction
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import java.util.concurrent.CopyOnWriteArrayList
 
@@ -23,13 +24,11 @@ import java.util.concurrent.CopyOnWriteArrayList
  */
 @Component
 class WithdrawalTransferService(
-    @Autowired private val withdrawalStatistics: WithdrawalStatistics,
-    @Autowired private val btcWithdrawalConfig: BtcWithdrawalConfig,
-    @Autowired private val transactionCreator: TransactionCreator,
-    @Autowired private val signCollector: SignCollector,
-    @Autowired private val unsignedTransactions: UnsignedTransactions,
-    @Autowired private val transactionHelper: TransactionHelper,
-    @Autowired private val btcRollbackService: BtcRollbackService
+    private val withdrawalStatistics: WithdrawalStatistics,
+    private val btcWithdrawalConfig: BtcWithdrawalConfig,
+    private val transactionCreator: TransactionCreator,
+    private val transactionHelper: TransactionHelper,
+    private val btcRollbackService: BtcRollbackService
 ) : Monitoring() {
     override fun monitor() = withdrawalStatistics
 
@@ -66,11 +65,6 @@ class WithdrawalTransferService(
             }
             Pair(transaction, unspents)
         }.map { (transaction, unspents) ->
-            logger.info { "Tx to sign\n$transaction" }
-            signCollector.collectSignatures(transaction, btcWithdrawalConfig.btcKeysWalletPath)
-            Pair(transaction, unspents)
-        }.map { (transaction, unspents) ->
-            unsignedTransactions.markAsUnsigned(withdrawalDetails, transaction)
             transactionHelper.registerUnspents(transaction, unspents)
             logger.info { "Tx ${transaction.hashAsString} was added to collection of unsigned transactions" }
         }.failure { ex ->

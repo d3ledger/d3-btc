@@ -24,19 +24,18 @@ import com.d3.commons.util.irohaEscape
 import com.github.kittinunf.result.Result
 import com.github.kittinunf.result.map
 import mu.KLogging
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 
 @Component
 class WithdrawalConsensusProvider(
     @Qualifier("consensusIrohaCredential")
-    @Autowired private val consensusIrohaCredential: IrohaCredential,
+    private val consensusIrohaCredential: IrohaCredential,
     @Qualifier("consensusIrohaConsumer")
-    @Autowired private val consensusIrohaConsumer: IrohaConsumer,
-    @Autowired private val peerListProvider: NotaryPeerListProvider,
-    @Autowired private val transactionHelper: TransactionHelper,
-    @Autowired private val btcWithdrawalConfig: BtcWithdrawalConfig
+    private val consensusIrohaConsumer: IrohaConsumer,
+    private val peerListProvider: NotaryPeerListProvider,
+    private val transactionHelper: TransactionHelper,
+    private val btcWithdrawalConfig: BtcWithdrawalConfig
 ) {
     /**
      * Creates consensus data and saves it in Iroha

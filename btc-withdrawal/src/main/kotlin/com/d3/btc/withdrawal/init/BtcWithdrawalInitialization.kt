@@ -17,10 +17,7 @@ import com.d3.btc.wallet.checkWalletNetwork
 import com.d3.btc.withdrawal.config.BTC_WITHDRAWAL_SERVICE_NAME
 import com.d3.btc.withdrawal.config.BtcWithdrawalConfig
 import com.d3.btc.withdrawal.expansion.WithdrawalServiceExpansion
-import com.d3.btc.withdrawal.handler.NewChangeAddressHandler
-import com.d3.btc.withdrawal.handler.NewConsensusDataHandler
-import com.d3.btc.withdrawal.handler.NewSignatureEventHandler
-import com.d3.btc.withdrawal.handler.NewTransferHandler
+import com.d3.btc.withdrawal.handler.*
 import com.d3.commons.config.RMQConfig
 import com.d3.commons.sidechain.iroha.BTC_CONSENSUS_DOMAIN
 import com.d3.commons.sidechain.iroha.BTC_SIGN_COLLECT_DOMAIN
@@ -56,8 +53,9 @@ class BtcWithdrawalInitialization(
     private val newTransferHandler: NewTransferHandler,
     private val newChangeAddressHandler: NewChangeAddressHandler,
     private val newConsensusDataHandler: NewConsensusDataHandler,
+    private val newTransactionCreatedHandler: NewTransactionCreatedHandler,
     private val withdrawalServiceExpansion: WithdrawalServiceExpansion,
-    private val rmqConfig: RMQConfig
+    rmqConfig: RMQConfig
 ) : HealthyService(), Closeable {
 
     private val irohaChainListener = ReliableIrohaChainListener(
@@ -100,6 +98,7 @@ class BtcWithdrawalInitialization(
             }
     }
 
+    //TODO refactor handlers
     /**
      * Handles Iroha blocks
      * @param block - Iroha block
@@ -114,12 +113,17 @@ class BtcWithdrawalInitialization(
                 block.blockV1.payload.createdTime
             )
         }
+        // Handle 'create new transaction' events
+        getSetDetailCommands(block).filter { command -> isNewTransactionCreated(command) }
+            .forEach { command ->
+                newTransactionCreatedHandler.handleCreateTransactionCommand(command.setAccountDetail)
+            }
+
         // Handle signature appearance commands
         getSetDetailCommands(block).filter { command -> isNewWithdrawalSignature(command) }
             .forEach { command ->
                 newSignatureEventHandler.handleNewSignatureCommand(
-                    command.setAccountDetail,
-                    peerGroup
+                    command.setAccountDetail
                 ) { transferWallet.saveToFile(File(btcWithdrawalConfig.btcTransfersWalletPath)) }
             }
         // Handle 'set new consensus' events
@@ -175,6 +179,9 @@ class BtcWithdrawalInitialization(
 
     private fun isNewWithdrawalSignature(command: Commands.Command) =
         command.hasSetAccountDetail() && command.setAccountDetail.accountId.endsWith("@$BTC_SIGN_COLLECT_DOMAIN")
+
+    private fun isNewTransactionCreated(command: Commands.Command) =
+        command.hasSetAccountDetail() && command.setAccountDetail.accountId == btcWithdrawalConfig.txStorageAccount
 
     private fun isNewConsensus(command: Commands.Command) =
         command.hasSetAccountDetail() && command.setAccountDetail.accountId.endsWith("@$BTC_CONSENSUS_DOMAIN")

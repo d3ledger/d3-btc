@@ -18,10 +18,7 @@ import com.d3.btc.wallet.loadAutoSaveWallet
 import com.d3.btc.withdrawal.config.BTC_WITHDRAWAL_SERVICE_NAME
 import com.d3.btc.withdrawal.config.BtcWithdrawalConfig
 import com.d3.btc.withdrawal.expansion.WithdrawalServiceExpansion
-import com.d3.btc.withdrawal.handler.NewChangeAddressHandler
-import com.d3.btc.withdrawal.handler.NewConsensusDataHandler
-import com.d3.btc.withdrawal.handler.NewSignatureEventHandler
-import com.d3.btc.withdrawal.handler.NewTransferHandler
+import com.d3.btc.withdrawal.handler.*
 import com.d3.btc.withdrawal.init.BtcWithdrawalInitialization
 import com.d3.btc.withdrawal.provider.WithdrawalConsensusProvider
 import com.d3.btc.withdrawal.service.BtcRollbackService
@@ -181,16 +178,25 @@ class BtcWithdrawalTestEnvironment(
             btcRegisteredAddressesProvider,
             btcChangeAddressProvider
         )
+
+    val transactionsStorage =
+        TransactionsStorage(
+            BtcRegTestConfigProvider(),
+            integrationHelper.queryHelper,
+            withdrawalIrohaConsumer,
+            btcWithdrawalConfig.txStorageAccount
+        )
     private val transactionCreator =
-        TransactionCreator(btcChangeAddressProvider, btcNetworkConfigProvider, transactionHelper)
+        TransactionCreator(btcChangeAddressProvider, btcNetworkConfigProvider, transactionHelper, transactionsStorage)
     private val transactionSigner =
-        TransactionSigner(btcRegisteredAddressesProvider, btcChangeAddressProvider)
+        TransactionSigner(btcRegisteredAddressesProvider, btcChangeAddressProvider, transferWallet)
     val signCollector =
         SignCollector(
             signaturesCollectorCredential,
             signaturesCollectorIrohaConsumer,
             irohaApi,
-            transactionSigner
+            transactionSigner,
+            transferWallet
         )
 
     private val withdrawalStatistics = WithdrawalStatistics.create()
@@ -201,7 +207,6 @@ class BtcWithdrawalTestEnvironment(
     )
     private val btcRollbackService =
         BtcRollbackService(withdrawalIrohaConsumer)
-    val unsignedTransactions = UnsignedTransactions(signCollector)
     private val withdrawalConsensusProvider = WithdrawalConsensusProvider(
         btcConsensusCredential,
         btcConsensusIrohaConsumer,
@@ -223,8 +228,6 @@ class BtcWithdrawalTestEnvironment(
         withdrawalStatistics,
         btcWithdrawalConfig,
         transactionCreator,
-        signCollector,
-        unsignedTransactions,
         transactionHelper,
         btcRollbackService
     )
@@ -232,12 +235,16 @@ class BtcWithdrawalTestEnvironment(
         NewSignatureEventHandler(
             withdrawalStatistics,
             signCollector,
-            unsignedTransactions,
+            transactionsStorage,
             transactionHelper,
-            btcRollbackService
+            btcRollbackService,
+            peerGroup
         )
 
     private val newConsensusDataHandler = NewConsensusDataHandler(withdrawalTransferService)
+
+    private val newTransactionCreatedHandler =
+        NewTransactionCreatedHandler(signCollector, transactionsStorage, btcWithdrawalConfig, btcRollbackService)
 
     val btcWithdrawalInitialization by lazy {
         BtcWithdrawalInitialization(
@@ -251,6 +258,7 @@ class BtcWithdrawalTestEnvironment(
             newTransferHandler,
             newChangeAddressHandler,
             newConsensusDataHandler,
+            newTransactionCreatedHandler,
             WithdrawalServiceExpansion(
                 ServiceExpansion(integrationHelper.accountHelper.expansionTriggerAccount.accountId, irohaApi),
                 withdrawalCredential

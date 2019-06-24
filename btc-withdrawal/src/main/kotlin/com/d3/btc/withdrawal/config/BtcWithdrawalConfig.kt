@@ -42,4 +42,6 @@ interface BtcWithdrawalConfig {
     val btcTransfersWalletPath: String
     // Path to wallet that stores keys
     val btcKeysWalletPath: String
+    // Account that is used to store created Bitcoin transactions
+    val txStorageAccount: String
 }

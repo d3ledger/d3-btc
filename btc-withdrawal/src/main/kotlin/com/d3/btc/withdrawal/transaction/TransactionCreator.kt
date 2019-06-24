@@ -8,15 +8,11 @@ package com.d3.btc.withdrawal.transaction
 import com.d3.btc.model.BtcAddress
 import com.d3.btc.provider.BtcChangeAddressProvider
 import com.d3.btc.provider.network.BtcNetworkConfigProvider
-import com.github.kittinunf.result.Result
-import com.github.kittinunf.result.fanout
-import com.github.kittinunf.result.flatMap
-import com.github.kittinunf.result.map
+import com.github.kittinunf.result.*
 import mu.KLogging
 import org.bitcoinj.core.Address
 import org.bitcoinj.core.Transaction
 import org.bitcoinj.core.TransactionOutput
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import kotlin.random.Random
 
@@ -26,9 +22,10 @@ import kotlin.random.Random
  */
 @Component
 class TransactionCreator(
-    @Autowired private val btcChangeAddressProvider: BtcChangeAddressProvider,
-    @Autowired private val btcNetworkConfigProvider: BtcNetworkConfigProvider,
-    @Autowired private val transactionHelper: TransactionHelper
+    private val btcChangeAddressProvider: BtcChangeAddressProvider,
+    private val btcNetworkConfigProvider: BtcNetworkConfigProvider,
+    private val transactionHelper: TransactionHelper,
+    private val transactionsStorage: TransactionsStorage
 ) {
 
     /**
@@ -54,24 +51,26 @@ class TransactionCreator(
                     confidenceLevel
                 )
             }.fanout {
-            btcChangeAddressProvider.getAllChangeAddresses(withdrawalDetails.withdrawalTime)
-        }.map { (unspents, changeAddresses) ->
-
-            unspents.forEach { unspent -> transaction.addInput(unspent) }
-            val changeAddress = chooseChangeAddress(withdrawalDetails, changeAddresses).address
-            logger.info("Change address chosen for withdrawal $withdrawalDetails is $changeAddress")
-            transactionHelper.addOutputs(
-                transaction,
-                unspents,
-                withdrawalDetails.toAddress,
-                withdrawalDetails.amountSat,
-                Address.fromBase58(
-                    btcNetworkConfigProvider.getConfig(),
-                    changeAddress
+                btcChangeAddressProvider.getAllChangeAddresses(withdrawalDetails.withdrawalTime)
+            }.map { (unspents, changeAddresses) ->
+                unspents.forEach { unspent -> transaction.addInput(unspent) }
+                val changeAddress = chooseChangeAddress(withdrawalDetails, changeAddresses).address
+                logger.info("Change address chosen for withdrawal $withdrawalDetails is $changeAddress")
+                transactionHelper.addOutputs(
+                    transaction,
+                    unspents,
+                    withdrawalDetails.toAddress,
+                    withdrawalDetails.amountSat,
+                    Address.fromBase58(
+                        btcNetworkConfigProvider.getConfig(),
+                        changeAddress
+                    )
                 )
-            )
-            unspents
-        }.map { unspents -> Pair(transaction, unspents) }
+                unspents
+            }.map { unspents ->
+                transactionsStorage.save(withdrawalDetails, transaction).failure { ex -> throw ex }
+                Pair(transaction, unspents)
+            }
     }
 
     /**

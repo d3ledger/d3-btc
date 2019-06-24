@@ -8,6 +8,7 @@ package com.d3.btc.withdrawal.transaction
 import com.d3.btc.helper.address.createMsRedeemScript
 import com.d3.btc.helper.address.outPutToBase58Address
 import com.d3.btc.helper.address.toEcPubKey
+import com.d3.btc.helper.input.getConnectedOutput
 import com.d3.btc.provider.BtcChangeAddressProvider
 import com.d3.btc.provider.BtcRegisteredAddressesProvider
 import com.d3.btc.wallet.safeLoad
@@ -19,7 +20,6 @@ import mu.KLogging
 import org.bitcoinj.core.ECKey
 import org.bitcoinj.core.Transaction
 import org.bitcoinj.wallet.Wallet
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
 /*
@@ -27,8 +27,9 @@ import org.springframework.stereotype.Component
  */
 @Component
 class TransactionSigner(
-    @Autowired private val btcRegisteredAddressesProvider: BtcRegisteredAddressesProvider,
-    @Autowired private val btcChangeAddressesProvider: BtcChangeAddressProvider
+    private val btcRegisteredAddressesProvider: BtcRegisteredAddressesProvider,
+    private val btcChangeAddressesProvider: BtcChangeAddressProvider,
+    private val transfersWallet: Wallet
 ) {
     /**
      * Signs transaction using available private keys from wallet
@@ -63,7 +64,8 @@ class TransactionSigner(
         var inputIndex = 0
         val signatures = ArrayList<InputSignature>()
         tx.inputs.forEach { input ->
-            getUsedPubKeys(outPutToBase58Address(input.connectedOutput!!)).fold({ pubKeys ->
+            val connectedOutput = input.getConnectedOutput(transfersWallet)
+            getUsedPubKeys(outPutToBase58Address(connectedOutput)).fold({ pubKeys ->
                 val keyPair = getPrivPubKeyPair(pubKeys, wallet)
                 if (keyPair != null) {
                     val redeem = createMsRedeemScript(pubKeys)

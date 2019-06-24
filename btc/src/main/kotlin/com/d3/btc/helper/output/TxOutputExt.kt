@@ -8,3 +8,4 @@ import org.bitcoinj.core.TransactionOutput
  */
 fun TransactionOutput.info() =
     "Address ${outPutToBase58Address(this)} tx hash ${this.parentTransactionHash} value ${this.value}"
+

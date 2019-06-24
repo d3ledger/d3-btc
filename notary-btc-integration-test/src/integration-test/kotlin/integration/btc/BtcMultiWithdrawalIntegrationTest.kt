@@ -29,7 +29,6 @@ import java.io.File
 import java.math.BigDecimal
 import java.util.*
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class BtcMultiWithdrawalIntegrationTest {
@@ -219,7 +218,6 @@ class BtcMultiWithdrawalIntegrationTest {
                 BigDecimal(integrationHelper.getIrohaAccountBalance(testClientSrc, BTC_ASSET))
             )
         )
-        assertFalse(environment.unsignedTransactions.isUnsigned(createdWithdrawalTx))
         assertEquals(2, environment.getLastCreatedTx().outputs.size)
         Assertions.assertNotNull(environment.getLastCreatedTx().outputs.firstOrNull { transactionOutput ->
             outPutToBase58Address(

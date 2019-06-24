@@ -9,6 +9,8 @@ import com.d3.btc.helper.address.createMsRedeemScript
 import com.d3.btc.helper.address.getSignThreshold
 import com.d3.btc.helper.address.outPutToBase58Address
 import com.d3.btc.helper.address.toEcPubKey
+import com.d3.btc.helper.input.getConnectedOutput
+import com.d3.btc.helper.transaction.shortTxHash
 import com.d3.commons.model.IrohaCredential
 import com.d3.commons.notary.IrohaCommand
 import com.d3.commons.notary.IrohaTransaction
@@ -32,6 +34,7 @@ import org.bitcoinj.core.ECKey
 import org.bitcoinj.core.Transaction
 import org.bitcoinj.crypto.TransactionSignature
 import org.bitcoinj.script.ScriptBuilder
+import org.bitcoinj.wallet.Wallet
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
@@ -42,11 +45,12 @@ import org.springframework.stereotype.Component
 @Component
 class SignCollector(
     @Qualifier("signatureCollectorCredential")
-    @Autowired private val signatureCollectorCredential: IrohaCredential,
+    private val signatureCollectorCredential: IrohaCredential,
     @Qualifier("signatureCollectorConsumer")
-    @Autowired private val signatureCollectorConsumer: IrohaConsumer,
+    private val signatureCollectorConsumer: IrohaConsumer,
     @Autowired private val irohaAPI: IrohaAPI,
-    @Autowired private val transactionSigner: TransactionSigner
+    private val transactionSigner: TransactionSigner,
+    private val transfersWallet: Wallet
 ) {
     private val queryHelper by lazy {
         IrohaQueryHelperImpl(
@@ -65,15 +69,15 @@ class SignCollector(
         )
 
     /**
-     * Collects current notary signatures. Process consists of 3 steps:
+     * Signs transaction and saves signatures in Iroha. Process consists of 3 steps:
      * 1) Sign tx
      * 2) Create special account named after tx hash for signature storing
      * 3) Save signatures in recently created account details
      * @param tx - transaction to sign
      * @param walletPath - path to current wallet. Used to get private keys
      */
-    fun collectSignatures(tx: Transaction, walletPath: String) {
-        transactionSigner.sign(tx, walletPath).flatMap { signedInputs ->
+    fun signAndSave(tx: Transaction, walletPath: String): Result<Unit, Exception> {
+        return transactionSigner.sign(tx, walletPath).flatMap { signedInputs ->
             if (signedInputs.isEmpty()) {
                 logger.warn(
                     "Cannot sign transaction ${tx.hashAsString}. " +
@@ -82,7 +86,7 @@ class SignCollector(
                 return@flatMap Result.of {}
             }
             logger.info { "Tx ${tx.hashAsString} signatures to add in Iroha $signedInputs" }
-            val shortTxHash = shortTxHash(tx)
+            val shortTxHash = tx.shortTxHash()
             val createAccountTx = IrohaConverter.convert(createSignCollectionAccountTx(shortTxHash))
             /**
              * We create a dedicated account on every withdrawal event.
@@ -94,10 +98,7 @@ class SignCollector(
             val setSignaturesTx =
                 IrohaConverter.convert(setSignatureDetailsTx(shortTxHash, signedInputs))
             signatureCollectorConsumer.send(setSignaturesTx)
-        }.fold(
-            {
-                logger.info { "Signatures for ${tx.hashAsString} were successfully processed" }
-            }, { ex -> throw ex })
+        }.map { Unit }
     }
 
     /**
@@ -141,7 +142,8 @@ class SignCollector(
                 logger.info { "Tx ${tx.hashAsString} input at index $inputIndex is not signed yet" }
                 return false
             }
-            val inputAddress = outPutToBase58Address(input.connectedOutput!!)
+            val connectedOutput = input.getConnectedOutput(transfersWallet)
+            val inputAddress = outPutToBase58Address(connectedOutput)
             transactionSigner.getUsedPubKeys(inputAddress).fold(
                 { usedPubKeys ->
                     val threshold = getSignThreshold(usedPubKeys)
@@ -168,7 +170,8 @@ class SignCollector(
         return Result.of {
             var inputIndex = 0
             tx.inputs.forEach { input ->
-                val inputAddress = outPutToBase58Address(input.connectedOutput!!)
+                val connectedOutput = input.getConnectedOutput(transfersWallet)
+                val inputAddress = outPutToBase58Address(connectedOutput)
                 transactionSigner.getUsedPubKeys(inputAddress).fold({ usedKeys ->
                     /**
                      * Signatures must be ordered the same way public keys are ordered in redeem script
@@ -189,7 +192,7 @@ class SignCollector(
                         redeemScript
                     )
                     input.scriptSig = inputScript
-                    input.verify()
+                    input.verify(connectedOutput)
                 }, { ex ->
                     throw IllegalStateException("Cannot get used keys", ex)
                 })
@@ -221,16 +224,10 @@ class SignCollector(
                 totalInputSignatures[inputSignature.index]!!.add(inputSignature.sigPubKey)
             } else {
                 totalInputSignatures[inputSignature.index] =
-                    ArrayList(listOf(inputSignature.sigPubKey))
+                        ArrayList(listOf(inputSignature.sigPubKey))
             }
         }
     }
-
-    //Cuts tx hash using raw tx hash string. Only first 32 symbols are taken.
-    fun shortTxHash(txHash: String) = txHash.substring(0, 32)
-
-    //Cuts tx hash using tx
-    fun shortTxHash(tx: Transaction) = shortTxHash(tx.hashAsString)
 
     //Creates Iroha transaction to create signature storing account
     private fun createSignCollectionAccountTx(txShortHash: String): IrohaTransaction {
