@@ -12,8 +12,9 @@ import com.d3.btc.withdrawal.config.BtcWithdrawalConfig
 import com.d3.btc.withdrawal.provider.WithdrawalConsensusProvider
 import com.d3.btc.withdrawal.service.BtcRollbackService
 import com.d3.btc.withdrawal.statistics.WithdrawalStatistics
-import com.d3.btc.withdrawal.transaction.TransactionHelper
+import com.d3.btc.withdrawal.provider.UTXOProvider
 import com.d3.btc.withdrawal.transaction.WithdrawalDetails
+import com.d3.btc.withdrawal.transaction.isDust
 import iroha.protocol.Commands
 import mu.KLogging
 import org.springframework.beans.factory.annotation.Autowired
@@ -29,7 +30,7 @@ class NewTransferHandler(
     @Autowired private val btcWithdrawalConfig: BtcWithdrawalConfig,
     @Autowired private val withdrawalConsensusProvider: WithdrawalConsensusProvider,
     @Autowired private val btcRollbackService: BtcRollbackService,
-    @Autowired private val transactionHelper: TransactionHelper
+    @Autowired private val bitcoinUTXOProvider: UTXOProvider
 ) {
 
     /**
@@ -77,7 +78,7 @@ class NewTransferHandler(
             return
         }
         // Check if withdrawal amount is not too little
-        if (transactionHelper.isDust(satAmount)) {
+        if (isDust(satAmount)) {
             btcRollbackService.rollback(
                 sourceAccountId,
                 satAmount,

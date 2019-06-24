@@ -22,7 +22,6 @@ import org.junit.jupiter.api.*
 import java.io.File
 import java.math.BigDecimal
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 
 private const val TOTAL_TESTS = 1
 
@@ -72,7 +71,7 @@ class BtcWithdrawalFailResistanceIntegrationTest {
         environment.withdrawalTransferService.addNewBtcTransactionListener { tx ->
             environment.createdTransactions[tx.hashAsString] = Pair(System.currentTimeMillis(), tx)
         }
-        environment.transactionHelper.addToBlackList(changeAddress.toBase58())
+        environment.utxoProvider.addToBlackList(changeAddress.toBase58())
     }
 
     /**
@@ -131,8 +130,8 @@ class BtcWithdrawalFailResistanceIntegrationTest {
             BtcWithdrawalIntegrationTest.logger.info { "signatures $signatures" }
             assertEquals(1, signatures[0]!!.size)
         }, { ex -> fail(ex) })
-        environment.transactionHelper.addToBlackList(btcAddressSrc)
-        environment.transactionHelper.addToBlackList(btcAddressDest)
+        environment.utxoProvider.addToBlackList(btcAddressSrc)
+        environment.utxoProvider.addToBlackList(btcAddressDest)
         assertEquals(
             0,
             BigDecimal.ZERO.compareTo(

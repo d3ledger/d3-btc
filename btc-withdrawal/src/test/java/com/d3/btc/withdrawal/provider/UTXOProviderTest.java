@@ -3,12 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package com.d3.btc.withdrawal.transaction;
+package com.d3.btc.withdrawal.provider;
 
 import com.d3.btc.peer.SharedPeerGroup;
+import com.d3.btc.provider.BtcChangeAddressProvider;
 import com.d3.btc.provider.BtcRegisteredAddressesProvider;
 import com.d3.btc.provider.network.BtcRegTestConfigProvider;
-import com.d3.btc.provider.BtcChangeAddressProvider;
+import com.d3.commons.sidechain.iroha.consumer.IrohaConsumer;
+import com.d3.commons.sidechain.iroha.util.IrohaQueryHelper;
 import com.github.kittinunf.result.Result;
 import org.bitcoinj.core.*;
 import org.bitcoinj.wallet.Wallet;
@@ -23,26 +25,36 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anySet;
 import static org.mockito.Mockito.*;
 
-public class TransactionHelperTest {
+public class UTXOProviderTest {
 
     private static final int CONFIDENCE_LEVEL = 6;
     private static Wallet wallet = mock(Wallet.class);
     private static Map<Sha256Hash, Integer> txHashAppearance = new HashMap<>();
     private static SharedPeerGroup peerGroup = mock(SharedPeerGroup.class);
-    private static TransactionHelper transactionHelper = spy(
-            new TransactionHelper(
+    private static UsedUTXOProvider usedUTXOProvider = new UsedUTXOProvider(mock(IrohaQueryHelper.class), mock(IrohaConsumer.class), "abc") {
+
+        private final Set<String> usedUTXO = new HashSet<>();
+
+        @Override
+        public Result<Boolean, Exception> isUsed(TransactionOutput output) {
+            return Result.Companion.of(() -> usedUTXO.contains(output.getHash().toString()));
+        }
+    };
+    private static UTXOProvider bitcoinUTXOProvider = spy(
+            new UTXOProvider(
                     wallet,
                     peerGroup,
                     new BtcRegTestConfigProvider(),
                     mock(BtcRegisteredAddressesProvider.class),
-                    mock(BtcChangeAddressProvider.class)
+                    mock(BtcChangeAddressProvider.class),
+                    usedUTXOProvider
             ));
 
     @BeforeClass
     public static void setUp() {
         Sha256Hash mockHash = mock(Sha256Hash.class);
         txHashAppearance.put(mockHash, 1);
-        doReturn(true).when(transactionHelper).isAvailableOutput(anySet(), any(TransactionOutput.class));
+        doReturn(true).when(bitcoinUTXOProvider).isAvailableOutput(anySet(), any(TransactionOutput.class));
         StoredBlock storedBlock = mock(StoredBlock.class);
         when(storedBlock.getHeight()).thenReturn(0);
         when(peerGroup.getBlock(mockHash)).thenReturn(storedBlock);
@@ -57,7 +69,7 @@ public class TransactionHelperTest {
     public void testCollectUnspents() {
         long amountToSpendSat = 1000;
         List<TransactionOutput> unspents = new ArrayList<>();
-        TransactionOutput output = mock(TransactionOutput.class);
+        TransactionOutput output = createTransactionOutput();
         Transaction transaction = mock(Transaction.class);
         when(transaction.getAppearsInHashes()).thenReturn(txHashAppearance);
         when(output.getParentTransaction()).thenReturn(transaction);
@@ -65,7 +77,7 @@ public class TransactionHelperTest {
         when(output.getParentTransactionDepthInBlocks()).thenReturn(CONFIDENCE_LEVEL);
         unspents.add(output);
         when(wallet.getUnspents()).thenReturn(unspents);
-        Result<List<TransactionOutput>, Exception> result = transactionHelper.collectUnspents(
+        Result<List<TransactionOutput>, Exception> result = bitcoinUTXOProvider.collectUnspents(
                 new HashSet<>(), amountToSpendSat, Integer.MAX_VALUE, CONFIDENCE_LEVEL);
         result.fold(transactionOutputs -> {
             assertEquals(1, transactionOutputs.size());
@@ -83,7 +95,7 @@ public class TransactionHelperTest {
     public void testCollectUnspentsBadHeight() {
         long amountToSpendSat = 1000;
         List<TransactionOutput> unspents = new ArrayList<>();
-        TransactionOutput output = mock(TransactionOutput.class);
+        TransactionOutput output = createTransactionOutput();
         Transaction transaction = mock(Transaction.class);
         when(transaction.getAppearsInHashes()).thenReturn(txHashAppearance);
         when(output.getParentTransaction()).thenReturn(transaction);
@@ -91,7 +103,7 @@ public class TransactionHelperTest {
         when(output.getParentTransactionDepthInBlocks()).thenReturn(CONFIDENCE_LEVEL);
         unspents.add(output);
         when(wallet.getUnspents()).thenReturn(unspents);
-        Result<List<TransactionOutput>, Exception> result = transactionHelper.collectUnspents(
+        Result<List<TransactionOutput>, Exception> result = bitcoinUTXOProvider.collectUnspents(
                 new HashSet<>(), amountToSpendSat, -1, CONFIDENCE_LEVEL);
         result.fold(transactionOutputs -> {
             fail();
@@ -109,7 +121,8 @@ public class TransactionHelperTest {
         long amountToSpendSat = 10_000;
         List<TransactionOutput> unspents = new ArrayList<>();
         for (int i = 0; i < 3; i++) {
-            TransactionOutput output = mock(TransactionOutput.class);
+
+            TransactionOutput output = createTransactionOutput();
             Transaction transaction = mock(Transaction.class);
             when(transaction.getAppearsInHashes()).thenReturn(txHashAppearance);
             when(output.getParentTransaction()).thenReturn(transaction);
@@ -118,11 +131,11 @@ public class TransactionHelperTest {
             unspents.add(output);
         }
         when(wallet.getUnspents()).thenReturn(unspents);
-        Result<List<TransactionOutput>, Exception> result = transactionHelper.collectUnspents(
+        Result<List<TransactionOutput>, Exception> result = bitcoinUTXOProvider.collectUnspents(
                 new HashSet<>(), amountToSpendSat, Integer.MAX_VALUE, CONFIDENCE_LEVEL);
         result.fold(transactionOutputs -> {
             assertEquals(2, transactionOutputs.size());
-            assertEquals(18_000, transactionHelper.getTotalUnspentValue(transactionOutputs));
+            assertEquals(18_000, bitcoinUTXOProvider.getTotalUnspentValue(transactionOutputs));
             return null;
         }, Assertions::fail);
     }
@@ -136,14 +149,15 @@ public class TransactionHelperTest {
     public void testCollectUnspentsOrder() {
         long amountToSpendSat = 1000;
 
-        TransactionOutput outputBigValue = mock(TransactionOutput.class);
+
+        TransactionOutput outputBigValue = createTransactionOutput();
         Transaction transactionBigValue = mock(Transaction.class);
         when(transactionBigValue.getAppearsInHashes()).thenReturn(txHashAppearance);
         when(outputBigValue.getParentTransaction()).thenReturn(transactionBigValue);
         when(outputBigValue.getValue()).thenReturn(Coin.valueOf(1_000_000L));
         when(outputBigValue.getParentTransactionDepthInBlocks()).thenReturn(CONFIDENCE_LEVEL);
 
-        TransactionOutput outputSmallValue = mock(TransactionOutput.class);
+        TransactionOutput outputSmallValue = createTransactionOutput();
         Transaction transactionSmallValue = mock(Transaction.class);
         when(transactionSmallValue.getAppearsInHashes()).thenReturn(txHashAppearance);
         when(outputBigValue.getParentTransaction()).thenReturn(transactionSmallValue);
@@ -152,7 +166,7 @@ public class TransactionHelperTest {
 
         List<TransactionOutput> unspents = new ArrayList<>(Arrays.asList(outputSmallValue, outputBigValue));
         when(wallet.getUnspents()).thenReturn(unspents);
-        Result<List<TransactionOutput>, Exception> result = transactionHelper.collectUnspents(
+        Result<List<TransactionOutput>, Exception> result = bitcoinUTXOProvider.collectUnspents(
                 new HashSet<>(), amountToSpendSat, Integer.MAX_VALUE, CONFIDENCE_LEVEL);
         result.fold(transactionOutputs -> {
             assertEquals(1, transactionOutputs.size());
@@ -170,7 +184,7 @@ public class TransactionHelperTest {
     public void testCollectUnspentsNoFee() {
         long amountToSpendSat = 1000;
 
-        TransactionOutput output = mock(TransactionOutput.class);
+        TransactionOutput output = createTransactionOutput();
         Transaction transaction = mock(Transaction.class);
         when(transaction.getAppearsInHashes()).thenReturn(txHashAppearance);
         when(output.getParentTransaction()).thenReturn(transaction);
@@ -180,7 +194,7 @@ public class TransactionHelperTest {
         List<TransactionOutput> unspents = new ArrayList<>();
         unspents.add(output);
         when(wallet.getUnspents()).thenReturn(unspents);
-        Result<List<TransactionOutput>, Exception> result = transactionHelper.collectUnspents(
+        Result<List<TransactionOutput>, Exception> result = bitcoinUTXOProvider.collectUnspents(
                 new HashSet<>(), amountToSpendSat, Integer.MAX_VALUE, CONFIDENCE_LEVEL);
         result.fold(transactionOutputs -> {
             fail();
@@ -197,7 +211,7 @@ public class TransactionHelperTest {
     public void testCollectUnspentsBadConfidenceLevel() {
         long amountToSpendSat = 1000;
 
-        TransactionOutput output = mock(TransactionOutput.class);
+        TransactionOutput output = createTransactionOutput();
         Transaction transaction = mock(Transaction.class);
         when(transaction.getAppearsInHashes()).thenReturn(txHashAppearance);
         when(output.getParentTransaction()).thenReturn(transaction);
@@ -207,7 +221,7 @@ public class TransactionHelperTest {
         List<TransactionOutput> unspents = new ArrayList<>();
         unspents.add(output);
         when(wallet.getUnspents()).thenReturn(unspents);
-        Result<List<TransactionOutput>, Exception> result = transactionHelper.collectUnspents(
+        Result<List<TransactionOutput>, Exception> result = bitcoinUTXOProvider.collectUnspents(
                 new HashSet<>(), amountToSpendSat, Integer.MAX_VALUE, CONFIDENCE_LEVEL);
         result.fold(transactionOutputs -> {
             fail();
@@ -224,17 +238,18 @@ public class TransactionHelperTest {
     public void testCollectUnspentsMultipleOutputsNoFee() {
         long amountToSpendSat = 1000;
 
-        TransactionOutput smallOutput = mock(TransactionOutput.class);
+        TransactionOutput smallOutput = createTransactionOutput();
         when(smallOutput.getValue()).thenReturn(Coin.valueOf(amountToSpendSat));
         when(smallOutput.getParentTransactionDepthInBlocks()).thenReturn(CONFIDENCE_LEVEL);
 
-        TransactionOutput evenSmallerOutput = mock(TransactionOutput.class);
+
+        TransactionOutput evenSmallerOutput = createTransactionOutput();
         when(evenSmallerOutput.getValue()).thenReturn(Coin.valueOf(1));
         when(evenSmallerOutput.getParentTransactionDepthInBlocks()).thenReturn(CONFIDENCE_LEVEL);
 
         List<TransactionOutput> unspents = new ArrayList<>(Arrays.asList(smallOutput, evenSmallerOutput));
         when(wallet.getUnspents()).thenReturn(unspents);
-        Result<List<TransactionOutput>, Exception> result = transactionHelper.collectUnspents(
+        Result<List<TransactionOutput>, Exception> result = bitcoinUTXOProvider.collectUnspents(
                 new HashSet<>(), amountToSpendSat, Integer.MAX_VALUE, CONFIDENCE_LEVEL);
         result.fold(transactionOutputs -> {
             fail();
@@ -255,7 +270,7 @@ public class TransactionHelperTest {
         List<TransactionOutput> unspents = new ArrayList<>();
 
         for (int i = 0; i < 100; i++) {
-            TransactionOutput output = mock(TransactionOutput.class);
+            TransactionOutput output = createTransactionOutput();
             Transaction transaction = mock(Transaction.class);
             when(transaction.getAppearsInHashes()).thenReturn(txHashAppearance);
             when(output.getParentTransaction()).thenReturn(transaction);
@@ -264,11 +279,20 @@ public class TransactionHelperTest {
             unspents.add(output);
         }
         when(wallet.getUnspents()).thenReturn(unspents);
-        Result<List<TransactionOutput>, Exception> result = transactionHelper.collectUnspents(
+        Result<List<TransactionOutput>, Exception> result = bitcoinUTXOProvider.collectUnspents(
                 new HashSet<>(), amountToSpendSat, Integer.MAX_VALUE, CONFIDENCE_LEVEL);
         result.fold(transactionOutputs -> {
             fail();
             return null;
         }, e -> null);
+    }
+
+    private TransactionOutput createTransactionOutput() {
+        TransactionOutput output = mock(TransactionOutput.class);
+        Random random = new Random();
+        byte[] utxoHash = new byte[256];
+        random.nextBytes(utxoHash);
+        when(output.getHash()).thenReturn(Sha256Hash.of(utxoHash));
+        return output;
     }
 }

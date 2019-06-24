@@ -85,7 +85,7 @@ class BtcWithdrawalIntegrationTest {
             environment.createdTransactions[tx.hashAsString] = Pair(System.currentTimeMillis(), tx)
         }
         environment.btcWithdrawalInitialization.init().failure { ex -> throw ex }
-        environment.transactionHelper.addToBlackList(changeAddress.toBase58())
+        environment.utxoProvider.addToBlackList(changeAddress.toBase58())
     }
 
     /**
@@ -145,8 +145,8 @@ class BtcWithdrawalIntegrationTest {
             logger.info { "signatures $signatures" }
             assertEquals(1, signatures[0]!!.size)
         }, { ex -> fail(ex) })
-        environment.transactionHelper.addToBlackList(btcAddressSrc)
-        environment.transactionHelper.addToBlackList(btcAddressDest)
+        environment.utxoProvider.addToBlackList(btcAddressSrc)
+        environment.utxoProvider.addToBlackList(btcAddressDest)
         assertEquals(
             0,
             BigDecimal.ZERO.compareTo(
@@ -245,8 +245,8 @@ class BtcWithdrawalIntegrationTest {
         )
         Thread.sleep(WITHDRAWAL_WAIT_MILLIS)
         assertEquals(initTxCount + 1, environment.createdTransactions.size)
-        environment.transactionHelper.addToBlackList(btcAddressSrc)
-        environment.transactionHelper.addToBlackList(btcAddressDest)
+        environment.utxoProvider.addToBlackList(btcAddressSrc)
+        environment.utxoProvider.addToBlackList(btcAddressDest)
     }
 
     /**
@@ -311,8 +311,8 @@ class BtcWithdrawalIntegrationTest {
         )
         Thread.sleep(WITHDRAWAL_WAIT_MILLIS)
         assertEquals(initTxCount + 2, environment.createdTransactions.size)
-        environment.transactionHelper.addToBlackList(btcAddressSrc)
-        environment.transactionHelper.addToBlackList(btcAddressDest)
+        environment.utxoProvider.addToBlackList(btcAddressSrc)
+        environment.utxoProvider.addToBlackList(btcAddressDest)
     }
 
     /**
@@ -363,8 +363,8 @@ class BtcWithdrawalIntegrationTest {
             logger.info { "signatures $signatures" }
             assertEquals(1, signatures[0]!!.size)
         }, { ex -> fail(ex) })
-        environment.transactionHelper.addToBlackList(btcAddressSrc)
-        environment.transactionHelper.addToBlackList(btcAddressDest)
+        environment.utxoProvider.addToBlackList(btcAddressSrc)
+        environment.utxoProvider.addToBlackList(btcAddressDest)
         assertEquals(
             0,
             BigDecimal.ZERO.compareTo(
@@ -436,8 +436,8 @@ class BtcWithdrawalIntegrationTest {
             initialSrcBalance,
             integrationHelper.getIrohaAccountBalance(testClientSrc, BTC_ASSET)
         )
-        environment.transactionHelper.addToBlackList(btcAddressSrc)
-        environment.transactionHelper.addToBlackList(btcAddressDest)
+        environment.utxoProvider.addToBlackList(btcAddressSrc)
+        environment.utxoProvider.addToBlackList(btcAddressDest)
     }
 
     /**
@@ -487,8 +487,8 @@ class BtcWithdrawalIntegrationTest {
             initialSrcBalance,
             integrationHelper.getIrohaAccountBalance(testClientSrc, BTC_ASSET)
         )
-        environment.transactionHelper.addToBlackList(btcAddressSrc)
-        environment.transactionHelper.addToBlackList(btcAddressDest)
+        environment.utxoProvider.addToBlackList(btcAddressSrc)
+        environment.utxoProvider.addToBlackList(btcAddressDest)
     }
 
     /**
@@ -556,8 +556,8 @@ class BtcWithdrawalIntegrationTest {
                 transactionOutput
             ) == changeAddress.toBase58()
         })
-        environment.transactionHelper.addToBlackList(btcAddressSrc)
-        environment.transactionHelper.addToBlackList(btcAddressDest)
+        environment.utxoProvider.addToBlackList(btcAddressSrc)
+        environment.utxoProvider.addToBlackList(btcAddressDest)
     }
 
     /**
@@ -615,8 +615,8 @@ class BtcWithdrawalIntegrationTest {
                 BigDecimal(integrationHelper.getIrohaAccountBalance(testClientSrc, BTC_ASSET))
             )
         )
-        environment.transactionHelper.addToBlackList(btcAddressSrc)
-        environment.transactionHelper.addToBlackList(btcAddressDest)
+        environment.utxoProvider.addToBlackList(btcAddressSrc)
+        environment.utxoProvider.addToBlackList(btcAddressDest)
         val createdWithdrawalTx = environment.getLastCreatedTxHash()
     }
 
@@ -698,8 +698,8 @@ class BtcWithdrawalIntegrationTest {
             initialSrcBalance,
             integrationHelper.getIrohaAccountBalance(testClientSrc, BTC_ASSET)
         )
-        environment.transactionHelper.addToBlackList(btcAddressSrc)
-        environment.transactionHelper.addToBlackList(btcAddressDest)
+        environment.utxoProvider.addToBlackList(btcAddressSrc)
+        environment.utxoProvider.addToBlackList(btcAddressDest)
     }
 
     /**
@@ -744,7 +744,7 @@ class BtcWithdrawalIntegrationTest {
             initialSrcBalance,
             integrationHelper.getIrohaAccountBalance(testClientSrc, BTC_ASSET)
         )
-        environment.transactionHelper.addToBlackList(btcAddressDest)
+        environment.utxoProvider.addToBlackList(btcAddressDest)
     }
 
     /**
@@ -795,8 +795,8 @@ class BtcWithdrawalIntegrationTest {
             integrationHelper.getIrohaAccountBalance(testClientSrc, BTC_ASSET)
         )
         assertEquals(initTxCount, environment.createdTransactions.size)
-        environment.transactionHelper.addToBlackList(btcAddressSrc)
-        environment.transactionHelper.addToBlackList(btcAddressDest)
+        environment.utxoProvider.addToBlackList(btcAddressSrc)
+        environment.utxoProvider.addToBlackList(btcAddressDest)
     }
 
     /**
@@ -845,8 +845,8 @@ class BtcWithdrawalIntegrationTest {
             initialSrcBalance,
             integrationHelper.getIrohaAccountBalance(testClientSrc, BTC_ASSET)
         )
-        environment.transactionHelper.addToBlackList(btcAddressSrc)
-        environment.transactionHelper.addToBlackList(btcAddressDest)
+        environment.utxoProvider.addToBlackList(btcAddressSrc)
+        environment.utxoProvider.addToBlackList(btcAddressDest)
     }
 
     /**
@@ -892,8 +892,8 @@ class BtcWithdrawalIntegrationTest {
             initialSrcBalance,
             integrationHelper.getIrohaAccountBalance(testClientSrc, BTC_ASSET)
         )
-        environment.transactionHelper.addToBlackList(btcAddressSrc)
-        environment.transactionHelper.addToBlackList(btcAddressDest)
+        environment.utxoProvider.addToBlackList(btcAddressSrc)
+        environment.utxoProvider.addToBlackList(btcAddressDest)
     }
 
     /**
@@ -940,8 +940,8 @@ class BtcWithdrawalIntegrationTest {
             initialSrcBalance,
             integrationHelper.getIrohaAccountBalance(testClientSrc, BTC_ASSET)
         )
-        environment.transactionHelper.addToBlackList(btcAddressSrc)
-        environment.transactionHelper.addToBlackList(btcAddressDest)
+        environment.utxoProvider.addToBlackList(btcAddressSrc)
+        environment.utxoProvider.addToBlackList(btcAddressDest)
         CurrentFeeRate.setMinimum()
     }
 

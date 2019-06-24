@@ -6,7 +6,6 @@
 package com.d3.btc.withdrawal.provider
 
 import com.d3.btc.config.BitcoinConfig
-import com.d3.btc.withdrawal.transaction.TransactionHelper
 import com.d3.btc.withdrawal.transaction.WithdrawalDetails
 import com.d3.btc.withdrawal.transaction.consensus.ConsensusDataStorage
 import com.d3.btc.withdrawal.transaction.consensus.WithdrawalConsensus
@@ -29,13 +28,13 @@ import org.springframework.stereotype.Component
 
 @Component
 class WithdrawalConsensusProvider(
-    @Qualifier("consensusIrohaCredential")
+        @Qualifier("consensusIrohaCredential")
     private val consensusIrohaCredential: IrohaCredential,
-    @Qualifier("consensusIrohaConsumer")
+        @Qualifier("consensusIrohaConsumer")
     private val consensusIrohaConsumer: IrohaConsumer,
-    private val peerListProvider: NotaryPeerListProvider,
-    private val transactionHelper: TransactionHelper,
-    private val bitcoinConfig: BitcoinConfig
+        private val peerListProvider: NotaryPeerListProvider,
+        private val bitcoinUTXOProvider: UTXOProvider,
+        private val bitcoinConfig: BitcoinConfig
 ) {
     /**
      * Creates consensus data and saves it in Iroha
@@ -46,7 +45,7 @@ class WithdrawalConsensusProvider(
         ConsensusDataStorage.create(withdrawalDetails)
         val consensusAccountName = withdrawalDetails.irohaFriendlyHashCode()
         val consensusAccountId = "$consensusAccountName@$BTC_CONSENSUS_DOMAIN"
-        return transactionHelper.getAvailableUTXOHeight(
+        return bitcoinUTXOProvider.getAvailableUTXOHeight(
             bitcoinConfig.confidenceLevel,
             withdrawalDetails.withdrawalTime
         ).map { availableHeight ->

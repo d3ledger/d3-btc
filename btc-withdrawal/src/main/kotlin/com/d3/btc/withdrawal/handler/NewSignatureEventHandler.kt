@@ -5,13 +5,14 @@
 
 package com.d3.btc.withdrawal.handler
 
+import com.d3.btc.withdrawal.provider.UTXOProvider
 import com.d3.btc.withdrawal.service.BtcRollbackService
 import com.d3.btc.withdrawal.statistics.WithdrawalStatistics
 import com.d3.btc.withdrawal.transaction.SignCollector
-import com.d3.btc.withdrawal.transaction.TransactionHelper
 import com.d3.btc.withdrawal.transaction.TransactionsStorage
 import com.d3.btc.withdrawal.transaction.WithdrawalDetails
 import com.d3.commons.sidechain.iroha.BTC_SIGN_COLLECT_DOMAIN
+import com.github.kittinunf.result.failure
 import com.github.kittinunf.result.map
 import iroha.protocol.Commands
 import mu.KLogging
@@ -28,7 +29,7 @@ class NewSignatureEventHandler(
     private val withdrawalStatistics: WithdrawalStatistics,
     private val signCollector: SignCollector,
     private val transactionsStorage: TransactionsStorage,
-    private val transactionHelper: TransactionHelper,
+    private val bitcoinUTXOProvider: UTXOProvider,
     private val btcRollbackService: BtcRollbackService,
     private val peerGroup: PeerGroup
 ) {
@@ -99,7 +100,8 @@ class NewSignatureEventHandler(
                     logger.info { "Tx ${tx.hashAsString} was successfully broadcasted" }
                     withdrawalStatistics.incSucceededTransfers()
                 }, { ex ->
-                    transactionHelper.unregisterUnspents(originalHash)
+                    bitcoinUTXOProvider.unregisterUnspents(tx, withdrawalDetails)
+                        .failure { e -> logger.error("Cannot unregister unspents", e) }
                     withdrawalStatistics.incFailedTransfers()
                     logger.error("Cannot complete tx $originalHash", ex)
                     btcRollbackService.rollback(
@@ -111,7 +113,8 @@ class NewSignatureEventHandler(
                 })
 
         }, { ex ->
-            transactionHelper.unregisterUnspents(originalHash)
+            bitcoinUTXOProvider.unregisterUnspents(tx, withdrawalDetails)
+                .failure { e -> logger.error("Cannot unregister unspents", e) }
             btcRollbackService.rollback(
                 withdrawalDetails.sourceAccountId,
                 withdrawalDetails.amountSat,

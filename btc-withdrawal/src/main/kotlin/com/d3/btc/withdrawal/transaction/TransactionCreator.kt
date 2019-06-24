@@ -5,14 +5,16 @@
 
 package com.d3.btc.withdrawal.transaction
 
+import com.d3.btc.fee.BYTES_PER_INPUT
+import com.d3.btc.fee.CurrentFeeRate
 import com.d3.btc.model.BtcAddress
 import com.d3.btc.provider.BtcChangeAddressProvider
 import com.d3.btc.provider.network.BtcNetworkConfigProvider
+import com.d3.btc.withdrawal.provider.UTXOProvider
 import com.github.kittinunf.result.*
 import mu.KLogging
 import org.bitcoinj.core.Address
 import org.bitcoinj.core.Transaction
-import org.bitcoinj.core.TransactionOutput
 import org.springframework.stereotype.Component
 import kotlin.random.Random
 
@@ -24,7 +26,7 @@ import kotlin.random.Random
 class TransactionCreator(
     private val btcChangeAddressProvider: BtcChangeAddressProvider,
     private val btcNetworkConfigProvider: BtcNetworkConfigProvider,
-    private val transactionHelper: TransactionHelper,
+    private val bitcoinUTXOProvider: UTXOProvider,
     private val transactionsStorage: TransactionsStorage
 ) {
 
@@ -39,12 +41,12 @@ class TransactionCreator(
         withdrawalDetails: WithdrawalDetails,
         availableHeight: Int,
         confidenceLevel: Int
-    ): Result<Pair<Transaction, List<TransactionOutput>>, Exception> {
+    ): Result<Transaction, Exception> {
         val transaction = Transaction(btcNetworkConfigProvider.getConfig())
-        return transactionHelper.getAvailableAddresses(withdrawalDetails.withdrawalTime)
+        return bitcoinUTXOProvider.getAvailableAddresses(withdrawalDetails.withdrawalTime)
             .flatMap { availableAddresses ->
                 logger.info("Available addresses $availableAddresses")
-                transactionHelper.collectUnspents(
+                bitcoinUTXOProvider.collectUnspents(
                     availableAddresses,
                     withdrawalDetails.amountSat,
                     availableHeight,
@@ -56,7 +58,7 @@ class TransactionCreator(
                 unspents.forEach { unspent -> transaction.addInput(unspent) }
                 val changeAddress = chooseChangeAddress(withdrawalDetails, changeAddresses).address
                 logger.info("Change address chosen for withdrawal $withdrawalDetails is $changeAddress")
-                transactionHelper.addOutputs(
+                bitcoinUTXOProvider.addOutputs(
                     transaction,
                     unspents,
                     withdrawalDetails.toAddress,
@@ -69,7 +71,7 @@ class TransactionCreator(
                 unspents
             }.map { unspents ->
                 transactionsStorage.save(withdrawalDetails, transaction).failure { ex -> throw ex }
-                Pair(transaction, unspents)
+                transaction
             }
     }
 
@@ -98,3 +100,10 @@ class TransactionCreator(
      */
     companion object : KLogging()
 }
+
+/**
+ * Checks if satValue is too low to spend
+ * @param satValue - amount of SAT to check if it's a dust
+ * @return true, if [satValue] is a dust
+ */
+fun isDust(satValue: Long) = satValue < (CurrentFeeRate.get() * BYTES_PER_INPUT)

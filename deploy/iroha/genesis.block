@@ -525,6 +525,13 @@
                 }
               },
               {
+                "createAccount": {
+                  "accountName": "btc_utxo_storage",
+                  "domainId": "notary",
+                  "publicKey": "0000000000000000000000000000000000000000000000000000000000000000"
+                }
+              },
+              {
                 "appendRole": {
                   "accountId": "notaries@notary",
                   "roleName": "notary_list_holder"

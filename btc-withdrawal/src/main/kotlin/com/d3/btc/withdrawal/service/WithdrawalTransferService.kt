@@ -7,9 +7,9 @@ package com.d3.btc.withdrawal.service
 
 import com.d3.btc.config.BitcoinConfig
 import com.d3.btc.monitoring.Monitoring
+import com.d3.btc.withdrawal.provider.UTXOProvider
 import com.d3.btc.withdrawal.statistics.WithdrawalStatistics
 import com.d3.btc.withdrawal.transaction.TransactionCreator
-import com.d3.btc.withdrawal.transaction.TransactionHelper
 import com.d3.btc.withdrawal.transaction.WithdrawalDetails
 import com.d3.btc.withdrawal.transaction.consensus.WithdrawalConsensus
 import com.github.kittinunf.result.failure
@@ -27,8 +27,8 @@ class WithdrawalTransferService(
     private val withdrawalStatistics: WithdrawalStatistics,
     private val bitcoinConfig: BitcoinConfig,
     private val transactionCreator: TransactionCreator,
-    private val transactionHelper: TransactionHelper,
-    private val btcRollbackService: BtcRollbackService
+    private val btcRollbackService: BtcRollbackService,
+    private val utxoProvider: UTXOProvider
 ) : Monitoring() {
     override fun monitor() = withdrawalStatistics
 
@@ -59,14 +59,15 @@ class WithdrawalTransferService(
             withdrawalDetails,
             withdrawalConsensus.availableHeight,
             bitcoinConfig.confidenceLevel
-        ).map { (transaction, unspents) ->
-            newBtcTransactionListeners.forEach { listener ->
-                listener(transaction)
+        ).map { transaction ->
+            try {
+                newBtcTransactionListeners.forEach { listener ->
+                    listener(transaction)
+                }
+            } catch (e: Exception) {
+                utxoProvider.unregisterUnspents(transaction, withdrawalDetails).failure { ex -> throw ex }
+                throw e
             }
-            Pair(transaction, unspents)
-        }.map { (transaction, unspents) ->
-            transactionHelper.registerUnspents(transaction, unspents)
-            logger.info { "Tx ${transaction.hashAsString} was added to collection of unsigned transactions" }
         }.failure { ex ->
             btcRollbackService.rollback(withdrawalDetails, "Cannot create Bitcoin transaction")
             withdrawalStatistics.incFailedTransfers()
