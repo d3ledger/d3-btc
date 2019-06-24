@@ -46,6 +46,7 @@ dependencies {
     compile project(":btc-address-generation")
     compile project(":btc-deposit")
     compile project(":btc-withdrawal")
+    compile project(":btc-dw-bridge")
 
     compile "com.github.d3ledger.notary:notary-registration:$notary_version"
     compile "com.github.d3ledger.notary:notary-iroha-integration-test:$notary_version"

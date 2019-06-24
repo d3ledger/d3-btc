@@ -5,6 +5,7 @@
 
 package com.d3.btc.deposit.init
 
+import com.d3.btc.config.BitcoinConfig
 import com.d3.btc.deposit.config.BTC_DEPOSIT_SERVICE_NAME
 import com.d3.btc.deposit.config.BtcDepositConfig
 import com.d3.btc.deposit.expansion.DepositServiceExpansion
@@ -43,6 +44,7 @@ class BtcNotaryInitialization(
     private val peerGroup: SharedPeerGroup,
     private val transferWallet: Wallet,
     private val btcDepositConfig: BtcDepositConfig,
+    private val bitcoinConfig: BitcoinConfig,
     private val notary: NotaryImpl,
     private val btcRegisteredAddressesProvider: BtcRegisteredAddressesProvider,
     private val btcEventsSource: PublishSubject<SideChainEvent.PrimaryBlockChainEvent>,
@@ -97,7 +99,7 @@ class BtcNotaryInitialization(
             }
             logger.info { "Registration service listener was successfully initialized" }
         }.map {
-            initBtcEvents(peerGroup, btcDepositConfig.bitcoin.confidenceLevel)
+            initBtcEvents(peerGroup, bitcoinConfig.confidenceLevel)
         }.map {
             notary.initIrohaConsumer().failure { ex -> throw ex }
         }.map {

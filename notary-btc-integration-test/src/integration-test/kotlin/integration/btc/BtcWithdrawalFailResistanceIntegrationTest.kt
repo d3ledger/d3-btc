@@ -56,7 +56,7 @@ class BtcWithdrawalFailResistanceIntegrationTest {
             environment.btcWithdrawalConfig.irohaBlockQueue,
             environment.rmqConfig.irohaExchange
         )
-        val blockStorageFolder = File(environment.btcWithdrawalConfig.bitcoin.blockStoragePath)
+        val blockStorageFolder = File(environment.bitcoinConfig.blockStoragePath)
         //Clear bitcoin blockchain folder
         blockStorageFolder.deleteRecursively()
         //Recreate folder
@@ -103,7 +103,7 @@ class BtcWithdrawalFailResistanceIntegrationTest {
         integrationHelper.sendBtc(
             btcAddressSrc,
             1,
-            environment.btcWithdrawalConfig.bitcoin.confidenceLevel
+            environment.bitcoinConfig.confidenceLevel
         )
         val randomNameDest = String.getRandomString(9)
         res = registrationServiceEnvironment.register(randomNameDest)

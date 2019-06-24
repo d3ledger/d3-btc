@@ -57,7 +57,7 @@ class BtcWithdrawalIntegrationTest {
     @BeforeAll
     fun setUp() {
         registrationServiceEnvironment.registrationInitialization.init()
-        val blockStorageFolder = File(environment.btcWithdrawalConfig.bitcoin.blockStoragePath)
+        val blockStorageFolder = File(environment.bitcoinConfig.blockStoragePath)
         //Clear bitcoin blockchain folder
         blockStorageFolder.deleteRecursively()
         //Recreate folder
@@ -125,7 +125,7 @@ class BtcWithdrawalIntegrationTest {
         integrationHelper.sendBtc(
             btcAddressSrc,
             1,
-            environment.btcWithdrawalConfig.bitcoin.confidenceLevel
+            environment.bitcoinConfig.confidenceLevel
         )
         val btcAddressDest = integrationHelper.createBtcAddress()
         integrationHelper.addIrohaAssetTo(testClientSrc, BTC_ASSET, amount)
@@ -212,7 +212,7 @@ class BtcWithdrawalIntegrationTest {
         integrationHelper.sendBtc(
             btcAddressSrc,
             1,
-            environment.btcWithdrawalConfig.bitcoin.confidenceLevel
+            environment.bitcoinConfig.confidenceLevel
         )
         val btcAddressDest = integrationHelper.createBtcAddress()
         integrationHelper.addIrohaAssetTo(testClientSrc, BTC_ASSET, amount)
@@ -278,7 +278,7 @@ class BtcWithdrawalIntegrationTest {
         integrationHelper.sendBtc(
             btcAddressSrc,
             1,
-            environment.btcWithdrawalConfig.bitcoin.confidenceLevel
+            environment.bitcoinConfig.confidenceLevel
         )
         val btcAddressDest = integrationHelper.createBtcAddress()
         integrationHelper.addIrohaAssetTo(testClientSrc, BTC_ASSET, amount)
@@ -343,7 +343,7 @@ class BtcWithdrawalIntegrationTest {
         integrationHelper.sendBtc(
             btcAddressSrc,
             1,
-            environment.btcWithdrawalConfig.bitcoin.confidenceLevel
+            environment.bitcoinConfig.confidenceLevel
         )
         val btcAddressDest = integrationHelper.createBtcAddress()
         integrationHelper.addIrohaAssetTo(testClientSrc, BTC_ASSET, amount)
@@ -411,12 +411,12 @@ class BtcWithdrawalIntegrationTest {
         integrationHelper.sendBtc(
             btcAddressSrc,
             1,
-            environment.btcWithdrawalConfig.bitcoin.confidenceLevel
+            environment.bitcoinConfig.confidenceLevel
         )
         integrationHelper.sendBtc(
             btcAddressSrc,
             1,
-            environment.btcWithdrawalConfig.bitcoin.confidenceLevel
+            environment.bitcoinConfig.confidenceLevel
         )
         val btcAddressDest = integrationHelper.createBtcAddress()
         integrationHelper.addIrohaAssetTo(testClientSrc, BTC_ASSET, amount)
@@ -467,7 +467,7 @@ class BtcWithdrawalIntegrationTest {
         integrationHelper.sendBtc(
             btcAddressSrc,
             1,
-            environment.btcWithdrawalConfig.bitcoin.confidenceLevel - 1
+            environment.bitcoinConfig.confidenceLevel - 1
         )
         val btcAddressDest = integrationHelper.createBtcAddress()
         integrationHelper.addIrohaAssetTo(testClientSrc, BTC_ASSET, amount)
@@ -519,12 +519,12 @@ class BtcWithdrawalIntegrationTest {
         integrationHelper.sendBtc(
             btcAddressSrc,
             5,
-            environment.btcWithdrawalConfig.bitcoin.confidenceLevel
+            environment.bitcoinConfig.confidenceLevel
         )
         integrationHelper.sendBtc(
             btcAddressSrc,
             5,
-            environment.btcWithdrawalConfig.bitcoin.confidenceLevel
+            environment.bitcoinConfig.confidenceLevel
         )
         val btcAddressDest = integrationHelper.createBtcAddress()
         integrationHelper.addIrohaAssetTo(testClientSrc, BTC_ASSET, amount)
@@ -649,7 +649,7 @@ class BtcWithdrawalIntegrationTest {
         integrationHelper.sendBtc(
             btcAddressSrc,
             1,
-            environment.btcWithdrawalConfig.bitcoin.confidenceLevel
+            environment.bitcoinConfig.confidenceLevel
         )
         val btcAddressDest = integrationHelper.createBtcAddress()
         integrationHelper.addIrohaAssetTo(testClientSrc, BTC_ASSET, amount)
@@ -775,7 +775,7 @@ class BtcWithdrawalIntegrationTest {
         integrationHelper.sendBtc(
             btcAddressSrc,
             1,
-            environment.btcWithdrawalConfig.bitcoin.confidenceLevel
+            environment.bitcoinConfig.confidenceLevel
         )
         val btcAddressDest = integrationHelper.createBtcAddress()
         integrationHelper.addIrohaAssetTo(testClientSrc, BTC_ASSET, amount)
@@ -826,7 +826,7 @@ class BtcWithdrawalIntegrationTest {
         for (utxo in 1..100) {
             integrationHelper.sendSat(btcAddressSrc, 1000, 0)
         }
-        integrationHelper.generateBtcBlocks(environment.btcWithdrawalConfig.bitcoin.confidenceLevel)
+        integrationHelper.generateBtcBlocks(environment.bitcoinConfig.confidenceLevel)
         val btcAddressDest = integrationHelper.createBtcAddress()
         integrationHelper.addIrohaAssetTo(testClientSrc, BTC_ASSET, amount)
         val initialSrcBalance = integrationHelper.getIrohaAccountBalance(testClientSrc, BTC_ASSET)

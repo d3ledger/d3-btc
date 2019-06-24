@@ -14,12 +14,8 @@ const val BTC_DEPOSIT_SERVICE_NAME = "btc-deposit"
 
 /** Configuration of Bitcoin deposit */
 interface BtcDepositConfig {
-    /** Web port for health checks */
-    val healthCheckPort: Int
 
     val iroha: IrohaConfig
-
-    val bitcoin: BitcoinConfig
 
     val notaryCredential: IrohaCredentialRawConfig
 

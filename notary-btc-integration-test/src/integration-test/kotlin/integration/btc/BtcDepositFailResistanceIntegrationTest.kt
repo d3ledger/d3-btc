@@ -37,7 +37,7 @@ class BtcDepositFailResistanceIntegrationTest {
 
     init {
         registrationServiceEnvironment.registrationInitialization.init()
-        val blockStorageFolder = File(environment.notaryConfig.bitcoin.blockStoragePath)
+        val blockStorageFolder = File(environment.bitcoinConfig.blockStoragePath)
         //Clear bitcoin blockchain folder
         blockStorageFolder.deleteRecursively()
         //Recreate folder
@@ -78,10 +78,10 @@ class BtcDepositFailResistanceIntegrationTest {
         //Start deposit service
         environment.btcNotaryInitialization.init {}
             .failure { ex -> fail("Cannot run BTC notary", ex) }
-        //Wait a little to initiale service properly
+        //Wait a little to initiate service properly
         Thread.sleep(DEPOSIT_WAIT_MILLIS)
         // Confirm coin
-        integrationHelper.generateBtcBlocks(environment.notaryConfig.bitcoin.confidenceLevel - 1)
+        integrationHelper.generateBtcBlocks(environment.bitcoinConfig.confidenceLevel - 1)
         Thread.sleep(DEPOSIT_WAIT_MILLIS)
         val newBalance = integrationHelper.getIrohaAccountBalance(testClient, BTC_ASSET)
         Assertions.assertEquals(

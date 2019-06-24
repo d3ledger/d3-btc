@@ -38,15 +38,15 @@ class BtcMultiNotaryIntegrationTest {
                 val testName = "multi_notary_${peerCount++}"
                 val notaryConfig =
                     integrationHelper.configHelper.createBtcDepositConfig(testName, notaryAccount)
-                environments.add(
+                val notaryEnvironment =
                     BtcNotaryTestEnvironment(
                         integrationHelper = integrationHelper,
                         notaryConfig = notaryConfig,
                         notaryCredential = notaryAccount,
                         testName = testName
                     )
-                )
-                val blockStorageFolder = File(notaryConfig.bitcoin.blockStoragePath)
+                environments.add(notaryEnvironment)
+                val blockStorageFolder = File(notaryEnvironment.bitcoinConfig.blockStoragePath)
                 //Clear bitcoin blockchain folder
                 blockStorageFolder.deleteRecursively()
                 //Recreate folder

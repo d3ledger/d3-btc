@@ -30,7 +30,7 @@ hs_err_pid*
 /btc-deposit/build/
 /btc-registration/build/
 /btc-withdrawal/build
-/notary-commons/build/
+/btc-testing-endpoints/build/
 /notary-btc-integration-test/build/
 /btc-dw-bridge/build
 /configs/brvs/key*.*

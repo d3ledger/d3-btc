@@ -5,8 +5,8 @@
 
 package com.d3.btc.withdrawal.service
 
+import com.d3.btc.config.BitcoinConfig
 import com.d3.btc.monitoring.Monitoring
-import com.d3.btc.withdrawal.config.BtcWithdrawalConfig
 import com.d3.btc.withdrawal.statistics.WithdrawalStatistics
 import com.d3.btc.withdrawal.transaction.TransactionCreator
 import com.d3.btc.withdrawal.transaction.TransactionHelper
@@ -25,7 +25,7 @@ import java.util.concurrent.CopyOnWriteArrayList
 @Component
 class WithdrawalTransferService(
     private val withdrawalStatistics: WithdrawalStatistics,
-    private val btcWithdrawalConfig: BtcWithdrawalConfig,
+    private val bitcoinConfig: BitcoinConfig,
     private val transactionCreator: TransactionCreator,
     private val transactionHelper: TransactionHelper,
     private val btcRollbackService: BtcRollbackService
@@ -58,7 +58,7 @@ class WithdrawalTransferService(
         transactionCreator.createTransaction(
             withdrawalDetails,
             withdrawalConsensus.availableHeight,
-            btcWithdrawalConfig.bitcoin.confidenceLevel
+            bitcoinConfig.confidenceLevel
         ).map { (transaction, unspents) ->
             newBtcTransactionListeners.forEach { listener ->
                 listener(transaction)

@@ -80,7 +80,7 @@ class BtcMultiWithdrawalIntegrationTest {
                 }
                 withdrawalEnvironments.add(environment)
                 val blockStorageFolder =
-                    File(environment.btcWithdrawalConfig.bitcoin.blockStoragePath)
+                    File(environment.bitcoinConfig.blockStoragePath)
                 //Clear bitcoin blockchain folder
                 blockStorageFolder.deleteRecursively()
                 //Recreate folder
@@ -190,7 +190,7 @@ class BtcMultiWithdrawalIntegrationTest {
         integrationHelper.sendBtc(
             btcAddressSrc,
             1,
-            environment.btcWithdrawalConfig.bitcoin.confidenceLevel
+            environment.bitcoinConfig.confidenceLevel
         )
         val btcAddressDest = integrationHelper.createBtcAddress()
         integrationHelper.addIrohaAssetTo(testClientSrc, BTC_ASSET, amount)

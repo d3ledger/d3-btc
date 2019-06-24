@@ -7,6 +7,7 @@ package integration.helper
 
 import com.d3.btc.config.BitcoinConfig
 import com.d3.btc.deposit.config.BtcDepositConfig
+import com.d3.btc.dwbridge.config.BtcDWBridgeConfig
 import com.d3.btc.generation.config.BtcAddressGenerationConfig
 import com.d3.btc.registration.config.BtcRegistrationConfig
 import com.d3.btc.withdrawal.config.BtcWithdrawalConfig
@@ -89,10 +90,6 @@ class BtcConfigHelper(
             override val registrationCredential =
                 accountHelper.createCredentialRawConfig(accountHelper.registrationAccount)
             override val mstRegistrationAccount = accountHelper.mstRegistrationAccount.accountId
-            override val bitcoin = createBitcoinConfig(btcWithdrawalConfig.bitcoin, testName)
-            override val notaryCredential =
-                accountHelper.createCredentialRawConfig(accountHelper.notaryAccount)
-            override val healthCheckPort = btcWithdrawalConfig.healthCheckPort
             override val withdrawalCredential =
                 accountHelper.createCredentialRawConfig(accountHelper.btcWithdrawalAccount)
             override val iroha = btcWithdrawalConfig.iroha
@@ -132,13 +129,24 @@ class BtcConfigHelper(
             override val changeAddressesStorageAccount =
                 accountHelper.changeAddressesStorageAccount.accountId
             override val btcTransferWalletPath = createWalletFile("transfers.$testName")
-            override val healthCheckPort = btcDepositConfig.healthCheckPort
             override val registrationAccount = accountHelper.registrationAccount.accountId
             override val iroha = createIrohaConfig()
-            override val bitcoin = createBitcoinConfig(btcDepositConfig.bitcoin, testName)
             override val notaryCredential =
                 accountHelper.createCredentialRawConfig(notaryIrohaCredential)
         }
+    }
+
+    /**
+     * Creates Bitcoin config
+     */
+    fun createBitcoinConfig(testName: String = ""): BitcoinConfig {
+        val btcDwBridgeConfig =
+            loadLocalConfigs(
+                "btc-dw-bridge",
+                BtcDWBridgeConfig::class.java,
+                "dw-bridge.properties"
+            ).get()
+        return createBitcoinConfig(btcDwBridgeConfig.bitcoin, testName)
     }
 
     private fun createBitcoinConfig(bitcoinConfig: BitcoinConfig, testName: String): BitcoinConfig {
