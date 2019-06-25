@@ -28,6 +28,7 @@ import com.d3.commons.sidechain.iroha.util.impl.IrohaQueryHelperImpl
 import com.d3.commons.util.createPrettySingleThreadPool
 import integration.helper.BtcIntegrationHelperUtil
 import io.grpc.ManagedChannelBuilder
+import jp.co.soramitsu.bootstrap.changelog.ChangelogInterface
 import jp.co.soramitsu.iroha.java.IrohaAPI
 import jp.co.soramitsu.iroha.java.Utils
 import org.bitcoinj.wallet.Wallet
@@ -178,6 +179,7 @@ class BtcAddressGenerationTestEnvironment(
         AddressGenerationServiceExpansion(
             ServiceExpansion(
                 integrationHelper.accountHelper.expansionTriggerAccount.accountId,
+                ChangelogInterface.superuserAccountId,
                 irohaApi
             ), mstRegistrationCredential
         )

@@ -33,6 +33,7 @@ import com.d3.commons.util.createPrettySingleThreadPool
 import io.grpc.ManagedChannelBuilder
 import io.reactivex.Observable
 import io.reactivex.subjects.PublishSubject
+import jp.co.soramitsu.bootstrap.changelog.ChangelogInterface
 import jp.co.soramitsu.iroha.java.IrohaAPI
 import jp.co.soramitsu.iroha.java.Utils
 import org.bitcoinj.wallet.Wallet
@@ -236,7 +237,11 @@ class BtcDWBridgeAppConfiguration {
 
     @Bean
     fun serviceExpansion() =
-        ServiceExpansion(dwBridgeConfig.expansionTriggerAccount, irohaAPI())
+        ServiceExpansion(
+            dwBridgeConfig.expansionTriggerAccount,
+            ChangelogInterface.superuserAccountId,
+            irohaAPI()
+        )
 
     @Bean
     fun dnsSeed() = dwBridgeConfig.dnsSeedAddress

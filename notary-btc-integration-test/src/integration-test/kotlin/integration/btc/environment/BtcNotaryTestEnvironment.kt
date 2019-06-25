@@ -30,6 +30,7 @@ import com.d3.commons.util.createPrettySingleThreadPool
 import integration.helper.BtcIntegrationHelperUtil
 import io.reactivex.Observable
 import io.reactivex.subjects.PublishSubject
+import jp.co.soramitsu.bootstrap.changelog.ChangelogInterface
 import jp.co.soramitsu.iroha.java.IrohaAPI
 import jp.co.soramitsu.iroha.java.Utils
 import org.bitcoinj.wallet.Wallet
@@ -152,6 +153,7 @@ class BtcNotaryTestEnvironment(
             DepositServiceExpansion(
                 ServiceExpansion(
                     integrationHelper.accountHelper.expansionTriggerAccount.accountId,
+                    ChangelogInterface.superuserAccountId,
                     irohaAPI
                 ), notaryCredential
             )

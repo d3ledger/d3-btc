@@ -36,6 +36,7 @@ import com.d3.commons.util.createPrettySingleThreadPool
 import com.rabbitmq.client.ConnectionFactory
 import integration.helper.BtcIntegrationHelperUtil
 import io.grpc.ManagedChannelBuilder
+import jp.co.soramitsu.bootstrap.changelog.ChangelogInterface
 import jp.co.soramitsu.iroha.java.IrohaAPI
 import jp.co.soramitsu.iroha.java.Utils
 import org.bitcoinj.core.Transaction
@@ -261,7 +262,11 @@ class BtcWithdrawalTestEnvironment(
             newConsensusDataHandler,
             newTransactionCreatedHandler,
             WithdrawalServiceExpansion(
-                ServiceExpansion(integrationHelper.accountHelper.expansionTriggerAccount.accountId, irohaApi),
+                ServiceExpansion(
+                    integrationHelper.accountHelper.expansionTriggerAccount.accountId,
+                    ChangelogInterface.superuserAccountId,
+                    irohaApi
+                ),
                 withdrawalCredential
             ),
             rmqConfig
