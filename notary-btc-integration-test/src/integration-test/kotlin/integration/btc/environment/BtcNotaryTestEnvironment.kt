@@ -151,6 +151,7 @@ class BtcNotaryTestEnvironment(
             confidenceExecutorService,
             btcNetworkConfigProvider,
             DepositServiceExpansion(
+                irohaAPI,
                 ServiceExpansion(
                     integrationHelper.accountHelper.expansionTriggerAccount.accountId,
                     ChangelogInterface.superuserAccountId,

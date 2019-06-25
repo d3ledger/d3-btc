@@ -273,6 +273,7 @@ class BtcWithdrawalTestEnvironment(
             newConsensusDataHandler,
             newTransactionCreatedHandler,
             WithdrawalServiceExpansion(
+                irohaApi,
                 ServiceExpansion(
                     integrationHelper.accountHelper.expansionTriggerAccount.accountId,
                     ChangelogInterface.superuserAccountId,
