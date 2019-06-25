@@ -50,4 +50,7 @@ interface BtcAddressGenerationConfig {
 
     // Account for triggering 'expansion' events
     val expansionTriggerAccount: String
+
+    // Account that triggers 'expansion' events
+    val expansionTriggerCreatorAccountId: String
 }

@@ -57,6 +57,7 @@ class BtcConfigHelper(
             override val mstRegistrationAccount =
                 accountHelper.createCredentialRawConfig(accountHelper.mstRegistrationAccount)
             override val pubKeyTriggerAccount = btcPkPreGenConfig.pubKeyTriggerAccount
+            override val expansionTriggerCreatorAccountId = accountHelper.superuserAccount.accountId
             override val notaryAccount = accountHelper.notaryAccount.accountId
             override val iroha = createIrohaConfig()
             override val btcKeysWalletPath = createWalletFile("keys.$walletNamePostfix")
