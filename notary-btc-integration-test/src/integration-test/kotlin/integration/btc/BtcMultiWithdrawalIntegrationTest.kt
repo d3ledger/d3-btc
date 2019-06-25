@@ -157,7 +157,7 @@ class BtcMultiWithdrawalIntegrationTest {
             initialSrcBalance,
             integrationHelper.getIrohaAccountBalance(testClientSrc, BTC_ASSET)
         )
-        environment.transactionHelper.addToBlackList(btcAddressDest)
+        environment.utxoProvider.addToBlackList(btcAddressDest)
     }
 
     /**
@@ -210,8 +210,8 @@ class BtcMultiWithdrawalIntegrationTest {
             BtcWithdrawalIntegrationTest.logger.info { "signatures $signatures" }
             assertEquals(peers, signatures[0]!!.size)
         }, { ex -> fail(ex) })
-        environment.transactionHelper.addToBlackList(btcAddressSrc)
-        environment.transactionHelper.addToBlackList(btcAddressDest)
+        environment.utxoProvider.addToBlackList(btcAddressSrc)
+        environment.utxoProvider.addToBlackList(btcAddressDest)
         assertEquals(
             0,
             BigDecimal.ZERO.compareTo(

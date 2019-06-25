@@ -5,11 +5,12 @@
 
 package com.d3.btc.withdrawal.transaction
 
+import com.d3.btc.helper.input.registerInIrohaKeyValue
+import com.d3.btc.helper.output.info
 import com.d3.btc.helper.transaction.shortTxHash
 import com.d3.btc.provider.network.BtcNetworkConfigProvider
-import com.d3.commons.sidechain.iroha.consumer.MultiSigIrohaConsumer
+import com.d3.commons.sidechain.iroha.consumer.IrohaConsumer
 import com.d3.commons.sidechain.iroha.util.IrohaQueryHelper
-import com.d3.commons.sidechain.iroha.util.ModelUtil
 import com.d3.commons.util.irohaEscape
 import com.d3.commons.util.unHex
 import com.github.kittinunf.result.Result
@@ -32,9 +33,12 @@ class TransactionsStorage(
     private val btcNetworkConfigProvider: BtcNetworkConfigProvider,
     @Qualifier("withdrawalQueryHelper")
     private val withdrawalQueryHelper: IrohaQueryHelper,
-    private val btcWithdrawalConsumer: MultiSigIrohaConsumer,
+    @Qualifier("withdrawalConsumer")
+    private val btcWithdrawalConsumer: IrohaConsumer,
     @Qualifier("txStorageAccount")
-    private val txStorageAccount: String
+    private val txStorageAccount: String,
+    @Qualifier("utxoStorageAccount")
+    private val utxoStorageAccount: String
 ) {
     /**
      * Saves transactions
@@ -51,18 +55,25 @@ class TransactionsStorage(
                     "Key ${transaction.shortTxHash()}"
         )
         return btcWithdrawalConsumer.getConsumerQuorum().flatMap { quorum ->
-            ModelUtil.setAccountDetail(
-                btcWithdrawalConsumer,
-                txStorageAccount,
-                transaction.shortTxHash(),
-                WithdrawalTransaction(
-                    withdrawalDetails,
-                    Utils.toHex(transaction.bitcoinSerialize())
-                ).toJson().irohaEscape(),
-                withdrawalDetails.withdrawalTime,
-                quorum
-            )
-        }.map { Unit }
+            val transactionBuilder = jp.co.soramitsu.iroha.java.Transaction
+                .builder(btcWithdrawalConsumer.creator)
+                .setAccountDetail(
+                    txStorageAccount, transaction.shortTxHash(), WithdrawalTransaction(
+                        withdrawalDetails,
+                        Utils.toHex(transaction.bitcoinSerialize())
+                    ).toJson().irohaEscape()
+                )
+                .setCreatedTime(withdrawalDetails.withdrawalTime)
+                .setQuorum(quorum)
+            transaction.inputs.forEach { input ->
+                val (key, value) = input.registerInIrohaKeyValue()
+                transactionBuilder.setAccountDetail(utxoStorageAccount, key, value)
+            }
+            btcWithdrawalConsumer.send(transactionBuilder.build())
+        }.map {
+            logger.info("Registered UTXO items:\n${transaction.inputs.map { it.connectedOutput!!.info() }}")
+            Unit
+        }
     }
 
     /**

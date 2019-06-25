@@ -20,11 +20,16 @@ import com.d3.btc.withdrawal.config.BtcWithdrawalConfig
 import com.d3.btc.withdrawal.expansion.WithdrawalServiceExpansion
 import com.d3.btc.withdrawal.handler.*
 import com.d3.btc.withdrawal.init.BtcWithdrawalInitialization
+import com.d3.btc.withdrawal.provider.UTXOProvider
+import com.d3.btc.withdrawal.provider.UsedUTXOProvider
 import com.d3.btc.withdrawal.provider.WithdrawalConsensusProvider
 import com.d3.btc.withdrawal.service.BtcRollbackService
 import com.d3.btc.withdrawal.service.WithdrawalTransferService
 import com.d3.btc.withdrawal.statistics.WithdrawalStatistics
-import com.d3.btc.withdrawal.transaction.*
+import com.d3.btc.withdrawal.transaction.SignCollector
+import com.d3.btc.withdrawal.transaction.TransactionCreator
+import com.d3.btc.withdrawal.transaction.TransactionSigner
+import com.d3.btc.withdrawal.transaction.TransactionsStorage
 import com.d3.commons.config.RMQConfig
 import com.d3.commons.config.loadRawLocalConfigs
 import com.d3.commons.expansion.ServiceExpansion
@@ -172,13 +177,17 @@ class BtcWithdrawalTestEnvironment(
         )
     }
 
-    val transactionHelper =
-        BlackListableTransactionHelper(
+    val usedUTXOProvider =
+        UsedUTXOProvider(integrationHelper.queryHelper, withdrawalIrohaConsumer, btcWithdrawalConfig.utxoStorageAccount)
+
+    val utxoProvider =
+        BlackListableBitcoinUTXOProvider(
             transferWallet,
             peerGroup,
             btcNetworkConfigProvider,
             btcRegisteredAddressesProvider,
-            btcChangeAddressProvider
+            btcChangeAddressProvider,
+            usedUTXOProvider
         )
 
     val transactionsStorage =
@@ -186,10 +195,11 @@ class BtcWithdrawalTestEnvironment(
             BtcRegTestConfigProvider(),
             integrationHelper.queryHelper,
             withdrawalIrohaConsumer,
-            btcWithdrawalConfig.txStorageAccount
+            btcWithdrawalConfig.txStorageAccount,
+            btcWithdrawalConfig.utxoStorageAccount
         )
     private val transactionCreator =
-        TransactionCreator(btcChangeAddressProvider, btcNetworkConfigProvider, transactionHelper, transactionsStorage)
+        TransactionCreator(btcChangeAddressProvider, btcNetworkConfigProvider, utxoProvider, transactionsStorage)
     private val transactionSigner =
         TransactionSigner(btcRegisteredAddressesProvider, btcChangeAddressProvider, transferWallet)
     val signCollector =
@@ -213,7 +223,7 @@ class BtcWithdrawalTestEnvironment(
         btcConsensusCredential,
         btcConsensusIrohaConsumer,
         notaryPeerListProvider,
-        transactionHelper,
+        utxoProvider,
         bitcoinConfig
     )
     private val newChangeAddressHandler
@@ -224,21 +234,22 @@ class BtcWithdrawalTestEnvironment(
             btcWithdrawalConfig,
             withdrawalConsensusProvider,
             btcRollbackService,
-            transactionHelper
+            utxoProvider
         )
     val withdrawalTransferService = WithdrawalTransferService(
         withdrawalStatistics,
         bitcoinConfig,
         transactionCreator,
-        transactionHelper,
-        btcRollbackService
+        btcRollbackService,
+        utxoProvider
+
     )
     val newSignatureEventHandler =
         NewSignatureEventHandler(
             withdrawalStatistics,
             signCollector,
             transactionsStorage,
-            transactionHelper,
+            utxoProvider,
             btcRollbackService,
             peerGroup
         )
@@ -279,18 +290,21 @@ class BtcWithdrawalTestEnvironment(
     fun getLastCreatedTx() =
         createdTransactions.maxBy { createdTransactionEntry -> createdTransactionEntry.value.first }!!.value.second
 
-    class BlackListableTransactionHelper(
+    class BlackListableBitcoinUTXOProvider(
         transferWallet: Wallet,
         peerGroup: SharedPeerGroup,
         btcNetworkConfigProvider: BtcNetworkConfigProvider,
         btcRegisteredAddressesProvider: BtcRegisteredAddressesProvider,
-        btcChangeAddressProvider: BtcChangeAddressProvider
-    ) : TransactionHelper(
+        btcChangeAddressProvider: BtcChangeAddressProvider,
+        usedUTXOProvider: UsedUTXOProvider
+    ) : UTXOProvider(
         transferWallet,
         peerGroup,
         btcNetworkConfigProvider,
         btcRegisteredAddressesProvider,
-        btcChangeAddressProvider
+        btcChangeAddressProvider,
+        usedUTXOProvider
+
     ) {
         //Collection of "blacklisted" addresses. For testing purposes only
         private val btcAddressBlackList = HashSet<String>()

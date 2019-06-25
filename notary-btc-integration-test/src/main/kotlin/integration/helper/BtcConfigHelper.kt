@@ -26,6 +26,9 @@ class BtcConfigHelper(
     private val accountHelper: IrohaAccountHelper
 ) : IrohaConfigHelper() {
 
+    private val utxoStorageAccountCredential = accountHelper.createTesterAccount("utxo_storage")
+    private val txStorageAccountCredential = accountHelper.createTesterAccount("tx_storage")
+
     /** Creates config for BTC multisig addresses generation
      * @param initAddresses - number of addresses that will be generated at initial phase
      * @param walletNamePostfix - postfix of wallet file name. used to keep wallets as multiple files in multisig tests.
@@ -75,7 +78,8 @@ class BtcConfigHelper(
                 "withdrawal.properties"
             ).get()
         return object : BtcWithdrawalConfig {
-            override val txStorageAccount = accountHelper.testCredential.accountId
+            override val utxoStorageAccount = utxoStorageAccountCredential.accountId
+            override val txStorageAccount = txStorageAccountCredential.accountId
             override val btcConsensusCredential =
                 accountHelper.createCredentialRawConfig(accountHelper.btcConsensusAccount)
             override val irohaBlockQueue = testName

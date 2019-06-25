@@ -3,9 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package com.d3.btc.withdrawal.transaction
+package com.d3.btc.withdrawal.provider
 
-import com.d3.btc.fee.BYTES_PER_INPUT
 import com.d3.btc.fee.CurrentFeeRate
 import com.d3.btc.fee.getTxFee
 import com.d3.btc.helper.address.outPutToBase58Address
@@ -14,6 +13,8 @@ import com.d3.btc.peer.SharedPeerGroup
 import com.d3.btc.provider.BtcChangeAddressProvider
 import com.d3.btc.provider.BtcRegisteredAddressesProvider
 import com.d3.btc.provider.network.BtcNetworkConfigProvider
+import com.d3.btc.withdrawal.transaction.WithdrawalDetails
+import com.d3.btc.withdrawal.transaction.isDust
 import com.github.kittinunf.result.Result
 import com.github.kittinunf.result.fanout
 import com.github.kittinunf.result.map
@@ -23,29 +24,23 @@ import org.bitcoinj.core.Coin
 import org.bitcoinj.core.Transaction
 import org.bitcoinj.core.TransactionOutput
 import org.bitcoinj.wallet.Wallet
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
 //Only two outputs are used: destination and change
 private const val OUTPUTS = 2
 
 /*
-    Helper class that is used to collect inputs, outputs and etc
+   Provider that is used to collect inputs, outputs and etc
  */
 @Component
-class TransactionHelper(
-    @Autowired private val transfersWallet: Wallet,
-    @Autowired private val peerGroup: SharedPeerGroup,
-    @Autowired private val btcNetworkConfigProvider: BtcNetworkConfigProvider,
-    @Autowired private val btcRegisteredAddressesProvider: BtcRegisteredAddressesProvider,
-    @Autowired private val btcChangeAddressProvider: BtcChangeAddressProvider
+class UTXOProvider(
+    private val transfersWallet: Wallet,
+    private val peerGroup: SharedPeerGroup,
+    private val btcNetworkConfigProvider: BtcNetworkConfigProvider,
+    private val btcRegisteredAddressesProvider: BtcRegisteredAddressesProvider,
+    private val btcChangeAddressProvider: BtcChangeAddressProvider,
+    private val usedUTXOProvider: UsedUTXOProvider
 ) {
-
-    /**
-     *  Map full of used transaction outputs. Key is tx hash, value is list of unspents.
-     *  We need it because Bitcoinj can't say if UTXO was spent until it was not broadcasted
-     *  */
-    private val usedOutputs = HashMap<String, List<TransactionOutput>>()
 
     /**
      * Adds outputs(destination and change addresses) to a given transaction
@@ -69,7 +64,6 @@ class TransactionHelper(
         )
         val change =
             totalAmount - amount - getTxFee(transaction.inputs.size, OUTPUTS, CurrentFeeRate.get())
-        //TODO create change address creation mechanism
         transaction.addOutput(Coin.valueOf(change), changeAddress)
     }
 
@@ -100,22 +94,12 @@ class TransactionHelper(
     }
 
     /**
-     * Registers given transaction outputs as "untouchable" to use in the future
-     * @param tx - transaction to register
-     * @param unspents - transaction outputs to register as "untouchable"
-     */
-    @Synchronized
-    fun registerUnspents(tx: Transaction, unspents: List<TransactionOutput>) {
-        usedOutputs[tx.hashAsString] = unspents
-    }
-
-    /**
      * Frees outputs, making them usable for other transactions
-     * @param txHash - hash of transaction which outputs/unspents must be freed
+     * @param transaction -  transaction which outputs/unspents must be freed
+     * @param withdrawalDetails - details of withdrawal that is related to given [transaction]
      */
-    @Synchronized
-    fun unregisterUnspents(txHash: String) {
-        usedOutputs.remove(txHash)
+    fun unregisterUnspents(transaction: Transaction, withdrawalDetails: WithdrawalDetails): Result<Unit, Exception> {
+        return usedUTXOProvider.unregisterUsedUTXO(transaction, withdrawalDetails)
     }
 
     /**
@@ -145,13 +129,6 @@ class TransactionHelper(
                 availableAddresses
             }
     }
-
-    /**
-     * Checks if satValue is too low to spend
-     * @param satValue - amount of SAT to check if it's a dust
-     * @return true, if [satValue] is a dust
-     */
-    fun isDust(satValue: Long) = satValue < (CurrentFeeRate.get() * BYTES_PER_INPUT)
 
     /**
      * Returns currently available UTXO height
@@ -258,21 +235,19 @@ class TransactionHelper(
      * @param confidenceLevel - minimum depth of transactions
      * @param availableAddresses - available addresses
      */
-    @Synchronized
     private fun getAvailableUnspents(
         unspents: List<TransactionOutput>,
         availableHeight: Int,
         confidenceLevel: Int,
         availableAddresses: Set<String>
     ): List<TransactionOutput> {
-        logger.info("Used unspents\n${usedOutputs.values.flatten().map { unspent -> unspent.info() }}")
         return unspents.filter { unspent ->
             // It's senseless to use 'dusty' transaction, because its fee will be higher than its value
             !isDust(unspent.value.value) &&
                     //Only confirmed unspents may be used
                     unspent.parentTransactionDepthInBlocks >= confidenceLevel
                     //Cannot use already used unspents
-                    && !usedOutputs.values.flatten().contains(unspent)
+                    && !usedUTXOProvider.isUsed(unspent).get()
                     //We are able to use those UTXOs which height is not bigger then availableHeight
                     && getUnspentHeight(unspent) <= availableHeight
                     //We use registered clients outputs only

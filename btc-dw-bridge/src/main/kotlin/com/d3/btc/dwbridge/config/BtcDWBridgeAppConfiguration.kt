@@ -185,7 +185,7 @@ class BtcDWBridgeAppConfiguration {
         IrohaCredential(withdrawalConfig.withdrawalCredential.accountId, withdrawalKeypair)
 
     @Bean
-    fun withdrawalConsumer() = MultiSigIrohaConsumer(withdrawalCredential(), irohaAPI())
+    fun withdrawalConsumer() = IrohaConsumerImpl(withdrawalCredential(), irohaAPI())
 
     @Bean
     fun withdrawalConfig() = withdrawalConfig
@@ -237,15 +237,14 @@ class BtcDWBridgeAppConfiguration {
 
     @Bean
     fun serviceExpansion() =
-        ServiceExpansion(
-            dwBridgeConfig.expansionTriggerAccount,
-            ChangelogInterface.superuserAccountId,
-            irohaAPI()
-        )
+        ServiceExpansion(dwBridgeConfig.expansionTriggerAccount, ChangelogInterface.superuserAccountId, irohaAPI())
 
     @Bean
     fun dnsSeed() = dwBridgeConfig.dnsSeedAddress
 
     @Bean
     fun txStorageAccount() = withdrawalConfig.txStorageAccount
+
+    @Bean
+    fun utxoStorageAccount() = withdrawalConfig.utxoStorageAccount
 }
