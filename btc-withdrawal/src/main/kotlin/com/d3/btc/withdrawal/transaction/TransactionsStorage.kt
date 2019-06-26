@@ -5,10 +5,11 @@
 
 package com.d3.btc.withdrawal.transaction
 
-import com.d3.btc.helper.input.registerInIrohaKeyValue
+import com.d3.btc.helper.input.irohaKey
 import com.d3.btc.helper.output.info
 import com.d3.btc.helper.transaction.shortTxHash
 import com.d3.btc.provider.network.BtcNetworkConfigProvider
+import com.d3.btc.withdrawal.provider.UTXODetails
 import com.d3.commons.sidechain.iroha.consumer.IrohaConsumer
 import com.d3.commons.sidechain.iroha.util.IrohaQueryHelper
 import com.d3.commons.util.irohaEscape
@@ -40,6 +41,8 @@ class TransactionsStorage(
     @Qualifier("utxoStorageAccount")
     private val utxoStorageAccount: String
 ) {
+
+    private val gson = Gson()
     /**
      * Saves transactions
      * @param withdrawalDetails - details of withdrawal(account id, amount and time)
@@ -66,8 +69,11 @@ class TransactionsStorage(
                 .setCreatedTime(withdrawalDetails.withdrawalTime)
                 .setQuorum(quorum)
             transaction.inputs.forEach { input ->
-                val (key, value) = input.registerInIrohaKeyValue()
-                transactionBuilder.setAccountDetail(utxoStorageAccount, key, value)
+                transactionBuilder.setAccountDetail(
+                    utxoStorageAccount,
+                    input.irohaKey(),
+                    gson.toJson(UTXODetails.register(withdrawalDetails.withdrawalTime)).irohaEscape()
+                )
             }
             btcWithdrawalConsumer.send(transactionBuilder.build())
         }.map {
