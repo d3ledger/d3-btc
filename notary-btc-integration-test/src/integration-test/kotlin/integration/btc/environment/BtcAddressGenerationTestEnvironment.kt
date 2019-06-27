@@ -177,6 +177,7 @@ class BtcAddressGenerationTestEnvironment(
         addressGenerationTrigger,
         btcNetworkConfigProvider,
         AddressGenerationServiceExpansion(
+            irohaApi,
             ServiceExpansion(
                 integrationHelper.accountHelper.expansionTriggerAccount.accountId,
                 ChangelogInterface.superuserAccountId,
