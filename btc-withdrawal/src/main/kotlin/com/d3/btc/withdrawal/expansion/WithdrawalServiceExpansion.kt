@@ -8,7 +8,6 @@ package com.d3.btc.withdrawal.expansion
 import com.d3.commons.expansion.ExpansionUtils
 import com.d3.commons.expansion.ServiceExpansion
 import com.d3.commons.model.IrohaCredential
-import com.d3.commons.util.toHexString
 import iroha.protocol.BlockOuterClass
 import jp.co.soramitsu.iroha.java.IrohaAPI
 import org.springframework.beans.factory.annotation.Qualifier

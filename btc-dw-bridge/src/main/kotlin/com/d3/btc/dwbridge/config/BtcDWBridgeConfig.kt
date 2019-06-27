@@ -12,6 +12,9 @@ interface BtcDWBridgeConfig {
 
     val expansionTriggerAccount: String
 
+    // Account that triggers 'expansion' events
+    val expansionTriggerCreatorAccountId: String
+
     val bitcoin: BitcoinConfig
 
     val iroha: IrohaConfig
