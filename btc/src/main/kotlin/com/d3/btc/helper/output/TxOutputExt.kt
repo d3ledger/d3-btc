@@ -1,7 +1,6 @@
 package com.d3.btc.helper.output
 
 import com.d3.btc.helper.address.outPutToBase58Address
-import com.d3.btc.helper.input.REMOVED_UTXO_KEY
 import org.bitcoinj.core.TransactionOutput
 
 /**
@@ -9,13 +8,6 @@ import org.bitcoinj.core.TransactionOutput
  */
 fun TransactionOutput.info() =
     "Address ${outPutToBase58Address(this)} tx hash ${this.parentTransactionHash} value ${this.value}"
-
-
-/**
- * Check if UTXO is removed from Iroha by a value associated with its key
- * @param irohaValue - value associated with UTXO
- */
-fun TransactionOutput.isRemovedFromIroha(irohaValue: String) = REMOVED_UTXO_KEY == irohaValue
 
 /**
  * Turns transaction input into String that may used as a key in Iroha.

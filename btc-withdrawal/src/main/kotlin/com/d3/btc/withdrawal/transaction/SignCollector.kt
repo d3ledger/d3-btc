@@ -28,7 +28,10 @@ import com.github.kittinunf.result.flatMap
 import com.github.kittinunf.result.map
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.Types
+import io.ktor.util.KtorExperimentalAPI
+import io.ktor.util.sha1
 import jp.co.soramitsu.iroha.java.IrohaAPI
+import jp.co.soramitsu.iroha.java.Utils
 import mu.KLogging
 import org.bitcoinj.core.ECKey
 import org.bitcoinj.core.Transaction
@@ -38,6 +41,8 @@ import org.bitcoinj.wallet.Wallet
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
+import java.lang.StringBuilder
+import kotlin.math.min
 
 /*
     Class that is used to collect signatures in Iroha
@@ -224,7 +229,7 @@ class SignCollector(
                 totalInputSignatures[inputSignature.index]!!.add(inputSignature.sigPubKey)
             } else {
                 totalInputSignatures[inputSignature.index] =
-                        ArrayList(listOf(inputSignature.sigPubKey))
+                    ArrayList(listOf(inputSignature.sigPubKey))
             }
         }
     }
@@ -246,12 +251,18 @@ class SignCollector(
     }
 
     //Creates Iroha transaction to store signatures as acount details
+    @KtorExperimentalAPI
     private fun setSignatureDetailsTx(
         txShortHash: String,
         signedInputs: List<InputSignature>
     ): IrohaTransaction {
         val signCollectionAccountId = "$txShortHash@$BTC_SIGN_COLLECT_DOMAIN"
         val signaturesJson = inputSignatureJsonAdapter.toJson(signedInputs).irohaEscape()
+        val hexes = StringBuilder()
+        signedInputs.forEach { inputSignature ->
+            hexes.append(inputSignature.sigPubKey.signatureHex)
+        }
+        val signaturesHash = Utils.toHex(sha1(hexes.toString().toByteArray()))
         return IrohaTransaction(
             signatureCollectorCredential.accountId,
             ModelUtil.getCurrentTime(),
@@ -259,7 +270,7 @@ class SignCollector(
             arrayListOf(
                 IrohaCommand.CommandSetAccountDetail(
                     signCollectionAccountId,
-                    String.getRandomId(),
+                    signaturesHash.substring(0, min(signaturesHash.length, 32)),
                     signaturesJson
                 )
             )

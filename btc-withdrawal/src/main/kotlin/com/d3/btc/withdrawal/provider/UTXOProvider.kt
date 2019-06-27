@@ -69,6 +69,7 @@ class UTXOProvider(
 
     /**
      * Collects previously sent transactions, that may be used as an input for newly created transaction
+     * @param withdrawalDetails - details of withdrawal
      * @param availableAddresses - set of addresses which transactions will be available to spend
      * @param amount - amount of SAT to spend
      * @param availableHeight - maximum available height for UTXO
@@ -76,6 +77,7 @@ class UTXOProvider(
      * @return result with list full of unspent transactions
      */
     fun collectUnspents(
+        withdrawalDetails: WithdrawalDetails,
         availableAddresses: Set<String>,
         amount: Long,
         availableHeight: Int,
@@ -83,6 +85,7 @@ class UTXOProvider(
     ): Result<List<TransactionOutput>, Exception> {
         return Result.of {
             collectUnspentsRec(
+                withdrawalDetails,
                 availableAddresses,
                 amount,
                 0,
@@ -132,15 +135,18 @@ class UTXOProvider(
 
     /**
      * Returns currently available UTXO height
+     * @param withdrawalDetails - details of withdrawal
      * @param withdrawalTime - time of withdrawal
      * @param confidenceLevel - minimum depth of transactions
      */
     fun getAvailableUTXOHeight(
+        withdrawalDetails: WithdrawalDetails,
         confidenceLevel: Int,
         withdrawalTime: Long
     ): Result<Int, Exception> {
         return getAvailableAddresses(withdrawalTime).map { availableAddresses ->
             getAvailableUnspents(
+                withdrawalDetails,
                 transfersWallet.unspents,
                 Integer.MAX_VALUE,
                 confidenceLevel,
@@ -152,6 +158,7 @@ class UTXOProvider(
     /**
      * Collects previously sent transactions, that may be used as an input for newly created transaction.
      * It may go into recursion if not enough money for fee was collected.
+     * @param withdrawalDetails - details of withdrawal
      * @param availableAddresses - set of addresses which transactions will be available to spend
      * @param amount - amount of SAT to spend
      * @param fee - tx fee that depends on inputs and outputs. Initial value is zero.
@@ -161,6 +168,7 @@ class UTXOProvider(
      * @return list full of unspent transactions
      */
     private tailrec fun collectUnspentsRec(
+        withdrawalDetails: WithdrawalDetails,
         availableAddresses: Set<String>,
         amount: Long,
         fee: Int,
@@ -170,6 +178,7 @@ class UTXOProvider(
     ): List<TransactionOutput> {
         logger.info("All unspents\n${transfersWallet.unspents.map { unspent -> unspent.info() }}")
         val unspents = ArrayList(getAvailableUnspents(
+            withdrawalDetails,
             transfersWallet.unspents,
             availableHeight,
             confidenceLevel,
@@ -217,6 +226,7 @@ class UTXOProvider(
             logger.info { "Not enough BTC amount(required $amount, fee $newFee, collected $collectedAmount) was collected for fee" }
             // Try to collect more unspents if no money is left for fee
             return collectUnspentsRec(
+                withdrawalDetails,
                 availableAddresses,
                 amount,
                 newFee,
@@ -230,12 +240,14 @@ class UTXOProvider(
 
     /**
      * Returns currently available unspents
+     * @param withdrawalDetails - details of withdrawal
      * @param unspents - all the unspents that we posses
      * @param availableHeight - maximum available height for UTXO
      * @param confidenceLevel - minimum depth of transactions
      * @param availableAddresses - available addresses
      */
     private fun getAvailableUnspents(
+        withdrawalDetails: WithdrawalDetails,
         unspents: List<TransactionOutput>,
         availableHeight: Int,
         confidenceLevel: Int,
@@ -247,7 +259,7 @@ class UTXOProvider(
                     //Only confirmed unspents may be used
                     unspent.parentTransactionDepthInBlocks >= confidenceLevel
                     //Cannot use already used unspents
-                    && !usedUTXOProvider.isUsed(unspent).get()
+                    && !usedUTXOProvider.isUsed(withdrawalDetails, unspent).get()
                     //We are able to use those UTXOs which height is not bigger then availableHeight
                     && getUnspentHeight(unspent) <= availableHeight
                     //We use registered clients outputs only

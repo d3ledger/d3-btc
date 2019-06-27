@@ -46,6 +46,7 @@ class WithdrawalConsensusProvider(
         val consensusAccountName = withdrawalDetails.irohaFriendlyHashCode()
         val consensusAccountId = "$consensusAccountName@$BTC_CONSENSUS_DOMAIN"
         return bitcoinUTXOProvider.getAvailableUTXOHeight(
+            withdrawalDetails,
             bitcoinConfig.confidenceLevel,
             withdrawalDetails.withdrawalTime
         ).map { availableHeight ->

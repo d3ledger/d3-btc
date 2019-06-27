@@ -47,6 +47,7 @@ class TransactionCreator(
             .flatMap { availableAddresses ->
                 logger.info("Available addresses $availableAddresses")
                 bitcoinUTXOProvider.collectUnspents(
+                    withdrawalDetails,
                     availableAddresses,
                     withdrawalDetails.amountSat,
                     availableHeight,
