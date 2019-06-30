@@ -8,7 +8,8 @@ package integration.btc
 import com.d3.commons.sidechain.iroha.CLIENT_DOMAIN
 import com.d3.commons.util.getRandomString
 import com.d3.commons.util.toHexString
-import com.squareup.moshi.Moshi
+import com.google.gson.Gson
+import com.google.gson.JsonObject
 import integration.btc.environment.BtcRegistrationTestEnvironment
 import integration.helper.BtcIntegrationHelperUtil
 import integration.registration.RegistrationServiceTestEnvironment
@@ -32,10 +33,7 @@ class BtcRegistrationIntegrationTest {
     private val registrationServiceEnvironment =
         RegistrationServiceTestEnvironment(integrationHelper)
 
-    // Moshi adapter for response JSON deserialization
-    private val moshiAdapter = Moshi
-        .Builder()
-        .build()!!.adapter(Map::class.java)!!
+    private val gson = Gson()
 
     init {
         registrationServiceEnvironment.registrationInitialization.init()
@@ -57,7 +55,7 @@ class BtcRegistrationIntegrationTest {
      */
     @Test
     fun testRegistration() {
-        integrationHelper.genFreeBtcAddress(btcRegistrationEnvironment.btcAddressGenerationConfig.btcKeysWalletPath)
+        integrationHelper.genFreeBtcAddress(btcRegistrationEnvironment.keyPairService)
         val keypair = Ed25519Sha3().generateKeypair()
         val userName = String.getRandomString(9)
         var res = registrationServiceEnvironment.register(userName, keypair.public.toHexString())
@@ -65,8 +63,8 @@ class BtcRegistrationIntegrationTest {
         res = btcRegistrationEnvironment.register(userName, keypair.public.toHexString())
         assertEquals(200, res.statusCode)
 
-        val response = moshiAdapter.fromJson(res.jsonObject.toString())!!
-        val registeredBtcAddress = response["clientId"]
+        val response = gson.fromJson(res.jsonObject.toString(), JsonObject::class.java)!!
+        val registeredBtcAddress = response["clientId"].asString
 
         btcRegistrationEnvironment.btcRegisteredAddressesProvider.getRegisteredAddresses()
             .fold({ addresses ->
@@ -90,20 +88,18 @@ class BtcRegistrationIntegrationTest {
      */
     @Test
     fun testDoubleRegistration() {
-        integrationHelper.genFreeBtcAddress(btcRegistrationEnvironment.btcAddressGenerationConfig.btcKeysWalletPath)
+        integrationHelper.genFreeBtcAddress(btcRegistrationEnvironment.keyPairService)
         val keypair = Ed25519Sha3().generateKeypair()
         val userName = String.getRandomString(9)
         var res = registrationServiceEnvironment.register(userName, keypair.public.toHexString())
         assertEquals(200, res.statusCode)
         res = btcRegistrationEnvironment.register(userName, keypair.public.toHexString())
         assertEquals(200, res.statusCode)
-        val response = moshiAdapter.fromJson(res.jsonObject.toString())!!
-
+        val response = gson.fromJson(res.jsonObject.toString(), JsonObject::class.java)!!
         //Double registration
         res = btcRegistrationEnvironment.register(userName, keypair.public.toHexString())
         assertEquals(500, res.statusCode)
-
-        val registeredBtcAddress = response["clientId"]
+        val registeredBtcAddress = response["clientId"].asString
 
         btcRegistrationEnvironment.btcRegisteredAddressesProvider.getRegisteredAddresses()
             .fold({ addresses ->
@@ -130,7 +126,7 @@ class BtcRegistrationIntegrationTest {
             btcRegistrationEnvironment.btcRegisteredAddressesProvider.getRegisteredAddresses().get()
                 .size
         integrationHelper.genFreeBtcAddress(
-            btcRegistrationEnvironment.btcAddressGenerationConfig.btcKeysWalletPath,
+            btcRegistrationEnvironment.keyPairService,
             "different node id"
         )
         val keypair = Ed25519Sha3().generateKeypair()
@@ -157,7 +153,7 @@ class BtcRegistrationIntegrationTest {
         val takenAddresses = HashSet<String>()
         val addressesToRegister = 3
         integrationHelper.preGenFreeBtcAddresses(
-            btcRegistrationEnvironment.btcAddressGenerationConfig.btcKeysWalletPath,
+            btcRegistrationEnvironment.keyPairService,
             addressesToRegister
         )
         for (i in 1..addressesToRegister) {
@@ -175,8 +171,10 @@ class BtcRegistrationIntegrationTest {
             assertEquals(200, res.statusCode)
             res = btcRegistrationEnvironment.register(userName, keypair.public.toHexString())
             assertEquals(200, res.statusCode)
-            val response = moshiAdapter.fromJson(res.jsonObject.toString())!!
-            val registeredBtcAddress = response["clientId"].toString()
+
+            val response = gson.fromJson(res.jsonObject.toString(), JsonObject::class.java)!!
+            val registeredBtcAddress = response["clientId"].asString
+
             assertEquals(newestAddress.address, registeredBtcAddress)
             assertFalse(takenAddresses.contains(registeredBtcAddress))
             takenAddresses.add(registeredBtcAddress)
@@ -238,7 +236,7 @@ class BtcRegistrationIntegrationTest {
         val clientsBeforeRegistration =
             btcRegistrationEnvironment.btcRegisteredAddressesProvider.getRegisteredAddresses().get()
                 .size
-        integrationHelper.genChangeBtcAddress(btcRegistrationEnvironment.btcAddressGenerationConfig.btcKeysWalletPath)
+        integrationHelper.genChangeBtcAddress(btcRegistrationEnvironment.keyPairService)
 
         val num =
             khttp.get("http://127.0.0.1:${btcRegistrationEnvironment.btcRegistrationConfig.port}/free-addresses/number")

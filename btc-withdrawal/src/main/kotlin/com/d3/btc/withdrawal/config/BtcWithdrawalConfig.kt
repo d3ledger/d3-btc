@@ -33,8 +33,6 @@ interface BtcWithdrawalConfig {
     val irohaBlockQueue: String
     // Path to wallet that stores transfers(UTXO)
     val btcTransfersWalletPath: String
-    // Path to wallet that stores keys
-    val btcKeysWalletPath: String
     // Account that is used to store created Bitcoin transactions
     val txStorageAccount: String
     // Account that is used to store used UTXO

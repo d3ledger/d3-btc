@@ -12,6 +12,9 @@ import com.d3.btc.deposit.expansion.DepositServiceExpansion
 import com.d3.btc.deposit.init.BtcNotaryInitialization
 import com.d3.btc.deposit.service.BtcWalletListenerRestartService
 import com.d3.btc.handler.NewBtcClientRegistrationHandler
+import com.d3.btc.keypair.securosys.SecuroSysConfig
+import com.d3.btc.keypair.securosys.SecuroSysKeyPairService
+import com.d3.btc.keypair.wallet.WalletKeyPairService
 import com.d3.btc.listener.NewBtcClientRegistrationListener
 import com.d3.btc.peer.SharedPeerGroup
 import com.d3.btc.provider.BtcChangeAddressProvider
@@ -55,6 +58,9 @@ class BtcNotaryTestEnvironment(
         )
     )
 ) : Closeable {
+
+    private val walletConfig = integrationHelper.configHelper.createWalletConfig(testName)
+    val keyPairService = WalletKeyPairService(walletConfig.btcKeysWalletPath)
 
     private val irohaAPI = IrohaAPI(notaryConfig.iroha.hostname, notaryConfig.iroha.port)
 

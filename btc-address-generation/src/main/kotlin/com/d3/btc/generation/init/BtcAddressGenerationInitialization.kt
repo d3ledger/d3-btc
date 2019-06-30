@@ -17,8 +17,6 @@ import com.d3.btc.provider.generation.ADDRESS_GENERATION_NODE_ID_KEY
 import com.d3.btc.provider.generation.ADDRESS_GENERATION_TIME_KEY
 import com.d3.btc.provider.generation.BtcPublicKeyProvider
 import com.d3.btc.provider.network.BtcNetworkConfigProvider
-import com.d3.btc.wallet.checkWalletNetwork
-import com.d3.btc.wallet.safeSave
 import com.d3.commons.sidechain.iroha.CLIENT_DOMAIN
 import com.d3.commons.sidechain.iroha.IrohaChainListener
 import com.d3.commons.sidechain.iroha.util.IrohaQueryHelper
@@ -34,7 +32,6 @@ import io.reactivex.schedulers.Schedulers
 import iroha.protocol.BlockOuterClass
 import iroha.protocol.Commands
 import mu.KLogging
-import org.bitcoinj.wallet.Wallet
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 
@@ -43,7 +40,6 @@ import org.springframework.stereotype.Component
  */
 @Component
 class BtcAddressGenerationInitialization(
-    private val keysWallet: Wallet,
     @Qualifier("registrationQueryHelper")
     private val registrationQueryHelper: IrohaQueryHelper,
     private val btcAddressGenerationConfig: BtcAddressGenerationConfig,
@@ -59,10 +55,7 @@ class BtcAddressGenerationInitialization(
      * @param onIrohaFail - function that will be called on Iroha failure
      */
     fun init(onIrohaFail: () -> Unit): Result<Unit, Exception> {
-        //Check wallet network
-        return keysWallet.checkWalletNetwork(btcNetworkConfigProvider.getConfig()).flatMap {
-            irohaChainListener.getBlockObservable()
-        }.map { irohaObservable ->
+        return irohaChainListener.getBlockObservable().map { irohaObservable ->
             initIrohaObservable(irohaObservable, onIrohaFail)
         }.flatMap {
             // Start free address generation at initial phase
@@ -174,7 +167,7 @@ class BtcAddressGenerationInitialization(
 
     // Generates new key
     private fun onGenerateKey(sessionAccountName: String): Result<String, Exception> {
-        return btcPublicKeyProvider.createKey(sessionAccountName) { saveWallet() }
+        return btcPublicKeyProvider.createKey(sessionAccountName)
     }
 
     /**
@@ -203,16 +196,11 @@ class BtcAddressGenerationInitialization(
                         addressType,
                         time,
                         nodeId
-                    ) { saveWallet() }
+                    )
                 } else {
                     Result.of { Unit }
                 }
             }
-    }
-
-    // Safes wallet full of keys
-    private fun saveWallet() {
-        keysWallet.safeSave(btcAddressGenerationConfig.btcKeysWalletPath)
     }
 
     /**

@@ -64,10 +64,10 @@ class BtcWithdrawalIntegrationTest {
         blockStorageFolder.mkdirs()
         integrationHelper.addBtcNotary("test", "test")
         integrationHelper.generateBtcInitialBlocks()
-        integrationHelper.genChangeBtcAddress(environment.btcWithdrawalConfig.btcKeysWalletPath)
+        integrationHelper.genChangeBtcAddress(environment.keyPairService)
             .fold({ address -> changeAddress = address }, { ex -> throw  ex })
         integrationHelper.preGenFreeBtcAddresses(
-            environment.btcWithdrawalConfig.btcKeysWalletPath,
+            environment.keyPairService,
             TOTAL_TESTS
         )
         // This listener emulates a failure
@@ -335,7 +335,7 @@ class BtcWithdrawalIntegrationTest {
         )
         assertEquals(200, res.statusCode)
         val btcAddressSrc = integrationHelper.registerBtcAddress(
-            environment.btcWithdrawalConfig.btcKeysWalletPath,
+            environment.keyPairService,
             randomNameSrc,
             CLIENT_DOMAIN,
             testClientSrcKeypair

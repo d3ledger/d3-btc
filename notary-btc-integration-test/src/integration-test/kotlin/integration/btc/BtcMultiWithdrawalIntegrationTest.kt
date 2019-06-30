@@ -76,7 +76,7 @@ class BtcMultiWithdrawalIntegrationTest {
                     )
                 environment.withdrawalTransferService.addNewBtcTransactionListener { tx ->
                     environment.createdTransactions[tx.hashAsString] =
-                            Pair(System.currentTimeMillis(), tx)
+                        Pair(System.currentTimeMillis(), tx)
                 }
                 withdrawalEnvironments.add(environment)
                 val blockStorageFolder =
@@ -92,9 +92,9 @@ class BtcMultiWithdrawalIntegrationTest {
             val testName = testNames[peerCount++]
             val environment = BtcAddressGenerationTestEnvironment(
                 integrationHelper,
+                testName = testName,
                 btcGenerationConfig = integrationHelper.configHelper.createBtcAddressGenerationConfig(
-                    0,
-                    testName
+                    0
                 ),
                 mstRegistrationCredential = mstRegistrationAccount
             )

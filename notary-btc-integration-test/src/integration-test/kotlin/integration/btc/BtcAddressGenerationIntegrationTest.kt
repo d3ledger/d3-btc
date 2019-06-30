@@ -26,7 +26,7 @@ import java.io.File
 import java.util.*
 
 const val WAIT_PREGEN_PROCESS_MILLIS = 15_000L
-const val WAIT_PREGEN_INIT_PROCESS_MILLIS = 30_000L
+const val WAIT_PREGEN_INIT_PROCESS_MILLIS = 45_000L
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class BtcAddressGenerationIntegrationTest {
@@ -82,8 +82,7 @@ class BtcAddressGenerationIntegrationTest {
             }.map { entry -> entry.value }
         val pubKey = notaryKeys.first()
         assertNotNull(pubKey)
-        val wallet = Wallet.loadFromFile(File(environment.btcGenerationConfig.btcKeysWalletPath))
-        assertTrue(wallet.issuedReceiveKeys.any { ecKey -> ecKey.publicKeyAsHex == pubKey })
+        assertTrue(environment.keyPairService.exists(pubKey))
         val notaryAccountDetails =
             integrationHelper.getAccountDetails(
                 environment.btcGenerationConfig.notaryAccount,
@@ -91,7 +90,6 @@ class BtcAddressGenerationIntegrationTest {
             )
         val expectedMsAddress =
             com.d3.btc.helper.address.createMsAddress(notaryKeys, RegTestParams.get())
-        assertTrue(wallet.isAddressWatched(expectedMsAddress))
         val generatedAddress =
             AddressInfo.fromJson(notaryAccountDetails[expectedMsAddress.toBase58()]!!)!!
         assertNull(generatedAddress.irohaClient)
@@ -127,8 +125,7 @@ class BtcAddressGenerationIntegrationTest {
             }.map { entry -> entry.value }
         val pubKey = notaryKeys.first()
         assertNotNull(pubKey)
-        val wallet = Wallet.loadFromFile(File(environment.btcGenerationConfig.btcKeysWalletPath))
-        assertTrue(wallet.issuedReceiveKeys.any { ecKey -> ecKey.publicKeyAsHex == pubKey })
+        assertTrue(environment.keyPairService.exists(pubKey))
         val changeAddressStorageAccountDetails =
             integrationHelper.getAccountDetails(
                 environment.btcGenerationConfig.changeAddressesStorageAccount,

@@ -62,10 +62,10 @@ class BtcWithdrawalFailResistanceIntegrationTest {
         blockStorageFolder.mkdirs()
         integrationHelper.addBtcNotary("test", "test")
         integrationHelper.generateBtcInitialBlocks()
-        integrationHelper.genChangeBtcAddress(environment.btcWithdrawalConfig.btcKeysWalletPath)
+        integrationHelper.genChangeBtcAddress(environment.keyPairService)
             .fold({ address -> changeAddress = address }, { ex -> throw  ex })
         integrationHelper.preGenFreeBtcAddresses(
-            environment.btcWithdrawalConfig.btcKeysWalletPath,
+            environment.keyPairService,
             TOTAL_TESTS * 2
         )
         environment.withdrawalTransferService.addNewBtcTransactionListener { tx ->

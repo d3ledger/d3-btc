@@ -1,6 +1,5 @@
 package com.d3.btc.withdrawal.handler
 
-import com.d3.btc.withdrawal.config.BtcWithdrawalConfig
 import com.d3.btc.withdrawal.service.BtcRollbackService
 import com.d3.btc.withdrawal.transaction.SignCollector
 import com.d3.btc.withdrawal.transaction.TransactionsStorage
@@ -14,7 +13,6 @@ import org.springframework.stereotype.Component
 class NewTransactionCreatedHandler(
     private val signCollector: SignCollector,
     private val transactionsStorage: TransactionsStorage,
-    private val btcWithdrawalConfig: BtcWithdrawalConfig,
     private val btcRollbackService: BtcRollbackService
 ) {
 
@@ -28,7 +26,7 @@ class NewTransactionCreatedHandler(
         val txHash = createNewTxCommand.key
         transactionsStorage.get(createNewTxCommand.key).map { (withdrawalDetails, transaction) ->
             logger.info { "Tx to sign\n$transaction" }
-            signCollector.signAndSave(transaction, btcWithdrawalConfig.btcKeysWalletPath).fold({
+            signCollector.signAndSave(transaction).fold({
                 logger.info { "Signatures for ${transaction.hashAsString} were successfully processed" }
             }, { ex ->
                 logger.error("Cannot sign transaction $transaction", ex)

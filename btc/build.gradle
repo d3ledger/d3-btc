@@ -8,6 +8,7 @@ buildscript {
 apply plugin: "kotlin-spring" // See https://kotlinlang.org/docs/reference/compiler-plugins.html#kotlin-spring-compiler-plugin
 
 dependencies {
+    compile files('libs/primusX.jar')
     //TODO change version after D3 release
     compile "com.github.d3ledger.notary:notary-commons:$notary_version"
     //bitcoin
@@ -66,16 +67,6 @@ task btcSendToAddress(type: JavaExec) {
 task btcGenerateBlocks(type: JavaExec) {
     main = 'com.d3.btc.cli.BtcGenerateBlocksMain'
     args getBtcGenerateBlocksArgs()
-    classpath = sourceSets.main.runtimeClasspath
-    setWorkingDir("$rootDir/")
-}
-
-/** Recreates wallets in RegTest mode
- *
- * Usage ./gradlew btcRefreshWallets
- */
-task btcRefreshWallets(type: JavaExec) {
-    main = 'com.d3.btc.cli.BtcRefreshWalletsMain'
     classpath = sourceSets.main.runtimeClasspath
     setWorkingDir("$rootDir/")
 }

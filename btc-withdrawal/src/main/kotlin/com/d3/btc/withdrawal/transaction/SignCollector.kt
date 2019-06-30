@@ -79,10 +79,9 @@ class SignCollector(
      * 2) Create special account named after tx hash for signature storing
      * 3) Save signatures in recently created account details
      * @param tx - transaction to sign
-     * @param walletPath - path to current wallet. Used to get private keys
      */
-    fun signAndSave(tx: Transaction, walletPath: String): Result<Unit, Exception> {
-        return transactionSigner.sign(tx, walletPath).flatMap { signedInputs ->
+    fun signAndSave(tx: Transaction): Result<Unit, Exception> {
+        return transactionSigner.sign(tx).flatMap { signedInputs ->
             if (signedInputs.isEmpty()) {
                 logger.warn(
                     "Cannot sign transaction ${tx.hashAsString}. " +
