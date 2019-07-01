@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicInteger
 private const val MIN_FEE_RATE = 10
 
 /**
- * Singleton object that holds information abount current fee rate
+ * Singleton object that holds information abount current fee rate in Bitcoin network
  */
 object CurrentFeeRate {
     private const val NOT_SET_FEE_RATE = -1
