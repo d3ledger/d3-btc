@@ -19,7 +19,6 @@ import com.d3.commons.sidechain.iroha.consumer.IrohaConsumer
 import com.d3.commons.sidechain.iroha.consumer.IrohaConverter
 import com.d3.commons.sidechain.iroha.util.ModelUtil
 import com.d3.commons.sidechain.iroha.util.impl.IrohaQueryHelperImpl
-import com.d3.commons.util.getRandomId
 import com.d3.commons.util.hex
 import com.d3.commons.util.irohaEscape
 import com.d3.commons.util.unHex
@@ -257,11 +256,11 @@ class SignCollector(
     ): IrohaTransaction {
         val signCollectionAccountId = "$txShortHash@$BTC_SIGN_COLLECT_DOMAIN"
         val signaturesJson = inputSignatureJsonAdapter.toJson(signedInputs).irohaEscape()
-        val hexes = StringBuilder()
+        val sigKey = StringBuilder()
         signedInputs.forEach { inputSignature ->
-            hexes.append(inputSignature.sigPubKey.signatureHex)
+            sigKey.append(inputSignature.sigPubKey.pubKey).append(inputSignature.index)
         }
-        val signaturesHash = Utils.toHex(sha1(hexes.toString().toByteArray()))
+        val signaturesHash = Utils.toHex(sha1(sigKey.toString().toByteArray()))
         return IrohaTransaction(
             signatureCollectorCredential.accountId,
             ModelUtil.getCurrentTime(),

@@ -78,7 +78,7 @@ class BtcWithdrawalTestEnvironment(
 
     private val walletConfig = integrationHelper.configHelper.createWalletConfig(testName)
     val keyPairService = WalletKeyPairService(walletConfig.btcKeysWalletPath)
-    
+
     /**
      * It's essential to handle blocks in this service one-by-one.
      * This is why we explicitly set single threaded executor.

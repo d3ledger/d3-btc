@@ -87,8 +87,8 @@ class SecuroSysKeyPairService(
     private fun setAttributes() {
         // Private keys MUST NOT be extractable
         PrimusKeyAttributes.setKeyAccessFlag(PrimusKeyAttributes.ACCESS_EXTRACTABLE, false)
-        // Sensitive data MUST NOT be accessible
-        PrimusKeyAttributes.setKeyAccessFlag(PrimusKeyAttributes.ACCESS_SENSITIVE, false)
+        // Keys as sensitive
+        PrimusKeyAttributes.setKeyAccessFlag(PrimusKeyAttributes.ACCESS_SENSITIVE, true)
         // Keys MUST NOT be 'deletable'
         PrimusKeyAttributes.setKeyAccessFlag(PrimusKeyAttributes.ACCESS_INDESTRUCTIBLE, true);
     }
