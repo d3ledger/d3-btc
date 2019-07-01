@@ -10,6 +10,9 @@ import com.d3.btc.generation.config.BtcAddressGenerationConfig
 import com.d3.btc.generation.expansion.AddressGenerationServiceExpansion
 import com.d3.btc.generation.init.BtcAddressGenerationInitialization
 import com.d3.btc.generation.trigger.AddressGenerationTrigger
+import com.d3.btc.keypair.securosys.SecuroSysConfig
+import com.d3.btc.keypair.securosys.SecuroSysKeyPairService
+import com.d3.btc.keypair.wallet.WalletKeyPairService
 import com.d3.btc.provider.BtcChangeAddressProvider
 import com.d3.btc.provider.BtcFreeAddressesProvider
 import com.d3.btc.provider.BtcRegisteredAddressesProvider
@@ -31,9 +34,7 @@ import io.grpc.ManagedChannelBuilder
 import jp.co.soramitsu.bootstrap.changelog.ChangelogInterface
 import jp.co.soramitsu.iroha.java.IrohaAPI
 import jp.co.soramitsu.iroha.java.Utils
-import org.bitcoinj.wallet.Wallet
 import java.io.Closeable
-import java.io.File
 
 //How many addresses to generate at initial phase
 private const val INIT_ADDRESSES = 3
@@ -43,9 +44,9 @@ private const val INIT_ADDRESSES = 3
  */
 class BtcAddressGenerationTestEnvironment(
     private val integrationHelper: BtcIntegrationHelperUtil,
-    val testName: String = "test",
+    testName: String = "test",
     val btcGenerationConfig: BtcAddressGenerationConfig =
-        integrationHelper.configHelper.createBtcAddressGenerationConfig(INIT_ADDRESSES, testName),
+        integrationHelper.configHelper.createBtcAddressGenerationConfig(INIT_ADDRESSES),
     mstRegistrationCredential: IrohaCredential = IrohaCredential(
         btcGenerationConfig.mstRegistrationAccount.accountId,
         Utils.parseHexKeypair(
@@ -55,7 +56,9 @@ class BtcAddressGenerationTestEnvironment(
     )
 ) : Closeable {
 
-    private val keysWallet = Wallet.loadFromFile(File(btcGenerationConfig.btcKeysWalletPath))
+    private val walletConfig = integrationHelper.configHelper.createWalletConfig(testName)
+    val keyPairService = WalletKeyPairService(walletConfig.btcKeysWalletPath)
+
     /**
      * It's essential to handle blocks in this service one-by-one.
      * This is why we explicitly set single threaded executor.
@@ -120,13 +123,13 @@ class BtcAddressGenerationTestEnvironment(
             btcGenerationConfig.notaryListSetterAccount
         )
         return BtcPublicKeyProvider(
-            keysWallet,
             notaryPeerListProvider,
             btcGenerationConfig.notaryAccount,
             btcGenerationConfig.changeAddressesStorageAccount,
             multiSigConsumer,
             sessionConsumer,
-            btcNetworkConfigProvider
+            btcNetworkConfigProvider,
+            keyPairService
         )
     }
 
@@ -169,7 +172,6 @@ class BtcAddressGenerationTestEnvironment(
     )
 
     val btcAddressGenerationInitialization = BtcAddressGenerationInitialization(
-        keysWallet,
         registrationQueryHelper,
         btcGenerationConfig,
         btcPublicKeyProvider(),

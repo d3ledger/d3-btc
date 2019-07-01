@@ -47,7 +47,7 @@ class BtcAddressGenerationWalletAutogenerationTest {
             containerHelper.irohaContainer.toriiAddress.port.toString()
         )
         addressGenerationContainer.addEnv(
-            "BTC-ADDRESS-GENERATION_BTCKEYSWALLETPATH",
+            "WALLET_BTCKEYSWALLETPATH",
             "$containerWalletsFolder/$walletName"
         )
     }

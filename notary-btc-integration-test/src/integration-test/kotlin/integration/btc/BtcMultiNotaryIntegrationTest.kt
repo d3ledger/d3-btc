@@ -85,7 +85,7 @@ class BtcMultiNotaryIntegrationTest {
         assertEquals(200, res.statusCode)
         val btcAddress =
             integrationHelper.registerBtcAddress(
-                environments.first().notaryConfig.btcTransferWalletPath,
+                environments.first().keyPairService,
                 randomName,
                 CLIENT_DOMAIN
             )

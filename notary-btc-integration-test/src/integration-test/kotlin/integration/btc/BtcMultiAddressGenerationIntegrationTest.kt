@@ -5,6 +5,7 @@
 
 package integration.btc
 
+import com.d3.btc.helper.address.createMsAddress
 import com.d3.btc.model.AddressInfo
 import com.d3.btc.model.BtcAddressType
 import com.d3.btc.provider.generation.ADDRESS_GENERATION_NODE_ID_KEY
@@ -44,13 +45,13 @@ class BtcMultiAddressGenerationIntegrationTest {
     init {
         var peerCount = 0
         integrationHelper.accountHelper.mstRegistrationAccounts.forEach { mstRegistrationAccount ->
-            val walletPostfix = "test-multisig-generation-$peerCount"
+            val testName = "test-multisig-generation-$peerCount"
             integrationHelper.addBtcNotary("test_notary_${peerCount++}", "test_notary_address")
             val environment = BtcAddressGenerationTestEnvironment(
                 integrationHelper,
+                testName = testName,
                 btcGenerationConfig = integrationHelper.configHelper.createBtcAddressGenerationConfig(
-                    0,
-                    walletPostfix
+                    0
                 ),
                 mstRegistrationCredential = mstRegistrationAccount
             )
@@ -95,28 +96,22 @@ class BtcMultiAddressGenerationIntegrationTest {
                 entry.key != ADDRESS_GENERATION_TIME_KEY
                         && entry.key != ADDRESS_GENERATION_NODE_ID_KEY
             }.map { entry -> entry.value }
-        val expectedMsAddress =
-            com.d3.btc.helper.address.createMsAddress(notaryKeys, RegTestParams.get())
-        val wallets = ArrayList<Wallet>()
-        environments.forEach { env ->
-            wallets.add(Wallet.loadFromFile(File(env.btcGenerationConfig.btcKeysWalletPath)))
-        }
+        val expectedMsAddress = createMsAddress(notaryKeys, RegTestParams.get())
 
-        //Check that every wallet has generated address
-        wallets.forEach { wallet ->
-            assertTrue(wallet.isAddressWatched(expectedMsAddress))
-        }
 
         //Check that every wallet has only one public key that was used in address generation
         val keysSavedInWallets = ArrayList<String>()
         notaryKeys.forEach { pubKey ->
-            val walletWithKey = wallets.first { wallet ->
-                wallet.issuedReceiveKeys.any { ecKey -> ecKey.publicKeyAsHex == pubKey }
+            var addedKeys = 0
+            environments.forEach { env ->
+                if (env.keyPairService.exists(pubKey)) {
+                    keysSavedInWallets.add(pubKey)
+                    addedKeys++
+                }
             }
-            keysSavedInWallets.add(pubKey)
-            wallets.remove(walletWithKey)
+            assertEquals(1, addedKeys)
         }
-        assertEquals(keysSavedInWallets.size, notaryKeys.size)
+        assertEquals(keysSavedInWallets, notaryKeys)
         val notaryAccountDetails =
             integrationHelper.getAccountDetails(
                 environment.btcGenerationConfig.notaryAccount,

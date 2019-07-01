@@ -8,6 +8,9 @@ package integration.btc.environment
 import com.d3.btc.config.BitcoinConfig
 import com.d3.btc.handler.NewBtcClientRegistrationHandler
 import com.d3.btc.helper.address.outPutToBase58Address
+import com.d3.btc.keypair.securosys.SecuroSysConfig
+import com.d3.btc.keypair.securosys.SecuroSysKeyPairService
+import com.d3.btc.keypair.wallet.WalletKeyPairService
 import com.d3.btc.peer.SharedPeerGroup
 import com.d3.btc.provider.BtcChangeAddressProvider
 import com.d3.btc.provider.BtcRegisteredAddressesProvider
@@ -72,6 +75,9 @@ class BtcWithdrawalTestEnvironment(
 ) : Closeable {
 
     val createdTransactions = ConcurrentHashMap<String, Pair<Long, Transaction>>()
+
+    private val walletConfig = integrationHelper.configHelper.createWalletConfig(testName)
+    val keyPairService = WalletKeyPairService(walletConfig.btcKeysWalletPath)
 
     /**
      * It's essential to handle blocks in this service one-by-one.
@@ -201,7 +207,7 @@ class BtcWithdrawalTestEnvironment(
     private val transactionCreator =
         TransactionCreator(btcChangeAddressProvider, btcNetworkConfigProvider, utxoProvider, transactionsStorage)
     private val transactionSigner =
-        TransactionSigner(btcRegisteredAddressesProvider, btcChangeAddressProvider, transferWallet)
+        TransactionSigner(btcRegisteredAddressesProvider, btcChangeAddressProvider, transferWallet, keyPairService)
     val signCollector =
         SignCollector(
             signaturesCollectorCredential,
@@ -257,7 +263,7 @@ class BtcWithdrawalTestEnvironment(
     private val newConsensusDataHandler = NewConsensusDataHandler(withdrawalTransferService)
 
     private val newTransactionCreatedHandler =
-        NewTransactionCreatedHandler(signCollector, transactionsStorage, btcWithdrawalConfig, btcRollbackService)
+        NewTransactionCreatedHandler(signCollector, transactionsStorage, btcRollbackService)
 
     val btcWithdrawalInitialization by lazy {
         BtcWithdrawalInitialization(

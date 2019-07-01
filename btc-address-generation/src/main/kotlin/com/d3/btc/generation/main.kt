@@ -8,6 +8,7 @@
 package com.d3.btc.generation
 
 import com.d3.btc.generation.init.BtcAddressGenerationInitialization
+import com.d3.btc.keypair.getKeyProviderProfile
 import com.d3.commons.config.getProfile
 import com.github.kittinunf.result.Result
 import com.github.kittinunf.result.failure
@@ -24,7 +25,9 @@ const val BTC_ADDRESS_GENERATION_SERVICE_NAME = "btc-add-gen"
         "com.d3.btc.healthcheck",
         "com.d3.btc.provider.generation",
         "com.d3.btc.provider.network",
-        "com.d3.btc.generation.trigger"]
+        "com.d3.btc.generation.trigger",
+        "com.d3.btc.keypair"
+    ]
 )
 class BtcAddressGenerationApplication
 
@@ -33,7 +36,7 @@ private val logger = KLogging().logger
 fun main(args: Array<String>) {
     Result.of {
         val context = AnnotationConfigApplicationContext()
-        context.environment.setActiveProfiles(getProfile())
+        context.environment.setActiveProfiles(getProfile(), getKeyProviderProfile())
         context.register(BtcAddressGenerationApplication::class.java)
         context.refresh()
         context

@@ -9,6 +9,7 @@ package com.d3.btc.dwbridge
 
 import com.d3.btc.deposit.init.BtcNotaryInitialization
 import com.d3.btc.dwbridge.config.dwBridgeConfig
+import com.d3.btc.keypair.getKeyProviderProfile
 import com.d3.btc.withdrawal.init.BtcWithdrawalInitialization
 import com.d3.commons.config.getProfile
 import com.d3.commons.util.createFolderIfDoesntExist
@@ -43,7 +44,8 @@ const val BTC_DW_BRIDGE_SERVICE_NAME = "btc-dw-bridge"
         "com.d3.btc.deposit.expansion",
         "com.d3.btc.peer",
         "com.d3.btc.dwbridge",
-        "com.d3.btc.healthcheck"]
+        "com.d3.btc.healthcheck",
+        "com.d3.btc.keypair"]
 )
 class BtcDWBridgeApplication
 
@@ -58,7 +60,7 @@ fun main(args: Array<String>) {
         createFolderIfDoesntExist(dwBridgeConfig.bitcoin.blockStoragePath)
     }.map {
         val context = AnnotationConfigApplicationContext()
-        context.environment.setActiveProfiles(getProfile())
+        context.environment.setActiveProfiles(getProfile(), getKeyProviderProfile())
         context.register(BtcDWBridgeApplication::class.java)
         context.refresh()
         context

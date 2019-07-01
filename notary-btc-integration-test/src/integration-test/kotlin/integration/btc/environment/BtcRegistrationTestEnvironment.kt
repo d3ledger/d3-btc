@@ -5,6 +5,10 @@
 
 package integration.btc.environment
 
+import com.d3.btc.keypair.securosys.SecuroSysConfig
+import com.d3.btc.keypair.securosys.SecuroSysKeyPairService
+import com.d3.btc.keypair.wallet.WalletConfig
+import com.d3.btc.keypair.wallet.WalletKeyPairService
 import com.d3.btc.provider.BtcFreeAddressesProvider
 import com.d3.btc.provider.BtcRegisteredAddressesProvider
 import com.d3.btc.provider.account.IrohaBtcAccountRegistrator
@@ -29,8 +33,8 @@ class BtcRegistrationTestEnvironment(private val integrationHelper: BtcIntegrati
 
     val btcRegistrationConfig = integrationHelper.configHelper.createBtcRegistrationConfig()
 
-    val btcAddressGenerationConfig =
-        integrationHelper.configHelper.createBtcAddressGenerationConfig(0)
+    private val walletConfig = integrationHelper.configHelper.createWalletConfig("test_registration")
+    val keyPairService = WalletKeyPairService(walletConfig.btcKeysWalletPath)
 
     private val btcRegistrationCredential =
         IrohaCredential(

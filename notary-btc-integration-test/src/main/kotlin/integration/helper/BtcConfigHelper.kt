@@ -9,6 +9,7 @@ import com.d3.btc.config.BitcoinConfig
 import com.d3.btc.deposit.config.BtcDepositConfig
 import com.d3.btc.dwbridge.config.BtcDWBridgeConfig
 import com.d3.btc.generation.config.BtcAddressGenerationConfig
+import com.d3.btc.keypair.wallet.WalletConfig
 import com.d3.btc.registration.config.BtcRegistrationConfig
 import com.d3.btc.withdrawal.config.BtcWithdrawalConfig
 import com.d3.commons.config.loadLocalConfigs
@@ -35,8 +36,7 @@ class BtcConfigHelper(
      * @return config
      * */
     fun createBtcAddressGenerationConfig(
-        initAddresses: Int,
-        walletNamePostfix: String = "test"
+        initAddresses: Int
     ): BtcAddressGenerationConfig {
         val btcPkPreGenConfig =
             loadLocalConfigs(
@@ -60,9 +60,19 @@ class BtcConfigHelper(
             override val expansionTriggerCreatorAccountId = accountHelper.superuserAccount.accountId
             override val notaryAccount = accountHelper.notaryAccount.accountId
             override val iroha = createIrohaConfig()
-            override val btcKeysWalletPath = createWalletFile("keys.$walletNamePostfix")
             override val registrationAccount =
                 accountHelper.createCredentialRawConfig(accountHelper.registrationAccount)
+        }
+    }
+
+    /**
+     * Creates wallet file config
+     * @param walletNamePostfix - wallet file name postfix
+     * @return config
+     */
+    fun createWalletConfig(walletNamePostfix: String = "test"): WalletConfig {
+        return object : WalletConfig {
+            override val btcKeysWalletPath = createWalletFile("keys.$walletNamePostfix")
         }
     }
 
@@ -84,7 +94,6 @@ class BtcConfigHelper(
             override val btcConsensusCredential =
                 accountHelper.createCredentialRawConfig(accountHelper.btcConsensusAccount)
             override val irohaBlockQueue = testName
-            override val btcKeysWalletPath = createWalletFile("keys.$testName")
             override val btcTransfersWalletPath = createWalletFile("transfers.$testName")
             override val notaryListStorageAccount = accountHelper.notaryListStorageAccount.accountId
             override val notaryListSetterAccount = accountHelper.notaryAccount.accountId

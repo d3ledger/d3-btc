@@ -44,7 +44,7 @@ class BtcWithdrawalExpansionTest {
         blockStorageFolder.mkdirs()
         integrationHelper.addBtcNotary("test", "test")
         integrationHelper.generateBtcInitialBlocks()
-        integrationHelper.genChangeBtcAddress(environment.btcWithdrawalConfig.btcKeysWalletPath)
+        integrationHelper.genChangeBtcAddress(environment.keyPairService)
             .failure { ex -> throw ex }
         environment.btcWithdrawalInitialization.init().failure { ex -> throw ex }
     }

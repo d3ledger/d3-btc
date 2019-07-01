@@ -8,6 +8,7 @@ package integration.helper
 import com.d3.btc.config.BitcoinConfig
 import com.d3.btc.helper.address.createMsAddress
 import com.d3.btc.helper.currency.satToBtc
+import com.d3.btc.keypair.KeyPairService
 import com.d3.btc.model.AddressInfo
 import com.d3.btc.peer.SharedPeerGroup
 import com.d3.btc.provider.BtcFreeAddressesProvider
@@ -32,12 +33,11 @@ import jp.co.soramitsu.bootstrap.changelog.ExpansionDetails
 import jp.co.soramitsu.bootstrap.changelog.ExpansionUtils
 import mu.KLogging
 import org.bitcoinj.core.Address
-import org.bitcoinj.crypto.DeterministicKey
 import org.bitcoinj.params.RegTestParams
 import org.bitcoinj.wallet.Wallet
-import java.io.File
 import java.math.BigDecimal
 import java.security.KeyPair
+import kotlin.math.ceil
 
 // Btc asset id
 const val BTC_ASSET = "btc#bitcoin"
@@ -102,36 +102,36 @@ class BtcIntegrationHelperUtil(peers: Int = 1) : IrohaIntegrationHelperUtil(peer
 
     /**
      * Pregenerates multiple BTC addresses that can be registered later
-     * @param walletFilePath - path to wallet file
+     * @param keyPairService - key pair service
      * @param addressesToGenerate - number of addresses to generate
      */
-    fun preGenFreeBtcAddresses(walletFilePath: String, addressesToGenerate: Int) {
+    fun preGenFreeBtcAddresses(keyPairService: KeyPairService, addressesToGenerate: Int) {
         val totalBatches =
-            Math.ceil(addressesToGenerate.div(GENERATED_ADDRESSES_PER_BATCH.toDouble())).toInt()
+            ceil(addressesToGenerate.div(GENERATED_ADDRESSES_PER_BATCH.toDouble())).toInt()
         /*
          Iroha dies if it sees too much of transactions in a batch.
           */
         for (batch in 1..totalBatches) {
             if (batch == totalBatches) {
                 preGenFreeBtcAddressesBatch(
-                    walletFilePath,
+                    keyPairService,
                     addressesToGenerate - (totalBatches - 1) * GENERATED_ADDRESSES_PER_BATCH
                 )
             } else {
-                preGenFreeBtcAddressesBatch(walletFilePath, GENERATED_ADDRESSES_PER_BATCH)
+                preGenFreeBtcAddressesBatch(keyPairService, GENERATED_ADDRESSES_PER_BATCH)
             }
         }
     }
 
     /**
      * Creates and executes a batch full of generated BTC addresses
-     * @param walletFilePath - path to wallet file
+     * @param keyPairService - key pair service
      * @param addressesToGenerate - number of addresses to generate
      */
-    private fun preGenFreeBtcAddressesBatch(walletFilePath: String, addressesToGenerate: Int) {
+    private fun preGenFreeBtcAddressesBatch(keyPairService: KeyPairService, addressesToGenerate: Int) {
         val irohaTxList = ArrayList<IrohaTransaction>()
         for (i in 1..addressesToGenerate) {
-            val (key, address) = generateKeyAndAddress(walletFilePath)
+            val (key, address) = generateKeyAndAddress(keyPairService)
             val irohaTx = IrohaTransaction(
                 mstRegistrationIrohaConsumer.creator,
                 ModelUtil.getCurrentTime(),
@@ -141,7 +141,7 @@ class BtcIntegrationHelperUtil(peers: Int = 1) : IrohaIntegrationHelperUtil(peer
                         accountHelper.notaryAccount.accountId,
                         address.toBase58(),
                         AddressInfo.createFreeAddressInfo(
-                            listOf(key.publicKeyAsHex),
+                            listOf(key),
                             NODE_ID,
                             System.currentTimeMillis()
                         ).toJson()
@@ -181,16 +181,16 @@ class BtcIntegrationHelperUtil(peers: Int = 1) : IrohaIntegrationHelperUtil(peer
      * @return randomly generated BTC address
      */
     fun genFreeBtcAddress(
-        walletFilePath: String,
+        keyPairService: KeyPairService,
         nodeId: String = NODE_ID
     ): Result<Address, Exception> {
-        val (key, address) = generateKeyAndAddress(walletFilePath)
+        val (key, address) = generateKeyAndAddress(keyPairService)
         return ModelUtil.setAccountDetail(
             mstRegistrationIrohaConsumer,
             accountHelper.notaryAccount.accountId,
             address.toBase58(),
             AddressInfo.createFreeAddressInfo(
-                listOf(key.publicKeyAsHex),
+                listOf(key),
                 nodeId,
                 System.currentTimeMillis()
             ).toJson()
@@ -199,17 +199,17 @@ class BtcIntegrationHelperUtil(peers: Int = 1) : IrohaIntegrationHelperUtil(peer
 
     /**
      * Generates one BTC address that can be registered later
-     * @param walletFilePath - path to wallet file
+     * @param keyPairService - key pair service
      * @return randomly generated BTC address
      */
-    fun genChangeBtcAddress(walletFilePath: String): Result<Address, Exception> {
-        val (key, address) = generateKeyAndAddress(walletFilePath)
+    fun genChangeBtcAddress(keyPairService: KeyPairService): Result<Address, Exception> {
+        val (key, address) = generateKeyAndAddress(keyPairService)
         return ModelUtil.setAccountDetail(
             mstRegistrationIrohaConsumer,
             accountHelper.changeAddressesStorageAccount.accountId,
             address.toBase58(),
             AddressInfo.createChangeAddressInfo(
-                listOf(key.publicKeyAsHex),
+                listOf(key),
                 NODE_ID,
                 System.currentTimeMillis()
             ).toJson()
@@ -217,31 +217,28 @@ class BtcIntegrationHelperUtil(peers: Int = 1) : IrohaIntegrationHelperUtil(peer
     }
 
     // Generates key and key based address
-    private fun generateKeyAndAddress(walletFilePath: String): Pair<DeterministicKey, Address> {
-        val walletFile = File(walletFilePath)
-        val wallet = Wallet.loadFromFile(walletFile)
-        val key = wallet.freshReceiveKey()
-        val address = createMsAddress(listOf(key.publicKeyAsHex), RegTestParams.get())
-        wallet.addWatchedAddress(address)
-        wallet.saveToFile(walletFile)
+    private fun generateKeyAndAddress(keyPairService: KeyPairService): Pair<String, Address> {
+        val keyPair = keyPairService.createKeyPair()
+        val address = createMsAddress(listOf(keyPair.publicKeyAsHex), RegTestParams.get())
+
         logger.info { "generated address $address" }
-        return Pair(key, address)
+        return Pair(keyPair.publicKeyAsHex, address)
     }
 
     /**
      * Registers BTC client
-     * @param walletFilePath - path to wallet file
+     * @param keyPairService - key pair service
      * @param irohaAccountName - client account in Iroha
      * @param keypair - key pair for new client in Iroha
      * @return btc address related to client
      */
     fun registerBtcAddress(
-        walletFilePath: String,
+        keyPairService: KeyPairService,
         irohaAccountName: String,
         domain: String,
         keypair: KeyPair = ModelUtil.generateKeypair()
     ): String {
-        genFreeBtcAddress(walletFilePath).fold({
+        genFreeBtcAddress(keyPairService).fold({
             return registerBtcAddressNoPreGen(irohaAccountName, domain, keypair)
         }, { ex -> throw ex })
     }

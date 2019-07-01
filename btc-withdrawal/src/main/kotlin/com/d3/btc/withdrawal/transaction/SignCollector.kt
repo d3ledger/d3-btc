@@ -19,7 +19,6 @@ import com.d3.commons.sidechain.iroha.consumer.IrohaConsumer
 import com.d3.commons.sidechain.iroha.consumer.IrohaConverter
 import com.d3.commons.sidechain.iroha.util.ModelUtil
 import com.d3.commons.sidechain.iroha.util.impl.IrohaQueryHelperImpl
-import com.d3.commons.util.getRandomId
 import com.d3.commons.util.hex
 import com.d3.commons.util.irohaEscape
 import com.d3.commons.util.unHex
@@ -79,10 +78,9 @@ class SignCollector(
      * 2) Create special account named after tx hash for signature storing
      * 3) Save signatures in recently created account details
      * @param tx - transaction to sign
-     * @param walletPath - path to current wallet. Used to get private keys
      */
-    fun signAndSave(tx: Transaction, walletPath: String): Result<Unit, Exception> {
-        return transactionSigner.sign(tx, walletPath).flatMap { signedInputs ->
+    fun signAndSave(tx: Transaction): Result<Unit, Exception> {
+        return transactionSigner.sign(tx).flatMap { signedInputs ->
             if (signedInputs.isEmpty()) {
                 logger.warn(
                     "Cannot sign transaction ${tx.hashAsString}. " +
@@ -258,11 +256,11 @@ class SignCollector(
     ): IrohaTransaction {
         val signCollectionAccountId = "$txShortHash@$BTC_SIGN_COLLECT_DOMAIN"
         val signaturesJson = inputSignatureJsonAdapter.toJson(signedInputs).irohaEscape()
-        val hexes = StringBuilder()
+        val sigKey = StringBuilder()
         signedInputs.forEach { inputSignature ->
-            hexes.append(inputSignature.sigPubKey.signatureHex)
+            sigKey.append(inputSignature.sigPubKey.pubKey).append(inputSignature.index)
         }
-        val signaturesHash = Utils.toHex(sha1(hexes.toString().toByteArray()))
+        val signaturesHash = Utils.toHex(sha1(sigKey.toString().toByteArray()))
         return IrohaTransaction(
             signatureCollectorCredential.accountId,
             ModelUtil.getCurrentTime(),

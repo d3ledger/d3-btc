@@ -64,7 +64,7 @@ class BtcNotaryIntegrationTest {
         assertEquals(200, res.statusCode)
         val btcAddress =
             integrationHelper.registerBtcAddress(
-                environment.btcAddressGenerationConfig.btcKeysWalletPath,
+                environment.keyPairService,
                 randomName,
                 CLIENT_DOMAIN
             )
@@ -104,7 +104,7 @@ class BtcNotaryIntegrationTest {
         assertEquals(200, res.statusCode)
         val btcAddress =
             integrationHelper.registerBtcAddress(
-                environment.btcAddressGenerationConfig.btcKeysWalletPath,
+                environment.keyPairService,
                 randomName,
                 CLIENT_DOMAIN
             )
@@ -148,7 +148,7 @@ class BtcNotaryIntegrationTest {
         assertEquals(200, res.statusCode)
         val btcAddress =
             integrationHelper.registerBtcAddress(
-                environment.btcAddressGenerationConfig.btcKeysWalletPath,
+                environment.keyPairService,
                 randomName,
                 CLIENT_DOMAIN
             )
@@ -198,7 +198,7 @@ class BtcNotaryIntegrationTest {
         assertEquals(200, res.statusCode)
         val btcAddress =
             integrationHelper.registerBtcAddress(
-                environment.btcAddressGenerationConfig.btcKeysWalletPath,
+                environment.keyPairService,
                 randomName,
                 CLIENT_DOMAIN
             )
@@ -239,7 +239,7 @@ class BtcNotaryIntegrationTest {
         assertEquals(200, res.statusCode)
         val btcAddress =
             integrationHelper.registerBtcAddress(
-                environment.btcAddressGenerationConfig.btcKeysWalletPath,
+                environment.keyPairService,
                 randomName,
                 CLIENT_DOMAIN
             )
