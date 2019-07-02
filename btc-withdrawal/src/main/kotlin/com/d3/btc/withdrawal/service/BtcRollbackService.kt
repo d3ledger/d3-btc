@@ -8,6 +8,7 @@ package com.d3.btc.withdrawal.service
 import com.d3.btc.helper.currency.satToBtc
 import com.d3.btc.withdrawal.transaction.WithdrawalDetails
 import com.d3.commons.sidechain.iroha.consumer.IrohaConsumer
+import com.d3.commons.sidechain.iroha.consumer.MultiSigIrohaConsumer
 import com.d3.commons.sidechain.iroha.util.ModelUtil
 import com.github.kittinunf.result.flatMap
 import mu.KLogging
@@ -22,8 +23,8 @@ private const val BTC_ASSET_ID = "btc#bitcoin"
  */
 @Component
 class BtcRollbackService(
-    @Qualifier("withdrawalConsumer")
-    @Autowired private val withdrawalConsumer: IrohaConsumer
+    @Qualifier("withdrawalConsumerMultiSig")
+    private val withdrawalConsumer: MultiSigIrohaConsumer
 ) {
 
     /**

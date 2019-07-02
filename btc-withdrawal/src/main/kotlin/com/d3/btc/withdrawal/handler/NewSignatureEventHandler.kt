@@ -5,6 +5,7 @@
 
 package com.d3.btc.withdrawal.handler
 
+import com.d3.btc.withdrawal.provider.BroadcastsProvider
 import com.d3.btc.withdrawal.provider.UTXOProvider
 import com.d3.btc.withdrawal.service.BtcRollbackService
 import com.d3.btc.withdrawal.statistics.WithdrawalStatistics
@@ -31,7 +32,8 @@ class NewSignatureEventHandler(
     private val transactionsStorage: TransactionsStorage,
     private val bitcoinUTXOProvider: UTXOProvider,
     private val btcRollbackService: BtcRollbackService,
-    private val peerGroup: PeerGroup
+    private val peerGroup: PeerGroup,
+    private val broadcastsProvider: BroadcastsProvider
 ) {
 
     private val broadcastTransactionListeners = CopyOnWriteArrayList<(tx: Transaction) -> Unit>()
@@ -55,12 +57,32 @@ class NewSignatureEventHandler(
         onBroadcastSuccess: () -> Unit
     ) {
         val shortTxHash = addNewSignatureCommand.accountId.replace("@$BTC_SIGN_COLLECT_DOMAIN", "")
+        var savedWithdrawal: WithdrawalDetails? = null
+        var savedTx: Transaction? = null
         transactionsStorage.get(shortTxHash).fold({ withdrawal ->
-            val withdrawalCommand = withdrawal.first
-            val tx = withdrawal.second
-            broadcastIfEnoughSignatures(tx, withdrawalCommand, onBroadcastSuccess)
+            savedWithdrawal = withdrawal.first
+            savedTx = withdrawal.second
+            broadcastsProvider.hasBeenBroadcasted(withdrawal.first).fold({ broadcasted ->
+                if (broadcasted) {
+                    logger.info("No need to broadcast. Withdrawal ${withdrawal.first} has been broadcasted before")
+                } else {
+                    val withdrawalCommand = withdrawal.first
+                    val tx = withdrawal.second
+                    broadcastIfEnoughSignatures(tx, withdrawalCommand, onBroadcastSuccess)
+                }
+            }, { ex -> throw ex })
         }, { ex ->
-            logger.error("Cannot read transaction by hash $shortTxHash", ex)
+            if (savedWithdrawal != null && savedTx != null) {
+                btcRollbackService.rollback(
+                    savedWithdrawal!!.sourceAccountId,
+                    savedWithdrawal!!.amountSat,
+                    savedWithdrawal!!.withdrawalTime,
+                    "Cannot handle new signature"
+                )
+                bitcoinUTXOProvider.unregisterUnspents(savedTx!!, savedWithdrawal!!)
+                    .failure { e -> logger.error("Cannot unregister unspents", e) }
+            }
+            logger.error("Cannot handle new signature for tx $shortTxHash", ex)
             withdrawalStatistics.incFailedTransfers()
         })
     }
@@ -71,7 +93,7 @@ class NewSignatureEventHandler(
      * @param withdrawalDetails - details of withdrawal
      * @param onBroadcastSuccess - function that will be called on successful broadcast attempt
      */
-    private fun broadcastIfEnoughSignatures(
+    protected fun broadcastIfEnoughSignatures(
         tx: Transaction,
         withdrawalDetails: WithdrawalDetails,
         onBroadcastSuccess: () -> Unit
@@ -92,10 +114,13 @@ class NewSignatureEventHandler(
                     broadcastTransactionListeners.forEach { listener ->
                         listener(tx)
                     }
-                    //Wait until it is broadcasted to all connected peers
+                    //Wait until it is broadcasted to all the connected peers
                     peerGroup.broadcastTransaction(tx).future().get()
                 }.map {
                     onBroadcastSuccess()
+                }.map {
+                    // Mark withdrwal as 'broadcasted'
+                    broadcastsProvider.markAsBroadcasted(withdrawalDetails)
                 }.fold({
                     logger.info { "Tx ${tx.hashAsString} was successfully broadcasted" }
                     withdrawalStatistics.incSucceededTransfers()
@@ -113,14 +138,14 @@ class NewSignatureEventHandler(
                 })
 
         }, { ex ->
-            bitcoinUTXOProvider.unregisterUnspents(tx, withdrawalDetails)
-                .failure { e -> logger.error("Cannot unregister unspents", e) }
             btcRollbackService.rollback(
                 withdrawalDetails.sourceAccountId,
                 withdrawalDetails.amountSat,
                 withdrawalDetails.withdrawalTime,
                 "Cannot get signatures for Bitcoin transaction"
             )
+            bitcoinUTXOProvider.unregisterUnspents(tx, withdrawalDetails)
+                .failure { e -> logger.error("Cannot unregister unspents", e) }
             withdrawalStatistics.incFailedTransfers()
             logger.error("Cannot get signatures for tx $originalHash", ex)
         })

@@ -22,11 +22,11 @@ class WithdrawalServiceExpansion(
 ) {
 
     fun expand(block: BlockOuterClass.Block) {
-        serviceExpansion.expand(block) { expansiontDetails, _, triggerTime ->
+        serviceExpansion.expand(block) { expansionDetails, _, triggerTime ->
             ExpansionUtils.addSignatureExpansionLogic(
                 irohaAPI,
                 withdrawalCredential,
-                expansiontDetails,
+                expansionDetails,
                 triggerTime
             )
         }

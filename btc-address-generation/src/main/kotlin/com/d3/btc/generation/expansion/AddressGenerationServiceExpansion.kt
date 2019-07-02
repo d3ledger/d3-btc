@@ -23,11 +23,11 @@ class AddressGenerationServiceExpansion(
 ) {
 
     fun expand(block: BlockOuterClass.Block) {
-        serviceExpansion.expand(block) { expansiontDetails, _, triggerTime ->
+        serviceExpansion.expand(block) { expansionsDetails, _, triggerTime ->
             ExpansionUtils.addSignatureExpansionLogic(
                 irohaAPI,
                 mstRegistrationCredential,
-                expansiontDetails,
+                expansionsDetails,
                 triggerTime
             )
         }

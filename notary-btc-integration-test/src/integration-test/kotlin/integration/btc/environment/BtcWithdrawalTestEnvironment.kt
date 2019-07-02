@@ -20,6 +20,7 @@ import com.d3.btc.withdrawal.config.BtcWithdrawalConfig
 import com.d3.btc.withdrawal.expansion.WithdrawalServiceExpansion
 import com.d3.btc.withdrawal.handler.*
 import com.d3.btc.withdrawal.init.BtcWithdrawalInitialization
+import com.d3.btc.withdrawal.provider.BroadcastsProvider
 import com.d3.btc.withdrawal.provider.UTXOProvider
 import com.d3.btc.withdrawal.provider.UsedUTXOProvider
 import com.d3.btc.withdrawal.provider.WithdrawalConsensusProvider
@@ -134,10 +135,30 @@ class BtcWithdrawalTestEnvironment(
         btcWithdrawalConfig.btcConsensusCredential.privkey
     )
 
+    private val broadcastKeyPair = Utils.parseHexKeypair(
+        btcWithdrawalConfig.broadcastsCredential.pubkey,
+        btcWithdrawalConfig.broadcastsCredential.privkey
+    )
+
     private val btcConsensusCredential =
         IrohaCredential(btcWithdrawalConfig.btcConsensusCredential.accountId, btcConsensusKeyPair)
 
-    private val withdrawalIrohaConsumer = MultiSigIrohaConsumer(
+    private val broadcastCredential =
+        IrohaCredential(btcWithdrawalConfig.broadcastsCredential.accountId, broadcastKeyPair)
+
+    private val broadcastIrohaConsumer = IrohaConsumerImpl(
+        broadcastCredential,
+        irohaApi
+    )
+
+    private val broadcastsProvider = BroadcastsProvider(broadcastIrohaConsumer, integrationHelper.queryHelper)
+
+    private val withdrawalIrohaConsumer = IrohaConsumerImpl(
+        withdrawalCredential,
+        irohaApi
+    )
+
+    private val withdrawalIrohaConsumerMultiSig = MultiSigIrohaConsumer(
         withdrawalCredential,
         irohaApi
     )
@@ -219,7 +240,7 @@ class BtcWithdrawalTestEnvironment(
         btcWithdrawalConfig.notaryListSetterAccount
     )
     private val btcRollbackService =
-        BtcRollbackService(withdrawalIrohaConsumer)
+        BtcRollbackService(withdrawalIrohaConsumerMultiSig)
     private val withdrawalConsensusProvider = WithdrawalConsensusProvider(
         withdrawalCredential,
         btcConsensusIrohaConsumer,
@@ -236,7 +257,7 @@ class BtcWithdrawalTestEnvironment(
             btcWithdrawalConfig,
             withdrawalConsensusProvider,
             btcRollbackService,
-            utxoProvider
+            broadcastsProvider
         )
     val withdrawalTransferService = WithdrawalTransferService(
         withdrawalStatistics,
@@ -253,14 +274,22 @@ class BtcWithdrawalTestEnvironment(
             transactionsStorage,
             utxoProvider,
             btcRollbackService,
-            peerGroup
+            peerGroup,
+            broadcastsProvider
         )
 
     private val newConsensusDataHandler =
         NewConsensusDataHandler(withdrawalTransferService, withdrawalConsensusProvider, btcRollbackService)
 
     private val newTransactionCreatedHandler =
-        NewTransactionCreatedHandler(signCollector, transactionsStorage, btcWithdrawalConfig, btcRollbackService)
+        NewTransactionCreatedHandler(
+            signCollector,
+            transactionsStorage,
+            btcWithdrawalConfig,
+            btcRollbackService,
+            utxoProvider,
+            broadcastsProvider
+        )
 
     val btcWithdrawalInitialization by lazy {
         BtcWithdrawalInitialization(

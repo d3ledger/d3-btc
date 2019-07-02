@@ -78,6 +78,14 @@ class BtcDWBridgeAppConfiguration {
             )
         )
 
+    private val broadcastCredential =
+        IrohaCredential(
+            withdrawalConfig.broadcastsCredential.accountId, Utils.parseHexKeypair(
+                withdrawalConfig.broadcastsCredential.pubkey,
+                withdrawalConfig.broadcastsCredential.privkey
+            )
+        )
+
     private val notaryCredential =
         IrohaCredential(depositConfig.notaryCredential.accountId, notaryKeypair)
 
@@ -187,6 +195,9 @@ class BtcDWBridgeAppConfiguration {
     fun withdrawalConsumer() = IrohaConsumerImpl(withdrawalCredential(), irohaAPI())
 
     @Bean
+    fun withdrawalConsumerMultiSig() = MultiSigIrohaConsumer(withdrawalCredential(), irohaAPI())
+
+    @Bean
     fun withdrawalConfig() = withdrawalConfig
 
     @Bean
@@ -195,6 +206,9 @@ class BtcDWBridgeAppConfiguration {
         dwBridgeConfig.iroha.port,
         notaryCredential
     )
+
+    @Bean
+    fun broadcastsIrohaConsumer() = IrohaConsumerImpl(broadcastCredential, irohaAPI())
 
     @Bean
     fun withdrawalQueryHelper() =
