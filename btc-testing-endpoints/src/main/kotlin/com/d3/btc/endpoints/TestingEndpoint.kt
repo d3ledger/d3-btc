@@ -109,8 +109,10 @@ class TestingEndpoint(
                 notaryAccountId,
                 testWithdrawal.address,
                 testWithdrawal.amount,
+                testWithdrawal.createdTime,
                 testWithdrawal.publicKey,
-                testWithdrawal.privateKey
+                testWithdrawal.privateKey,
+                testWithdrawal.blocking
             )
         }
     }
@@ -122,8 +124,10 @@ class TestingEndpoint(
                 testTransfer.destAccountId,
                 "test",
                 testTransfer.amount,
+                testTransfer.createdTime,
                 testTransfer.publicKey,
-                testTransfer.privateKey
+                testTransfer.privateKey,
+                testTransfer.blocking
             )
         }
     }
@@ -133,11 +137,13 @@ class TestingEndpoint(
         destAccountId: String,
         description: String,
         amount: String,
+        createdTime: String?,
         publicKey: String,
-        privateKey: String
+        privateKey: String,
+        blocking: Boolean?
     ) {
-        val response = irohaAPI.transaction(
-            Transaction.builder(accountId)
+        val transaction =
+            Transaction.builder(accountId, createdTime?.toLongOrNull() ?: System.currentTimeMillis())
                 .transferAsset(
                     accountId,
                     destAccountId,
@@ -153,9 +159,13 @@ class TestingEndpoint(
                     )
                 )
                 .build()
-        ).lastElement().blockingGet()
-        if (response.txStatus != Endpoint.TxStatus.COMMITTED) {
-            throw Exception("Not committed in Iroha. Got response:\n$response")
+        if (blocking == false) {
+            irohaAPI.transaction(transaction)
+        } else {
+            val response = irohaAPI.transaction(transaction).lastElement().blockingGet()
+            if (response.txStatus != Endpoint.TxStatus.COMMITTED) {
+                throw Exception("Not committed in Iroha. Got response:\n$response")
+            }
         }
     }
 
@@ -169,16 +179,20 @@ data class TestDeposit(val address: String, val amount: String)
 
 data class TestWithdrawal(
     val accountId: String,
+    val createdTime: String?,
     val address: String,
     val amount: String,
     val publicKey: String,
-    val privateKey: String
+    val privateKey: String,
+    val blocking: Boolean?
 )
 
 data class TestTransfer(
     val accountId: String,
     val destAccountId: String,
+    val createdTime: String?,
     val amount: String,
     val publicKey: String,
-    val privateKey: String
+    val privateKey: String,
+    val blocking: Boolean?
 )
