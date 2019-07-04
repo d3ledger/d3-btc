@@ -196,7 +196,8 @@ class BtcWithdrawalTestEnvironment(
             integrationHelper.queryHelper,
             withdrawalIrohaConsumer,
             btcWithdrawalConfig.txStorageAccount,
-            btcWithdrawalConfig.utxoStorageAccount
+            btcWithdrawalConfig.utxoStorageAccount,
+            btcConsensusCredential
         )
     private val transactionCreator =
         TransactionCreator(btcChangeAddressProvider, btcNetworkConfigProvider, utxoProvider, transactionsStorage)
@@ -220,8 +221,9 @@ class BtcWithdrawalTestEnvironment(
     private val btcRollbackService =
         BtcRollbackService(withdrawalIrohaConsumer)
     private val withdrawalConsensusProvider = WithdrawalConsensusProvider(
-        btcConsensusCredential,
+        withdrawalCredential,
         btcConsensusIrohaConsumer,
+        integrationHelper.queryHelper,
         notaryPeerListProvider,
         utxoProvider,
         bitcoinConfig
@@ -254,7 +256,8 @@ class BtcWithdrawalTestEnvironment(
             peerGroup
         )
 
-    private val newConsensusDataHandler = NewConsensusDataHandler(withdrawalTransferService)
+    private val newConsensusDataHandler =
+        NewConsensusDataHandler(withdrawalTransferService, withdrawalConsensusProvider, btcRollbackService)
 
     private val newTransactionCreatedHandler =
         NewTransactionCreatedHandler(signCollector, transactionsStorage, btcWithdrawalConfig, btcRollbackService)

@@ -5,13 +5,8 @@
 
 package com.d3.btc.withdrawal.transaction
 
-import org.bitcoinj.core.Transaction
-import kotlin.math.absoluteValue
-
-/**
- * Withdrawal transaction
- */
-data class WithdrawalTx(val withdrawalDetails: WithdrawalDetails, val tx: Transaction)
+import io.ktor.util.sha1
+import jp.co.soramitsu.iroha.java.Utils
 
 /**
  * Withdrawal details
@@ -26,5 +21,12 @@ data class WithdrawalDetails(
     val amountSat: Long,
     val withdrawalTime: Long
 ) {
-    fun irohaFriendlyHashCode() = hashCode().absoluteValue.toString()
+    /**
+     * Computes sha1 based Iroha friendly hash code
+     * @return hash code as a String
+     */
+    fun irohaFriendlyHashCode(): String =
+        Utils.toHex(
+            sha1((sourceAccountId + toAddress + amountSat + withdrawalTime).toByteArray())
+        ).toLowerCase().substring(0..31)
 }

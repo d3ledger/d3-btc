@@ -11,7 +11,7 @@ import com.d3.btc.withdrawal.provider.UTXOProvider
 import com.d3.btc.withdrawal.statistics.WithdrawalStatistics
 import com.d3.btc.withdrawal.transaction.TransactionCreator
 import com.d3.btc.withdrawal.transaction.WithdrawalDetails
-import com.d3.btc.withdrawal.transaction.consensus.WithdrawalConsensus
+import com.d3.btc.withdrawal.transaction.WithdrawalConsensus
 import com.github.kittinunf.result.failure
 import com.github.kittinunf.result.map
 import mu.KLogging
