@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package com.d3.btc.withdrawal.transaction.consensus
+package com.d3.btc.withdrawal.transaction
 
 import com.squareup.moshi.Moshi
 

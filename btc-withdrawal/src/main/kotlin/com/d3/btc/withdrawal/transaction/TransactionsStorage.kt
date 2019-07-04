@@ -10,6 +10,7 @@ import com.d3.btc.helper.output.info
 import com.d3.btc.helper.transaction.shortTxHash
 import com.d3.btc.provider.network.BtcNetworkConfigProvider
 import com.d3.btc.withdrawal.provider.UTXODetails
+import com.d3.commons.model.IrohaCredential
 import com.d3.commons.sidechain.iroha.consumer.IrohaConsumer
 import com.d3.commons.sidechain.iroha.util.IrohaQueryHelper
 import com.d3.commons.util.irohaEscape
@@ -39,7 +40,9 @@ class TransactionsStorage(
     @Qualifier("txStorageAccount")
     private val txStorageAccount: String,
     @Qualifier("utxoStorageAccount")
-    private val utxoStorageAccount: String
+    private val utxoStorageAccount: String,
+    @Qualifier("consensusIrohaCredential")
+    private val consensusIrohaCredential: IrohaCredential
 ) {
 
     private val gson = Gson()
@@ -67,6 +70,7 @@ class TransactionsStorage(
                     ).toJson().irohaEscape()
                 )
                 .setCreatedTime(withdrawalDetails.withdrawalTime)
+                .setAccountDetail(consensusIrohaCredential.accountId, withdrawalDetails.irohaFriendlyHashCode(), "")
                 .setQuorum(quorum)
             transaction.inputs.forEach { input ->
                 transactionBuilder.setAccountDetail(
