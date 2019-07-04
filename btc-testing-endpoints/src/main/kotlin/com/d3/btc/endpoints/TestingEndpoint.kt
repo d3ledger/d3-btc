@@ -71,7 +71,7 @@ class TestingEndpoint(
                     val testWithdrawal = call.receive(TestWithdrawal::class)
                     TestingEndpoint.logger.info { "Testing withdrawal invoked with parameters:${testWithdrawal.address}, ${testWithdrawal.amount}" }
                     withdrawBtc(testWithdrawal).fold({
-                        TestingEndpoint.logger.info { "Bitcoins were withdrawn successfully" }
+                        logger.info { "Bitcoins were withdrawn successfully" }
                         call.respondText("", status = HttpStatusCode.NoContent)
                     },
                         { ex -> call.respondText(ex.message!!, status = HttpStatusCode.BadRequest) }
@@ -81,7 +81,6 @@ class TestingEndpoint(
                     val testTransfer = call.receive(TestTransfer::class)
                     TestingEndpoint.logger.info { "Testing transfer invoked with parameters:${testTransfer.destAccountId}, ${testTransfer.amount}" }
                     transferBtc(testTransfer).fold({
-                        TestingEndpoint.logger.info { "Bitcoins were transferred successfully" }
                         call.respondText("", status = HttpStatusCode.NoContent)
                     },
                         { ex -> call.respondText(ex.message!!, status = HttpStatusCode.BadRequest) }
@@ -159,13 +158,18 @@ class TestingEndpoint(
                     )
                 )
                 .build()
+        val hash = Utils.toHex(Utils.hash(transaction))
         if (blocking == false) {
             irohaAPI.transaction(transaction)
+            logger.info { "Sent nonblocking tx: $hash" }
         } else {
+            logger.info { "Sending blocking tx: $hash" }
             val response = irohaAPI.transaction(transaction).lastElement().blockingGet()
             if (response.txStatus != Endpoint.TxStatus.COMMITTED) {
+                logger.error { "Not committed in Iroha. Got response:\n$response" }
                 throw Exception("Not committed in Iroha. Got response:\n$response")
             }
+            logger.info { "Bitcoins were transferred successfully" }
         }
     }
 
