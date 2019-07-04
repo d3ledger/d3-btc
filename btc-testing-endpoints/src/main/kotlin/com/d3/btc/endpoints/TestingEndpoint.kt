@@ -25,8 +25,10 @@ import iroha.protocol.Endpoint
 import jp.co.soramitsu.iroha.java.IrohaAPI
 import jp.co.soramitsu.iroha.java.Transaction
 import jp.co.soramitsu.iroha.java.Utils
+import jp.co.soramitsu.iroha.java.subscription.WaitForTerminalStatus
 import mu.KLogging
 import java.math.BigDecimal
+import java.util.*
 
 const val DEPOSIT_PATH = "deposit"
 const val WITHDRAWAL_PATH = "withdraw"
@@ -44,6 +46,16 @@ class TestingEndpoint(
     private val irohaAPI: IrohaAPI,
     private val notaryAccountId: String
 ) {
+
+    private val subscriptionStrategy = WaitForTerminalStatus(
+        Arrays.asList(
+            Endpoint.TxStatus.STATELESS_VALIDATION_FAILED,
+            Endpoint.TxStatus.COMMITTED,
+            Endpoint.TxStatus.MST_EXPIRED,
+            Endpoint.TxStatus.REJECTED,
+            Endpoint.TxStatus.UNRECOGNIZED
+        )
+    )
 
     init {
         logger.info { "Start ${serverBundle.ethRefund} test endpoints on port ${serverBundle.port}" }
@@ -164,7 +176,7 @@ class TestingEndpoint(
             logger.info { "Sent nonblocking tx: $hash" }
         } else {
             logger.info { "Sending blocking tx: $hash" }
-            val response = irohaAPI.transaction(transaction).lastElement().blockingGet()
+            val response = irohaAPI.transaction(transaction, subscriptionStrategy).lastElement().blockingGet()
             if (response.txStatus != Endpoint.TxStatus.COMMITTED) {
                 logger.error { "Not committed in Iroha. Got response:\n$response" }
                 throw Exception("Not committed in Iroha. Got response:\n$response")
