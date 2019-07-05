@@ -13,6 +13,8 @@ const val BTC_WITHDRAWAL_SERVICE_NAME = "btc-withdrawal"
 interface BtcWithdrawalConfig {
     // Account that handles withdrawal events
     val withdrawalCredential: IrohaCredentialRawConfig
+    // Account that stores withdrawal broadcasts
+    val broadcastsCredential: IrohaCredentialRawConfig
     // Account that stores Bitcoin transaction signatures
     val signatureCollectorCredential: IrohaCredentialRawConfig
     // Account that is used to deal with registered accounts

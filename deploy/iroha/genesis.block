@@ -56,6 +56,14 @@
               },
               {
                 "createRole": {
+                  "roleName": "broadcast",
+                  "permissions": [
+                    "can_set_detail"
+                    ]
+                }
+              },
+              {
+                "createRole": {
                   "roleName": "client",
                   "permissions": [
                     "can_get_my_account",
@@ -398,9 +406,22 @@
               },
               {
                 "createAccount": {
+                  "accountName": "broadcast",
+                  "domainId": "notary",
+                  "publicKey": "e48e003991142b90a3569d6804738c69296f339216166a3e6d20d6380afb25b1"
+                }
+              },
+              {
+                "createAccount": {
                   "accountName": "btc_registration_service",
                   "domainId": "notary",
                   "publicKey": "e48e003991142b90a3569d6804738c69296f339216166a3e6d20d6380afb25b1"
+                }
+              },
+              {
+                "appendRole": {
+                  "accountId": "broadcast@notary",
+                  "roleName": "broadcast"
                 }
               },
               {

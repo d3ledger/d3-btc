@@ -28,6 +28,7 @@ class BtcConfigHelper(
 
     private val utxoStorageAccountCredential = accountHelper.createTesterAccount("utxo_storage")
     private val txStorageAccountCredential = accountHelper.createTesterAccount("tx_storage")
+    private val broadcastCredential = accountHelper.createTesterAccount("broadcast", "broadcast")
 
     /** Creates config for BTC multisig addresses generation
      * @param initAddresses - number of addresses that will be generated at initial phase
@@ -79,6 +80,7 @@ class BtcConfigHelper(
                 "withdrawal.properties"
             ).get()
         return object : BtcWithdrawalConfig {
+            override val broadcastsCredential = accountHelper.createCredentialRawConfig(broadcastCredential)
             override val utxoStorageAccount = utxoStorageAccountCredential.accountId
             override val txStorageAccount = txStorageAccountCredential.accountId
             override val btcConsensusCredential =
