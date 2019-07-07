@@ -201,9 +201,11 @@ class UTXOProvider(
             It will help us having a little amount of inputs.
             Less inputs -> smaller tx size -> smaller fee*/
             val valueComparison = -output1.value.value.compareTo(output2.value.value)
-            //If values are the same, we compare by hash codes
+            //If values are the same, we compare UTXO by pointers
             if (valueComparison == 0) {
-                output1.hashCode().compareTo(output2.hashCode())
+                val output1Pointer = output1.parentTransactionHash?.toString() + ":" + output1.index
+                val output2Pointer = output2.parentTransactionHash?.toString() + ":" + output2.index
+                output1Pointer.compareTo(output2Pointer)
             } else {
                 valueComparison
             }
