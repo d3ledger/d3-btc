@@ -62,12 +62,7 @@ class NewTransferHandler(
                     checkAndStartConsensus(withdrawalDetails)
                 }
             }, { ex ->
-                btcRollbackService.rollback(
-                    withdrawalDetails.sourceAccountId,
-                    withdrawalDetails.amountSat,
-                    withdrawalDetails.withdrawalTime,
-                    "Iroha error"
-                )
+                btcRollbackService.rollback(withdrawalDetails, "Iroha error")
                 logger.error("Can't execute withdrawal operation due to Iroha error", ex)
             })
     }
@@ -80,31 +75,22 @@ class NewTransferHandler(
         if (!CurrentFeeRate.isPresent()) {
             logger.warn { "Cannot execute transfer. Fee rate was not set." }
             btcRollbackService.rollback(
-                withdrawalDetails.sourceAccountId,
-                withdrawalDetails.amountSat,
-                withdrawalDetails.withdrawalTime,
-                "Not able to transfer yet"
+                withdrawalDetails, "Not able to transfer yet"
             )
             return
         }
         // Check if withdrawal has valid destination address
         if (!isValidBtcAddress(withdrawalDetails.toAddress)) {
-            logger.warn { "Cannot execute transfer. Destination $withdrawalDetails.toAddress is not a valid base58 address." }
+            logger.warn { "Cannot execute transfer. Destination '${withdrawalDetails.toAddress}' is not a valid base58 address." }
             btcRollbackService.rollback(
-                withdrawalDetails.sourceAccountId,
-                withdrawalDetails.amountSat,
-                withdrawalDetails.withdrawalTime,
-                "Invalid address"
+                withdrawalDetails, "Invalid address"
             )
             return
         }
         // Check if withdrawal amount is not too little
         if (isDust(withdrawalDetails.amountSat)) {
             btcRollbackService.rollback(
-                withdrawalDetails.sourceAccountId,
-                withdrawalDetails.amountSat,
-                withdrawalDetails.withdrawalTime,
-                "Too small amount"
+                withdrawalDetails, "Too small amount"
             )
             logger.warn { "Can't spend SAT ${withdrawalDetails.amountSat}, because it's considered a dust" }
             return
@@ -112,14 +98,13 @@ class NewTransferHandler(
         // Create consensus
         withdrawalStatistics.incTotalTransfers()
         startConsensusProcess(withdrawalDetails)
-
     }
 
     /**
      * Starts consensus creation process
      * @param withdrawalDetails - details of withdrawal
      */
-    private fun startConsensusProcess(withdrawalDetails: WithdrawalDetails) {
+    protected fun startConsensusProcess(withdrawalDetails: WithdrawalDetails) {
         withdrawalConsensusProvider.createConsensusData(withdrawalDetails).fold({
             logger.info("Consensus data for $withdrawalDetails has been created")
         }, { ex ->
