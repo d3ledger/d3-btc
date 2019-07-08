@@ -54,10 +54,7 @@ class NewTransactionCreatedHandler(
             if (savedTransaction != null && savedWithdrawalDetails != null) {
                 logger.error("Cannot handle new transaction $savedTransaction", ex)
                 btcRollbackService.rollback(
-                    savedWithdrawalDetails!!.sourceAccountId,
-                    savedWithdrawalDetails!!.amountSat,
-                    savedWithdrawalDetails!!.withdrawalTime,
-                    "Cannot sign"
+                    savedWithdrawalDetails!!, "Cannot sign"
                 )
                 bitcoinUTXOProvider.unregisterUnspents(savedTransaction!!, savedWithdrawalDetails!!)
                     .failure { e -> NewSignatureEventHandler.logger.error("Cannot unregister unspents", e) }
