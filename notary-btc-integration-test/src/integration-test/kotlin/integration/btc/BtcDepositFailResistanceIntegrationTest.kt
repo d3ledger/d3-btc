@@ -55,7 +55,7 @@ class BtcDepositFailResistanceIntegrationTest {
      */
     @Test
     fun testDeposit() {
-        val walletFile = File(environment.notaryConfig.btcTransferWalletPath)
+        val walletFile = File(environment.depositConfig.btcTransferWalletPath)
         val transfersWallet = Wallet.loadFromFile(walletFile)
         val initUTXOCount = transfersWallet.unspents.size
         val randomName = String.getRandomString(9)

@@ -17,15 +17,15 @@ import org.springframework.stereotype.Component
 class DepositServiceExpansion(
     private val irohaAPI: IrohaAPI,
     private val serviceExpansion: ServiceExpansion,
-    @Qualifier("notaryCredential")
-    private val notaryCredential: IrohaCredential
+    @Qualifier("depositServiceCredential")
+    private val depositServiceCredential: IrohaCredential
 ) {
 
     fun expand(block: BlockOuterClass.Block) {
         serviceExpansion.expand(block) { expansionsDetails, _, triggerTime ->
             ExpansionUtils.addSignatureExpansionLogic(
                 irohaAPI,
-                notaryCredential,
+                depositServiceCredential,
                 expansionsDetails,
                 triggerTime
             )

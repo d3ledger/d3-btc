@@ -33,16 +33,16 @@ class BtcMultiNotaryIntegrationTest {
         registrationServiceEnvironment.registrationInitialization.init()
         var peerCount = 0
         //Create configs for multiple notary services
-        integrationHelper.accountHelper.notaryAccounts
-            .forEach { notaryAccount ->
+        integrationHelper.accountHelper.makeAccountMst(integrationHelper.configHelper.depositAccountCredential)
+            .forEach { depositAccount ->
                 val testName = "multi_notary_${peerCount++}"
                 val notaryConfig =
-                    integrationHelper.configHelper.createBtcDepositConfig(testName, notaryAccount)
+                    integrationHelper.configHelper.createBtcDepositConfig(testName, depositAccount)
                 val notaryEnvironment =
                     BtcNotaryTestEnvironment(
                         integrationHelper = integrationHelper,
-                        notaryConfig = notaryConfig,
-                        notaryCredential = notaryAccount,
+                        depositConfig = notaryConfig,
+                        depositServiceCredential = depositAccount,
                         testName = testName
                     )
                 environments.add(notaryEnvironment)
@@ -85,7 +85,7 @@ class BtcMultiNotaryIntegrationTest {
         assertEquals(200, res.statusCode)
         val btcAddress =
             integrationHelper.registerBtcAddress(
-                environments.first().notaryConfig.btcTransferWalletPath,
+                environments.first().depositConfig.btcTransferWalletPath,
                 randomName,
                 CLIENT_DOMAIN
             )

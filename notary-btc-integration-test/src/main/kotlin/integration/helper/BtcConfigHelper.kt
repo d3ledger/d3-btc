@@ -11,6 +11,7 @@ import com.d3.btc.dwbridge.config.BtcDWBridgeConfig
 import com.d3.btc.generation.config.BtcAddressGenerationConfig
 import com.d3.btc.registration.config.BtcRegistrationConfig
 import com.d3.btc.withdrawal.config.BtcWithdrawalConfig
+import com.d3.commons.config.IrohaCredentialRawConfig
 import com.d3.commons.config.loadLocalConfigs
 import com.d3.commons.model.IrohaCredential
 import org.bitcoinj.params.RegTestParams
@@ -26,6 +27,7 @@ class BtcConfigHelper(
     private val accountHelper: IrohaAccountHelper
 ) : IrohaConfigHelper() {
 
+    val depositAccountCredential = accountHelper.createTesterAccount("deposit", "deposit")
     private val utxoStorageAccountCredential = accountHelper.createTesterAccount("utxo_storage")
     private val txStorageAccountCredential = accountHelper.createTesterAccount("tx_storage")
     private val broadcastCredential = accountHelper.createTesterAccount("broadcast", "broadcast")
@@ -132,14 +134,14 @@ class BtcConfigHelper(
             "deposit.properties"
         ).get()
         return object : BtcDepositConfig {
+            override val notaryAccount = notaryIrohaCredential.accountId
+            override val depositServiceCredential = accountHelper.createCredentialRawConfig(depositAccountCredential)
             override val mstRegistrationAccount = accountHelper.mstRegistrationAccount.accountId
             override val changeAddressesStorageAccount =
                 accountHelper.changeAddressesStorageAccount.accountId
             override val btcTransferWalletPath = createWalletFile("transfers.$testName")
             override val registrationAccount = accountHelper.registrationAccount.accountId
             override val iroha = createIrohaConfig()
-            override val notaryCredential =
-                accountHelper.createCredentialRawConfig(notaryIrohaCredential)
         }
     }
 

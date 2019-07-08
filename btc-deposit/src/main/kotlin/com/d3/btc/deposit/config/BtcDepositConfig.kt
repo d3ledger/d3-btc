@@ -5,9 +5,7 @@
 
 package com.d3.btc.deposit.config
 
-import com.d3.btc.config.BitcoinConfig
 import com.d3.commons.config.IrohaConfig
-import com.d3.commons.config.IrohaCredentialConfig
 import com.d3.commons.config.IrohaCredentialRawConfig
 
 const val BTC_DEPOSIT_SERVICE_NAME = "btc-deposit"
@@ -17,7 +15,9 @@ interface BtcDepositConfig {
 
     val iroha: IrohaConfig
 
-    val notaryCredential: IrohaCredentialRawConfig
+    val depositServiceCredential: IrohaCredentialRawConfig
+
+    val notaryAccount: String
 
     val registrationAccount: String
 

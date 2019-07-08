@@ -57,7 +57,7 @@ class BtcNotaryIntegrationTest {
     @Test
     fun testDeposit() {
         val initUTXOCount =
-            Wallet.loadFromFile(File(environment.notaryConfig.btcTransferWalletPath)).unspents.size
+            Wallet.loadFromFile(File(environment.depositConfig.btcTransferWalletPath)).unspents.size
         val randomName = String.getRandomString(9)
         val testClient = "$randomName@$CLIENT_DOMAIN"
         val res = registrationServiceEnvironment.register(randomName)
@@ -83,7 +83,7 @@ class BtcNotaryIntegrationTest {
         assertTrue(environment.btcNotaryInitialization.isWatchedAddress(btcAddress))
         assertEquals(
             initUTXOCount + 1,
-            Wallet.loadFromFile(File(environment.notaryConfig.btcTransferWalletPath)).unspents.size
+            Wallet.loadFromFile(File(environment.depositConfig.btcTransferWalletPath)).unspents.size
         )
     }
 
@@ -96,7 +96,7 @@ class BtcNotaryIntegrationTest {
     @Test
     fun testMultipleDeposit() {
         val initUTXOCount =
-            Wallet.loadFromFile(File(environment.notaryConfig.btcTransferWalletPath)).unspents.size
+            Wallet.loadFromFile(File(environment.depositConfig.btcTransferWalletPath)).unspents.size
         val totalDeposits = 3
         val randomName = String.getRandomString(9)
         val testClient = "$randomName@$CLIENT_DOMAIN"
@@ -125,7 +125,7 @@ class BtcNotaryIntegrationTest {
         assertTrue(environment.btcNotaryInitialization.isWatchedAddress(btcAddress))
         assertEquals(
             initUTXOCount + totalDeposits,
-            Wallet.loadFromFile(File(environment.notaryConfig.btcTransferWalletPath)).unspents.size
+            Wallet.loadFromFile(File(environment.depositConfig.btcTransferWalletPath)).unspents.size
         )
     }
 
@@ -140,7 +140,7 @@ class BtcNotaryIntegrationTest {
     @Test
     fun testMultipleDepositMultiThreaded() {
         val initUTXOCount =
-            Wallet.loadFromFile(File(environment.notaryConfig.btcTransferWalletPath)).unspents.size
+            Wallet.loadFromFile(File(environment.depositConfig.btcTransferWalletPath)).unspents.size
         val totalDeposits = 5
         val randomName = String.getRandomString(9)
         val testClient = "$randomName@$CLIENT_DOMAIN"
@@ -178,7 +178,7 @@ class BtcNotaryIntegrationTest {
         assertTrue(environment.btcNotaryInitialization.isWatchedAddress(btcAddress))
         assertEquals(
             initUTXOCount + totalDeposits,
-            Wallet.loadFromFile(File(environment.notaryConfig.btcTransferWalletPath)).unspents.size
+            Wallet.loadFromFile(File(environment.depositConfig.btcTransferWalletPath)).unspents.size
         )
     }
 
@@ -191,7 +191,7 @@ class BtcNotaryIntegrationTest {
     @Test
     fun testDepositNotConfirmed() {
         val initUTXOCount =
-            Wallet.loadFromFile(File(environment.notaryConfig.btcTransferWalletPath)).unspents.size
+            Wallet.loadFromFile(File(environment.depositConfig.btcTransferWalletPath)).unspents.size
         val randomName = String.getRandomString(9)
         val testClient = "$randomName@$CLIENT_DOMAIN"
         val res = registrationServiceEnvironment.register(randomName)
@@ -218,7 +218,7 @@ class BtcNotaryIntegrationTest {
         assertTrue(environment.btcNotaryInitialization.isWatchedAddress(btcAddress))
         assertEquals(
             initUTXOCount + 1,
-            Wallet.loadFromFile(File(environment.notaryConfig.btcTransferWalletPath)).unspents.size
+            Wallet.loadFromFile(File(environment.depositConfig.btcTransferWalletPath)).unspents.size
         )
     }
 
@@ -232,7 +232,7 @@ class BtcNotaryIntegrationTest {
     @Test
     fun testDepositConfirmation() {
         val initUTXOCount =
-            Wallet.loadFromFile(File(environment.notaryConfig.btcTransferWalletPath)).unspents.size
+            Wallet.loadFromFile(File(environment.depositConfig.btcTransferWalletPath)).unspents.size
         val randomName = String.getRandomString(9)
         val testClient = "$randomName@$CLIENT_DOMAIN"
         val res = registrationServiceEnvironment.register(randomName)
@@ -263,7 +263,7 @@ class BtcNotaryIntegrationTest {
         assertTrue(environment.btcNotaryInitialization.isWatchedAddress(btcAddress))
         assertEquals(
             initUTXOCount + 1,
-            Wallet.loadFromFile(File(environment.notaryConfig.btcTransferWalletPath)).unspents.size
+            Wallet.loadFromFile(File(environment.depositConfig.btcTransferWalletPath)).unspents.size
         )
     }
 }

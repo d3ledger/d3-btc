@@ -60,9 +60,9 @@ class BtcDWBridgeAppConfiguration {
         withdrawalConfig.withdrawalCredential.pubkey,
         withdrawalConfig.withdrawalCredential.privkey
     )
-    private val notaryKeypair = Utils.parseHexKeypair(
-        depositConfig.notaryCredential.pubkey,
-        depositConfig.notaryCredential.privkey
+    private val depositServiceKeyPair = Utils.parseHexKeypair(
+        depositConfig.depositServiceCredential.pubkey,
+        depositConfig.depositServiceCredential.privkey
     )
 
     private val signatureCollectorKeypair = Utils.parseHexKeypair(
@@ -86,11 +86,11 @@ class BtcDWBridgeAppConfiguration {
             )
         )
 
-    private val notaryCredential =
-        IrohaCredential(depositConfig.notaryCredential.accountId, notaryKeypair)
+    private val depositServiceCredential =
+        IrohaCredential(depositConfig.depositServiceCredential.accountId, depositServiceKeyPair)
 
     @Bean
-    fun notaryCredential() = notaryCredential
+    fun depositServiceCredential() = depositServiceCredential
 
     @Bean
     fun consensusIrohaCredential() = btcConsensusCredential
@@ -115,8 +115,8 @@ class BtcDWBridgeAppConfiguration {
     @Bean
     fun notary() =
         NotaryImpl(
-            MultiSigIrohaConsumer(notaryCredential, irohaAPI()),
-            notaryCredential,
+            MultiSigIrohaConsumer(depositServiceCredential, irohaAPI()),
+            depositServiceCredential,
             btcEventsObservable()
         )
 
@@ -159,11 +159,11 @@ class BtcDWBridgeAppConfiguration {
         return BtcRegisteredAddressesProvider(
             IrohaQueryHelperImpl(
                 irohaAPI(),
-                depositConfig.notaryCredential.accountId,
-                notaryKeypair
+                depositConfig.depositServiceCredential.accountId,
+                depositServiceKeyPair
             ),
             depositConfig.registrationAccount,
-            depositConfig.notaryCredential.accountId
+            depositConfig.notaryAccount
         )
     }
 
@@ -204,7 +204,7 @@ class BtcDWBridgeAppConfiguration {
     fun depositIrohaChainListener() = IrohaChainListener(
         dwBridgeConfig.iroha.hostname,
         dwBridgeConfig.iroha.port,
-        notaryCredential
+        depositServiceCredential
     )
 
     @Bean
