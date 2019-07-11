@@ -53,4 +53,7 @@ interface BtcAddressGenerationConfig {
 
     // Account that triggers 'expansion' events
     val expansionTriggerCreatorAccountId: String
+
+    // Queue where chain-adapter saves Iroha blocks
+    val irohaBlockQueue: String
 }

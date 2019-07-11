@@ -9,12 +9,14 @@ import com.d3.btc.generation.BTC_ADDRESS_GENERATION_SERVICE_NAME
 import com.d3.btc.provider.BtcChangeAddressProvider
 import com.d3.btc.provider.network.BtcNetworkConfigProvider
 import com.d3.btc.wallet.createWalletIfAbsent
+import com.d3.commons.config.RMQConfig
 import com.d3.commons.config.loadLocalConfigs
+import com.d3.commons.config.loadRawLocalConfigs
 import com.d3.commons.expansion.ServiceExpansion
 import com.d3.commons.model.IrohaCredential
 import com.d3.commons.provider.NotaryPeerListProvider
 import com.d3.commons.provider.NotaryPeerListProviderImpl
-import com.d3.commons.sidechain.iroha.IrohaChainListener
+import com.d3.commons.sidechain.iroha.ReliableIrohaChainListener
 import com.d3.commons.sidechain.iroha.consumer.IrohaConsumerImpl
 import com.d3.commons.sidechain.iroha.consumer.MultiSigIrohaConsumer
 import com.d3.commons.sidechain.iroha.util.impl.IrohaQueryHelperImpl
@@ -33,6 +35,9 @@ val btcAddressGenerationConfig =
         BtcAddressGenerationConfig::class.java,
         "address_generation.properties"
     ).get()
+
+private val rmqConfig =
+    loadRawLocalConfigs("rmq", RMQConfig::class.java, "rmq.properties")
 
 @Configuration
 class BtcAddressGenerationAppConfiguration {
@@ -130,9 +135,13 @@ class BtcAddressGenerationAppConfiguration {
     fun changeAddressStorageAccount() = btcAddressGenerationConfig.changeAddressesStorageAccount
 
     @Bean
-    fun irohaChainListener() = IrohaChainListener(
-        generationIrohaAPI(),
-        registrationCredential
+    fun irohaChainListener() = ReliableIrohaChainListener(
+        rmqConfig, btcAddressGenerationConfig.irohaBlockQueue,
+        consumerExecutorService = createPrettySingleThreadPool(
+            BTC_ADDRESS_GENERATION_SERVICE_NAME,
+            "rmq-consumer"
+        ),
+        autoAck = true
     )
 
     @Bean

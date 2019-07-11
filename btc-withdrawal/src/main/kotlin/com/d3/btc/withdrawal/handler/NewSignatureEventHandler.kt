@@ -64,7 +64,7 @@ class NewSignatureEventHandler(
             savedTx = withdrawal.second
             broadcastsProvider.hasBeenBroadcasted(withdrawal.first).fold({ broadcasted ->
                 if (broadcasted) {
-                    logger.info("No need to broadcast. Withdrawal ${withdrawal.first} has been broadcasted before")
+                    logger.info("No need to sign. Withdrawal ${withdrawal.first} has been broadcasted before")
                 } else {
                     val withdrawalCommand = withdrawal.first
                     val tx = withdrawal.second
