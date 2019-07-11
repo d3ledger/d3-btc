@@ -20,7 +20,7 @@ import com.d3.btc.provider.network.BtcNetworkConfigProvider
 import com.d3.btc.wallet.checkWalletNetwork
 import com.d3.btc.wallet.safeSave
 import com.d3.commons.sidechain.iroha.CLIENT_DOMAIN
-import com.d3.commons.sidechain.iroha.IrohaChainListener
+import com.d3.commons.sidechain.iroha.ReliableIrohaChainListener
 import com.d3.commons.sidechain.iroha.util.IrohaQueryHelper
 import com.d3.commons.sidechain.iroha.util.getCreateAccountCommands
 import com.d3.commons.sidechain.iroha.util.getSetDetailCommands
@@ -48,7 +48,7 @@ class BtcAddressGenerationInitialization(
     private val registrationQueryHelper: IrohaQueryHelper,
     private val btcAddressGenerationConfig: BtcAddressGenerationConfig,
     private val btcPublicKeyProvider: BtcPublicKeyProvider,
-    private val irohaChainListener: IrohaChainListener,
+    private val irohaChainListener: ReliableIrohaChainListener,
     private val addressGenerationTrigger: AddressGenerationTrigger,
     private val btcNetworkConfigProvider: BtcNetworkConfigProvider,
     private val addressGenerationServiceExpansion: AddressGenerationServiceExpansion
@@ -56,14 +56,15 @@ class BtcAddressGenerationInitialization(
 
     /**
      * Initiates address generation process
-     * @param onIrohaFail - function that will be called on Iroha failure
      */
-    fun init(onIrohaFail: () -> Unit): Result<Unit, Exception> {
+    fun init(): Result<Unit, Exception> {
         //Check wallet network
         return keysWallet.checkWalletNetwork(btcNetworkConfigProvider.getConfig()).flatMap {
             irohaChainListener.getBlockObservable()
         }.map { irohaObservable ->
-            initIrohaObservable(irohaObservable, onIrohaFail)
+            initIrohaObservable(irohaObservable)
+        }.flatMap {
+            irohaChainListener.listen()
         }.flatMap {
             // Start free address generation at initial phase
             addressGenerationTrigger
@@ -81,11 +82,9 @@ class BtcAddressGenerationInitialization(
     /**
      * Initiates Iroha observable
      * @param irohaObservable - Iroha observable object to initiate
-     * @param onIrohaFail - function that will be called on Iroha failure
      */
     private fun initIrohaObservable(
-        irohaObservable: Observable<BlockOuterClass.Block>,
-        onIrohaFail: () -> Unit
+        irohaObservable: Observable<Pair<BlockOuterClass.Block, () -> Unit>>
     ) {
         irohaObservable.subscribeOn(
             Schedulers.from(
@@ -94,7 +93,7 @@ class BtcAddressGenerationInitialization(
                     "iroha-block-handler"
                 )
             )
-        ).subscribe({ block ->
+        ).subscribe({ (block, _) ->
             // Expand the address generation service if there a need to do so
             addressGenerationServiceExpansion.expand(block)
 
@@ -135,7 +134,6 @@ class BtcAddressGenerationInitialization(
         }, { ex ->
             notHealthy()
             logger.error("Error on subscribe", ex)
-            onIrohaFail()
         })
     }
 

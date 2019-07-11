@@ -15,6 +15,7 @@ import com.github.kittinunf.result.flatMap
 import mu.KLogging
 import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import org.springframework.context.annotation.ComponentScan
+import kotlin.system.exitProcess
 
 const val BTC_ADDRESS_GENERATION_SERVICE_NAME = "btc-add-gen"
 
@@ -30,7 +31,7 @@ class BtcAddressGenerationApplication
 
 private val logger = KLogging().logger
 
-fun main(args: Array<String>) {
+fun main() {
     Result.of {
         val context = AnnotationConfigApplicationContext()
         context.environment.setActiveProfiles(getProfile())
@@ -38,12 +39,9 @@ fun main(args: Array<String>) {
         context.refresh()
         context
     }.flatMap { context ->
-        context.getBean(BtcAddressGenerationInitialization::class.java).init {
-            logger.error("Iroha failure. Exit.")
-            System.exit(1)
-        }
+        context.getBean(BtcAddressGenerationInitialization::class.java).init()
     }.failure { ex ->
         logger.error("cannot run btc address generation", ex)
-        System.exit(1)
+        exitProcess(1)
     }
 }

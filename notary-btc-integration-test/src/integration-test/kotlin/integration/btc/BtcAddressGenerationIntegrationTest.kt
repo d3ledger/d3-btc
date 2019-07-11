@@ -46,7 +46,7 @@ class BtcAddressGenerationIntegrationTest {
     init {
         integrationHelper.addBtcNotary("test_notary", "test_notary_address")
         GlobalScope.launch {
-            environment.btcAddressGenerationInitialization.init {}.failure { ex -> throw ex }
+            environment.btcAddressGenerationInitialization.init().failure { ex -> throw ex }
         }
         // Wait for initial address generation
         Thread.sleep(WAIT_PREGEN_INIT_PROCESS_MILLIS)

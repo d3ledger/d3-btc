@@ -13,6 +13,7 @@ import com.d3.btc.registration.config.BtcRegistrationConfig
 import com.d3.btc.withdrawal.config.BtcWithdrawalConfig
 import com.d3.commons.config.loadLocalConfigs
 import com.d3.commons.model.IrohaCredential
+import com.d3.commons.util.getRandomString
 import org.bitcoinj.params.RegTestParams
 import org.bitcoinj.wallet.Wallet
 import java.io.File
@@ -32,14 +33,14 @@ class BtcConfigHelper(
 
     /** Creates config for BTC multisig addresses generation
      * @param initAddresses - number of addresses that will be generated at initial phase
-     * @param walletNamePostfix - postfix of wallet file name. used to keep wallets as multiple files in multisig tests.
+     * @param testName - name of test
      * @return config
      * */
     fun createBtcAddressGenerationConfig(
         initAddresses: Int,
-        walletNamePostfix: String = "test"
+        testName: String = "test"
     ): BtcAddressGenerationConfig {
-        val btcPkPreGenConfig =
+        val btcAddressGenConfig =
             loadLocalConfigs(
                 "btc-address-generation",
                 BtcAddressGenerationConfig::class.java,
@@ -47,21 +48,22 @@ class BtcConfigHelper(
             ).get()
 
         return object : BtcAddressGenerationConfig {
+            override val irohaBlockQueue = testName + "_" + String.getRandomString(5)
             override val expansionTriggerAccount = accountHelper.expansionTriggerAccount.accountId
             override val threshold = initAddresses
             override val nodeId = NODE_ID
             override val changeAddressesStorageAccount =
                 accountHelper.changeAddressesStorageAccount.accountId
-            override val healthCheckPort = btcPkPreGenConfig.healthCheckPort
+            override val healthCheckPort = btcAddressGenConfig.healthCheckPort
             override val notaryListStorageAccount = accountHelper.notaryListStorageAccount.accountId
             override val notaryListSetterAccount = accountHelper.notaryAccount.accountId
             override val mstRegistrationAccount =
                 accountHelper.createCredentialRawConfig(accountHelper.mstRegistrationAccount)
-            override val pubKeyTriggerAccount = btcPkPreGenConfig.pubKeyTriggerAccount
+            override val pubKeyTriggerAccount = btcAddressGenConfig.pubKeyTriggerAccount
             override val expansionTriggerCreatorAccountId = accountHelper.superuserAccount.accountId
             override val notaryAccount = accountHelper.notaryAccount.accountId
             override val iroha = createIrohaConfig()
-            override val btcKeysWalletPath = createWalletFile("keys.$walletNamePostfix")
+            override val btcKeysWalletPath = createWalletFile("keys.$testName")
             override val registrationAccount =
                 accountHelper.createCredentialRawConfig(accountHelper.registrationAccount)
         }
@@ -85,7 +87,7 @@ class BtcConfigHelper(
             override val txStorageAccount = txStorageAccountCredential.accountId
             override val btcConsensusCredential =
                 accountHelper.createCredentialRawConfig(accountHelper.btcConsensusAccount)
-            override val irohaBlockQueue = testName
+            override val irohaBlockQueue = testName + "_" + String.getRandomString(5)
             override val btcKeysWalletPath = createWalletFile("keys.$testName")
             override val btcTransfersWalletPath = createWalletFile("transfers.$testName")
             override val notaryListStorageAccount = accountHelper.notaryListStorageAccount.accountId
@@ -126,11 +128,6 @@ class BtcConfigHelper(
         testName: String = "",
         notaryIrohaCredential: IrohaCredential = accountHelper.notaryAccount
     ): BtcDepositConfig {
-        val btcDepositConfig = loadLocalConfigs(
-            "btc-deposit",
-            BtcDepositConfig::class.java,
-            "deposit.properties"
-        ).get()
         return object : BtcDepositConfig {
             override val mstRegistrationAccount = accountHelper.mstRegistrationAccount.accountId
             override val changeAddressesStorageAccount =
