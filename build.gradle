@@ -90,3 +90,14 @@ pitest {
     mutators = ['CONDITIONALS_BOUNDARY', 'NEGATE_CONDITIONALS', 'REMOVE_CONDITIONALS', 'MATH', 'INCREMENTS',
                 'INVERT_NEGS', 'INLINE_CONSTS', 'VOID_METHOD_CALLS']
 }
+
+
+task stopDockerCompose(type: Exec) {
+    executable "sh"
+    args "-c", "docker-compose -f deploy/docker-compose.yml -f deploy/docker-compose.dev.yml down"
+}
+
+task runDockerCompose(type: Exec) {
+    executable "sh"
+    args "-c", "docker-compose -f deploy/docker-compose.yml -f deploy/docker-compose.dev.yml up"
+}

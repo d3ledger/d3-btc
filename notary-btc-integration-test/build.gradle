@@ -4,7 +4,16 @@ buildscript {
         jcenter()
     }
 }
+
+plugins {
+    id 'com.avast.gradle.docker-compose' version '0.7.1'
+}
+
 apply plugin: "kotlin-spring" // See https://kotlinlang.org/docs/reference/compiler-plugins.html#kotlin-spring-compiler-plugin
+
+dockerCompose {
+    useComposeFiles = ['../deploy/docker-compose.dev.yml', '../deploy/docker-compose.yml']
+}
 
 sourceSets {
     integrationTest {
@@ -35,11 +44,7 @@ task integrationTest(type: Test) {
     // Enable JUnit5 tests
     useJUnitPlatform {
     }
-
-    mustRunAfter test
 }
-check.dependsOn integrationTest
-
 
 dependencies {
     compile project(":btc-registration")
