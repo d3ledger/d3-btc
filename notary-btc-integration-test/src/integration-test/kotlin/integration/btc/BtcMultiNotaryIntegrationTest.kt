@@ -94,7 +94,7 @@ class BtcMultiNotaryIntegrationTest {
             BTC_ASSET
         )
         val btcAmount = 1
-        integrationHelper.sendBtc(btcAddress, btcAmount)
+        integrationHelper.sendBtc(btcAddress, BigDecimal(btcAmount))
         Thread.sleep(DEPOSIT_WAIT_MILLIS * peers)
         val newBalance = integrationHelper.getIrohaAccountBalance(testClient, BTC_ASSET)
         assertEquals(

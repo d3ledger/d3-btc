@@ -54,6 +54,11 @@ class BtcIntegrationHelperUtil(peers: Int = 1) : IrohaIntegrationHelperUtil(peer
         IrohaConsumerImpl(accountHelper.mstRegistrationAccount, irohaAPI)
     }
 
+    /**
+     * Returns withdrawal fees
+     */
+    fun getWithdrawalFees() = BigDecimal(getIrohaAccountBalance("withdrawal_billing@d3", BTC_ASSET))
+
     private val rpcClient by lazy {
         BitcoinRpcClientFactory.createClient(
             user = "test",
@@ -274,9 +279,9 @@ class BtcIntegrationHelperUtil(peers: Int = 1) : IrohaIntegrationHelperUtil(peer
     /**
      * Sends btc to a given address
      */
-    fun sendBtc(address: String, amount: Int, confirmations: Int = 6) {
+    fun sendBtc(address: String, amount: BigDecimal, confirmations: Int = 6) {
         logger.info { "Send $amount BTC to $address" }
-        rpcClient.sendToAddress(address = address, amount = BigDecimal(amount))
+        rpcClient.sendToAddress(address = address, amount = amount)
         generateBtcBlocks(confirmations)
     }
 

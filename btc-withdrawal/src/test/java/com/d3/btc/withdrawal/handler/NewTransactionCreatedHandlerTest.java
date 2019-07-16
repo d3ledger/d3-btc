@@ -58,7 +58,8 @@ public class NewTransactionCreatedHandlerTest {
                     "source account",
                     "destination address",
                     1,
-                    System.currentTimeMillis());
+                    System.currentTimeMillis(),
+                    0);
             Transaction transaction = mock(Transaction.class);
             return new Pair<>(withdrawalDetails, transaction);
         }));
@@ -80,7 +81,8 @@ public class NewTransactionCreatedHandlerTest {
                     "source account",
                     "destination address",
                     1,
-                    System.currentTimeMillis());
+                    System.currentTimeMillis(),
+                    0);
             Transaction transaction = mock(Transaction.class);
             return new Pair<>(withdrawalDetails, transaction);
         }));
@@ -102,7 +104,8 @@ public class NewTransactionCreatedHandlerTest {
                     "source account",
                     "destination address",
                     1,
-                    System.currentTimeMillis());
+                    System.currentTimeMillis(),
+                    0);
             Transaction transaction = mock(Transaction.class);
             return new Pair<>(withdrawalDetails, transaction);
         }));

@@ -36,7 +36,7 @@ class WithdrawalConsensusProvider(
     @Qualifier("consensusIrohaConsumer")
     private val consensusIrohaConsumer: IrohaConsumer,
     @Qualifier("withdrawalQueryHelper")
-    private val withdrwalQueryHelper: IrohaQueryHelper,
+    private val withdrawalQueryHelper: IrohaQueryHelper,
     private val peerListProvider: NotaryPeerListProvider,
     private val bitcoinUTXOProvider: UTXOProvider,
     private val bitcoinConfig: BitcoinConfig
@@ -86,7 +86,7 @@ class WithdrawalConsensusProvider(
      * @return consensus data in form of (withdrawal details, list of consensus data from all the nodes)
      */
     fun getConsensus(withdrawalHash: String): Result<Pair<WithdrawalDetails, List<WithdrawalConsensus>>, Exception> {
-        return withdrwalQueryHelper.getAccountDetails(
+        return withdrawalQueryHelper.getAccountDetails(
             consensusIrohaConsumer.creator,
             consensusIrohaConsumer.creator,
             withdrawalHash
@@ -97,7 +97,7 @@ class WithdrawalConsensusProvider(
                 throw IllegalStateException("Withdrawal details data is not present for hash $withdrawalHash")
             }
         }.fanout {
-            withdrwalQueryHelper.getAccountDetails(
+            withdrawalQueryHelper.getAccountDetails(
                 "$withdrawalHash@$BTC_CONSENSUS_DOMAIN",
                 consensusIrohaConsumer.creator
             )
@@ -116,7 +116,7 @@ class WithdrawalConsensusProvider(
      * @return true if consensus has been established before
      */
     fun hasBeenEstablished(withdrawalHash: String): Result<Boolean, Exception> {
-        return withdrwalQueryHelper.getAccountDetails(
+        return withdrawalQueryHelper.getAccountDetails(
             consensusIrohaConsumer.creator,
             withdrawalCredential.accountId,
             withdrawalHash

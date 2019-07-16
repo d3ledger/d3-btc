@@ -11,6 +11,7 @@ import com.d3.btc.helper.currency.satToBtc
 import com.d3.btc.model.BtcAddressType
 import com.d3.btc.provider.generation.ADDRESS_GENERATION_NODE_ID_KEY
 import com.d3.btc.provider.generation.ADDRESS_GENERATION_TIME_KEY
+import com.d3.commons.sidechain.iroha.FEE_DESCRIPTION
 import com.d3.commons.sidechain.iroha.CLIENT_DOMAIN
 import com.d3.commons.sidechain.iroha.util.ModelUtil
 import com.d3.commons.util.getRandomString
@@ -74,10 +75,6 @@ class BtcMultiWithdrawalIntegrationTest {
                         btcWithdrawalConfig = withdrawalConfig,
                         withdrawalCredential = withdrawalAccount
                     )
-                environment.withdrawalTransferService.addNewBtcTransactionListener { tx ->
-                    environment.createdTransactions[tx.hashAsString] =
-                        Pair(System.currentTimeMillis(), tx)
-                }
                 withdrawalEnvironments.add(environment)
                 val blockStorageFolder =
                     File(environment.bitcoinConfig.blockStoragePath)
@@ -122,6 +119,7 @@ class BtcMultiWithdrawalIntegrationTest {
      */
     @Test
     fun testWithdrawalMultisigRollback() {
+        val feeInitialAmount = integrationHelper.getWithdrawalFees()
         val environment = withdrawalEnvironments.first()
         val initTxCount = environment.createdTransactions.size
         val amount = satToBtc(1L)
@@ -140,16 +138,19 @@ class BtcMultiWithdrawalIntegrationTest {
             testClientSrcKeypair
         )
         val btcAddressDest = integrationHelper.createBtcAddress()
-        integrationHelper.addIrohaAssetTo(testClientSrc, BTC_ASSET, amount)
+        integrationHelper.addIrohaAssetTo(testClientSrc, BTC_ASSET, amount + MINIMUM_FEE)
         val initialSrcBalance = integrationHelper.getIrohaAccountBalance(testClientSrc, BTC_ASSET)
-        integrationHelper.transferAssetIrohaFromClient(
+        integrationHelper.transferAssetIrohaFromClientWithFee(
             testClientSrc,
             testClientSrcKeypair,
             testClientSrc,
             environment.btcWithdrawalConfig.withdrawalCredential.accountId,
             BTC_ASSET,
             btcAddressDest,
-            amount.toPlainString()
+            amount.toPlainString(),
+            BTC_ASSET,
+            MINIMUM_FEE.toPlainString(),
+            FEE_DESCRIPTION
         )
         Thread.sleep(WITHDRAWAL_WAIT_MILLIS)
         assertEquals(initTxCount, environment.createdTransactions.size)
@@ -157,6 +158,7 @@ class BtcMultiWithdrawalIntegrationTest {
             initialSrcBalance,
             integrationHelper.getIrohaAccountBalance(testClientSrc, BTC_ASSET)
         )
+        assertEquals(feeInitialAmount, integrationHelper.getWithdrawalFees())
         environment.utxoProvider.addToBlackList(btcAddressDest)
     }
 
@@ -169,6 +171,7 @@ class BtcMultiWithdrawalIntegrationTest {
      */
     @Test
     fun testWithdrawal() {
+        val feeInitialAmount = integrationHelper.getWithdrawalFees()
         val environment = withdrawalEnvironments.first()
         val initTxCount = environment.createdTransactions.size
         val amount = satToBtc(10000L)
@@ -189,19 +192,22 @@ class BtcMultiWithdrawalIntegrationTest {
             )
         integrationHelper.sendBtc(
             btcAddressSrc,
-            1,
+            BigDecimal(1),
             environment.bitcoinConfig.confidenceLevel
         )
         val btcAddressDest = integrationHelper.createBtcAddress()
-        integrationHelper.addIrohaAssetTo(testClientSrc, BTC_ASSET, amount)
-        integrationHelper.transferAssetIrohaFromClient(
+        integrationHelper.addIrohaAssetTo(testClientSrc, BTC_ASSET, getAmountWithFee(amount))
+        integrationHelper.transferAssetIrohaFromClientWithFee(
             testClientSrc,
             testClientSrcKeypair,
             testClientSrc,
             environment.btcWithdrawalConfig.withdrawalCredential.accountId,
             BTC_ASSET,
             btcAddressDest,
-            amount.toPlainString()
+            amount.toPlainString(),
+            BTC_ASSET,
+            getFee(amount).toPlainString(),
+            FEE_DESCRIPTION
         )
         Thread.sleep(WITHDRAWAL_WAIT_MILLIS)
         assertEquals(initTxCount + 1, environment.createdTransactions.size)
@@ -224,6 +230,7 @@ class BtcMultiWithdrawalIntegrationTest {
                 transactionOutput
             ) == btcAddressDest
         })
+        assertEquals(feeInitialAmount + getFee(amount), integrationHelper.getWithdrawalFees())
         //Check that change addresses are watched
         withdrawalEnvironments.forEach { withdrawalEnvironment ->
             val changeAddresses =

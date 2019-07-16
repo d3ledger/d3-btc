@@ -4,8 +4,10 @@ import com.d3.btc.withdrawal.transaction.WithdrawalDetails
 import com.d3.commons.sidechain.iroha.consumer.IrohaConsumer
 import com.d3.commons.sidechain.iroha.util.IrohaQueryHelper
 import com.d3.commons.sidechain.iroha.util.ModelUtil
+import com.d3.commons.util.irohaEscape
 import com.github.kittinunf.result.Result
 import com.github.kittinunf.result.map
+import com.google.gson.Gson
 import mu.KLogging
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
@@ -21,6 +23,7 @@ class BroadcastsProvider(
     private val withdrawalQueryHelper: IrohaQueryHelper
 ) {
 
+    private val gson = Gson()
     /**
      * Checks if given withdrawal has been broadcasted before
      * @param withdrawalDetails - details of withdrawal
@@ -63,7 +66,7 @@ class BroadcastsProvider(
             broadcastsIrohaConsumer,
             broadcastsIrohaConsumer.creator,
             withdrawalDetails.irohaFriendlyHashCode(),
-            ""
+            gson.toJson(withdrawalDetails).irohaEscape()
         ).map { Unit }
     }
 

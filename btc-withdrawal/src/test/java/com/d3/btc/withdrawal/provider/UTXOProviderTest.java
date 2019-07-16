@@ -301,6 +301,6 @@ public class UTXOProviderTest {
         return new WithdrawalDetails("test@account",
                 "test address",
                 666,
-                System.currentTimeMillis());
+                System.currentTimeMillis(), 0);
     }
 }

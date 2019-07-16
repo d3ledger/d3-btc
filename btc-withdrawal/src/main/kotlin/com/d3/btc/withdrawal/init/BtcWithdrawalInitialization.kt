@@ -8,6 +8,7 @@ package com.d3.btc.withdrawal.init
 import com.d3.btc.fee.CurrentFeeRate
 import com.d3.btc.handler.NewBtcClientRegistrationHandler
 import com.d3.btc.healthcheck.HealthyService
+import com.d3.btc.helper.address.isValidBtcAddress
 import com.d3.btc.helper.network.addPeerConnectionStatusListener
 import com.d3.btc.helper.network.startChainDownload
 import com.d3.btc.peer.SharedPeerGroup
@@ -18,18 +19,20 @@ import com.d3.btc.withdrawal.config.BTC_WITHDRAWAL_SERVICE_NAME
 import com.d3.btc.withdrawal.config.BtcWithdrawalConfig
 import com.d3.btc.withdrawal.expansion.WithdrawalServiceExpansion
 import com.d3.btc.withdrawal.handler.*
+import com.d3.commons.sidechain.iroha.FEE_DESCRIPTION
 import com.d3.commons.config.RMQConfig
 import com.d3.btc.config.BTC_CONSENSUS_DOMAIN
 import com.d3.btc.config.BTC_SIGN_COLLECT_DOMAIN
 import com.d3.commons.sidechain.iroha.ReliableIrohaChainListener
 import com.d3.commons.sidechain.iroha.util.getSetDetailCommands
-import com.d3.commons.sidechain.iroha.util.getTransferCommands
+import com.d3.commons.sidechain.iroha.util.getTransferTransactions
 import com.d3.commons.util.createPrettySingleThreadPool
 import com.github.kittinunf.result.Result
 import com.github.kittinunf.result.flatMap
 import com.github.kittinunf.result.map
 import iroha.protocol.BlockOuterClass
 import iroha.protocol.Commands
+import iroha.protocol.TransactionOuterClass
 import mu.KLogging
 import org.bitcoinj.core.PeerGroup
 import org.bitcoinj.utils.BriefLogFormatter
@@ -54,6 +57,7 @@ class BtcWithdrawalInitialization(
     private val newChangeAddressHandler: NewChangeAddressHandler,
     private val newConsensusDataHandler: NewConsensusDataHandler,
     private val newTransactionCreatedHandler: NewTransactionCreatedHandler,
+    private val broadcastTransactionHandler: BroadcastTransactionHandler,
     private val withdrawalServiceExpansion: WithdrawalServiceExpansion,
     rmqConfig: RMQConfig
 ) : HealthyService(), Closeable {
@@ -107,18 +111,25 @@ class BtcWithdrawalInitialization(
         // Expand the withdrawal service if there is a need to do so
         withdrawalServiceExpansion.expand(block)
         // Handle transfer commands
-        getTransferCommands(block).forEach { command ->
-            newTransferHandler.handleTransferCommand(
-                command.transferAsset,
-                block.blockV1.payload.createdTime
-            )
+        getTransferTransactions(block, btcWithdrawalConfig.withdrawalCredential.accountId).forEach { transaction ->
+            getWithdrawalCommands(transaction)?.let { (withdrawalCommand, feeCommand) ->
+                newTransferHandler.handleTransferCommand(
+                    withdrawalCommand.transferAsset,
+                    feeCommand.transferAsset,
+                    block.blockV1.payload.createdTime
+                )
+            }
         }
+        // Handle 'broadcast' events
+        getSetDetailCommands(block).filter { command -> isBroadcast(command) }
+            .forEach { command ->
+                broadcastTransactionHandler.handleBroadcastCommand(command.setAccountDetail)
+            }
         // Handle 'create new transaction' events
         getSetDetailCommands(block).filter { command -> isNewTransactionCreated(command) }
             .forEach { command ->
                 newTransactionCreatedHandler.handleCreateTransactionCommand(command.setAccountDetail)
             }
-
         // Handle signature appearance commands
         getSetDetailCommands(block).filter { command -> isNewWithdrawalSignature(command) }
             .forEach { command ->
@@ -135,7 +146,6 @@ class BtcWithdrawalInitialization(
         getSetDetailCommands(block).forEach { command ->
             newBtcClientRegistrationHandler.handleNewClientCommand(command, transferWallet)
         }
-
         // Handle newly generated Bitcoin change addresses. We need it to update transferWallet object.
         getSetDetailCommands(block).filter { command ->
             command.hasSetAccountDetail() &&
@@ -185,6 +195,36 @@ class BtcWithdrawalInitialization(
 
     private fun isNewConsensus(command: Commands.Command) =
         command.hasSetAccountDetail() && command.setAccountDetail.accountId.endsWith("@$BTC_CONSENSUS_DOMAIN")
+
+    private fun isBroadcast(command: Commands.Command) =
+        command.hasSetAccountDetail() && command.setAccountDetail.accountId == btcWithdrawalConfig.broadcastsCredential.accountId
+
+    /**
+     * Returns withdrawal commands from transaction if form of Pair(withdrawal command, fee command)
+     * @param transaction - transaction that will be used to get commands from
+     * @return pair of commands or null if no appropriate commands were found
+     */
+    private fun getWithdrawalCommands(transaction: TransactionOuterClass.Transaction): Pair<Commands.Command, Commands.Command>? {
+        var withdrawalCommand: Commands.Command? = null
+        var feeCommand: Commands.Command? = null
+        transaction.payload.reducedPayload.commandsList.forEach { command ->
+            if (command.hasTransferAsset()) {
+                val transferCommand = command.transferAsset
+                if (isValidBtcAddress(transferCommand.description)) {
+                    // If description is a valid BTC address, then it's a withdrawal command
+                    withdrawalCommand = command
+                } else if (transferCommand.description == FEE_DESCRIPTION) {
+                    // If description is a sha256('Fee'), then it's a fee command
+                    feeCommand = command
+                }
+            }
+        }
+        // If no commands were found
+        if (withdrawalCommand == null || feeCommand == null) {
+            return null
+        }
+        return Pair(withdrawalCommand!!, feeCommand!!)
+    }
 
     override fun close() {
         logger.info { "Closing Bitcoin withdrawal service" }

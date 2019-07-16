@@ -35,7 +35,8 @@ public class NewConsensusDataHandlerTest {
                 "src account id",
                 "to address",
                 0,
-                System.currentTimeMillis());
+                System.currentTimeMillis(),
+                0);
         newConsensusDataHandler = new NewConsensusDataHandler(
                 withdrawalTransferService,
                 withdrawalConsensusProvider,

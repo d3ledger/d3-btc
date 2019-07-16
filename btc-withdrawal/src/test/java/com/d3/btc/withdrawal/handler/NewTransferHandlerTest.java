@@ -29,6 +29,11 @@ public class NewTransferHandlerTest {
     private BroadcastsProvider broadcastsProvider;
     private BtcWithdrawalConfig btcWithdrawalConfig;
     private NewTransferHandler handler;
+    private static final String BTC_SERVICE_ACCOUNT = "btcService@btc";
+    private static final Commands.TransferAsset feeCommand = Commands.TransferAsset.newBuilder()
+            .setDestAccountId(BTC_SERVICE_ACCOUNT)
+            .setAmount("0.1")
+            .build();
 
     @Before
     public void setUp() {
@@ -52,17 +57,16 @@ public class NewTransferHandlerTest {
      */
     @Test
     public void testHandleTransferCommandHasBeenBroadcasted() {
-        String btcServiceAccount = "btcService@btc";
         IrohaCredentialRawConfig irohaCredentialRawConfig = mock(IrohaCredentialRawConfig.class);
-        when(irohaCredentialRawConfig.getAccountId()).thenReturn(btcServiceAccount);
+        when(irohaCredentialRawConfig.getAccountId()).thenReturn(BTC_SERVICE_ACCOUNT);
         when(btcWithdrawalConfig.getWithdrawalCredential()).thenReturn(irohaCredentialRawConfig);
         when(broadcastsProvider.hasBeenBroadcasted(any(WithdrawalDetails.class))).thenReturn(Result.Companion.of(() -> true));
         doNothing().when(handler).checkAndStartConsensus(any());
         Commands.TransferAsset transferAsset = Commands.TransferAsset.newBuilder()
-                .setDestAccountId(btcServiceAccount)
+                .setDestAccountId(BTC_SERVICE_ACCOUNT)
                 .setAmount("1")
                 .build();
-        handler.handleTransferCommand(transferAsset, System.currentTimeMillis());
+        handler.handleTransferCommand(transferAsset, feeCommand, System.currentTimeMillis());
         verify(handler, never()).checkAndStartConsensus(any());
         verify(btcRollbackService, never()).rollback(any(WithdrawalDetails.class), anyString());
     }
@@ -75,17 +79,16 @@ public class NewTransferHandlerTest {
      */
     @Test
     public void testHandleTransferCommandHasNotBeenBroadcasted() {
-        String btcServiceAccount = "btcService@btc";
         IrohaCredentialRawConfig irohaCredentialRawConfig = mock(IrohaCredentialRawConfig.class);
-        when(irohaCredentialRawConfig.getAccountId()).thenReturn(btcServiceAccount);
+        when(irohaCredentialRawConfig.getAccountId()).thenReturn(BTC_SERVICE_ACCOUNT);
         when(btcWithdrawalConfig.getWithdrawalCredential()).thenReturn(irohaCredentialRawConfig);
         when(broadcastsProvider.hasBeenBroadcasted(any(WithdrawalDetails.class))).thenReturn(Result.Companion.of(() -> false));
         doNothing().when(handler).checkAndStartConsensus(any());
         Commands.TransferAsset transferAsset = Commands.TransferAsset.newBuilder()
-                .setDestAccountId(btcServiceAccount)
+                .setDestAccountId(BTC_SERVICE_ACCOUNT)
                 .setAmount("1")
                 .build();
-        handler.handleTransferCommand(transferAsset, System.currentTimeMillis());
+        handler.handleTransferCommand(transferAsset, feeCommand, System.currentTimeMillis());
         verify(handler).checkAndStartConsensus(any());
         verify(btcRollbackService, never()).rollback(any(WithdrawalDetails.class), anyString());
     }
@@ -101,7 +104,7 @@ public class NewTransferHandlerTest {
             throw new RuntimeException("Failed consensus");
         }));
         WithdrawalDetails withdrawalDetails = new WithdrawalDetails(
-                "source account id", VALID_BTC_ADDRESS, 0, System.currentTimeMillis());
+                "source account id", VALID_BTC_ADDRESS, 0, System.currentTimeMillis(), 0);
         handler.startConsensusProcess(withdrawalDetails);
         verify(btcRollbackService).rollback(eq(withdrawalDetails), anyString());
     }
@@ -115,7 +118,7 @@ public class NewTransferHandlerTest {
     public void testStartConsensusProcess() {
         when(withdrawalConsensusProvider.createConsensusData(any())).thenReturn(Result.Companion.of(() -> Unit.INSTANCE));
         WithdrawalDetails withdrawalDetails = new WithdrawalDetails(
-                "source account id", VALID_BTC_ADDRESS, 0, System.currentTimeMillis());
+                "source account id", VALID_BTC_ADDRESS, 0, System.currentTimeMillis(), 0);
         handler.startConsensusProcess(withdrawalDetails);
         verify(btcRollbackService, never()).rollback(eq(withdrawalDetails), anyString());
     }
@@ -132,7 +135,7 @@ public class NewTransferHandlerTest {
         when(broadcastsProvider.hasBeenBroadcasted(any(WithdrawalDetails.class))).thenReturn(Result.Companion.of(() -> false));
         doNothing().when(handler).startConsensusProcess(any());
         WithdrawalDetails withdrawalDetails = new WithdrawalDetails(
-                "source account id", VALID_BTC_ADDRESS, 10_000, System.currentTimeMillis());
+                "source account id", VALID_BTC_ADDRESS, 10_000, System.currentTimeMillis(), 0);
         handler.checkAndStartConsensus(withdrawalDetails);
         verify(btcRollbackService).rollback(eq(withdrawalDetails), anyString());
         verify(handler, never()).startConsensusProcess(any());
@@ -150,7 +153,7 @@ public class NewTransferHandlerTest {
         when(broadcastsProvider.hasBeenBroadcasted(any(WithdrawalDetails.class))).thenReturn(Result.Companion.of(() -> false));
         doNothing().when(handler).startConsensusProcess(any());
         WithdrawalDetails withdrawalDetails = new WithdrawalDetails(
-                "source account id", "invalid address", 10_000, System.currentTimeMillis());
+                "source account id", "invalid address", 10_000, System.currentTimeMillis(), 0);
         handler.checkAndStartConsensus(withdrawalDetails);
         verify(btcRollbackService).rollback(eq(withdrawalDetails), anyString());
         verify(handler, never()).startConsensusProcess(any());
@@ -168,7 +171,7 @@ public class NewTransferHandlerTest {
         when(broadcastsProvider.hasBeenBroadcasted(any(WithdrawalDetails.class))).thenReturn(Result.Companion.of(() -> false));
         doNothing().when(handler).startConsensusProcess(any());
         WithdrawalDetails withdrawalDetails = new WithdrawalDetails(
-                "source account id", VALID_BTC_ADDRESS, 0, System.currentTimeMillis());
+                "source account id", VALID_BTC_ADDRESS, 0, System.currentTimeMillis(), 0);
         handler.checkAndStartConsensus(withdrawalDetails);
         verify(btcRollbackService).rollback(eq(withdrawalDetails), anyString());
         verify(handler, never()).startConsensusProcess(any());
@@ -186,7 +189,7 @@ public class NewTransferHandlerTest {
         when(broadcastsProvider.hasBeenBroadcasted(any(WithdrawalDetails.class))).thenReturn(Result.Companion.of(() -> false));
         doNothing().when(handler).startConsensusProcess(any());
         WithdrawalDetails withdrawalDetails = new WithdrawalDetails(
-                "source account id", VALID_BTC_ADDRESS, 10_000, System.currentTimeMillis());
+                "source account id", VALID_BTC_ADDRESS, 10_000, System.currentTimeMillis(), 0);
         handler.checkAndStartConsensus(withdrawalDetails);
         verify(btcRollbackService, never()).rollback(eq(withdrawalDetails), anyString());
         verify(handler).startConsensusProcess(any());
@@ -199,9 +202,8 @@ public class NewTransferHandlerTest {
      */
     @Test
     public void testHandleTransferCommandBroadcastFailure() {
-        String btcServiceAccount = "btcService@btc";
         IrohaCredentialRawConfig irohaCredentialRawConfig = mock(IrohaCredentialRawConfig.class);
-        when(irohaCredentialRawConfig.getAccountId()).thenReturn(btcServiceAccount);
+        when(irohaCredentialRawConfig.getAccountId()).thenReturn(BTC_SERVICE_ACCOUNT);
         when(btcWithdrawalConfig.getWithdrawalCredential()).thenReturn(irohaCredentialRawConfig);
         when(withdrawalConsensusProvider.createConsensusData(any())).thenReturn(Result.Companion.of(() -> Unit.INSTANCE));
         when(broadcastsProvider.hasBeenBroadcasted(any(WithdrawalDetails.class))).thenReturn(Result.Companion.of(() -> {
@@ -212,8 +214,8 @@ public class NewTransferHandlerTest {
                 .setAmount("10000")
                 .setDescription(VALID_BTC_ADDRESS)
                 .setSrcAccountId("source account id")
-                .setDestAccountId(btcServiceAccount).build();
-        handler.handleTransferCommand(transferAssetCommand, System.currentTimeMillis());
+                .setDestAccountId(BTC_SERVICE_ACCOUNT).build();
+        handler.handleTransferCommand(transferAssetCommand, feeCommand, System.currentTimeMillis());
         verify(btcRollbackService).rollback(any(WithdrawalDetails.class), anyString());
         verify(handler, never()).checkAndStartConsensus(any());
     }
@@ -237,7 +239,7 @@ public class NewTransferHandlerTest {
                 .setDescription(VALID_BTC_ADDRESS)
                 .setSrcAccountId("source account id")
                 .setDestAccountId("another@account").build();
-        handler.handleTransferCommand(transferAssetCommand, System.currentTimeMillis());
+        handler.handleTransferCommand(transferAssetCommand, feeCommand, System.currentTimeMillis());
         verify(handler, never()).checkAndStartConsensus(any());
         verify(btcRollbackService, never()).rollback(any(WithdrawalDetails.class), anyString());
     }

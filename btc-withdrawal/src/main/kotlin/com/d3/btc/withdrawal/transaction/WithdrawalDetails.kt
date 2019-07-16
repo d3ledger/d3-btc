@@ -14,12 +14,14 @@ import jp.co.soramitsu.iroha.java.Utils
  * @param amountSat - desired amount of SAT to withdraw
  * @param toAddress - Bitcoin destination address in base58 format
  * @param withdrawalTime - time of withdrawal
+ * @param withdrawalFeeSat - fee of withdrawal in Satoshi
  */
 data class WithdrawalDetails(
     val sourceAccountId: String,
     val toAddress: String,
     val amountSat: Long,
-    val withdrawalTime: Long
+    val withdrawalTime: Long,
+    val withdrawalFeeSat: Long
 ) {
     /**
      * Computes sha1 based Iroha friendly hash code
@@ -27,6 +29,6 @@ data class WithdrawalDetails(
      */
     fun irohaFriendlyHashCode(): String =
         Utils.toHex(
-            sha1((sourceAccountId + toAddress + amountSat + withdrawalTime).toByteArray())
+            sha1((sourceAccountId + toAddress + amountSat + withdrawalTime + withdrawalFeeSat).toByteArray())
         ).toLowerCase().substring(0..31)
 }

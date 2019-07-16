@@ -58,7 +58,7 @@ public class NewSignatureEventHandlerTest {
      */
     @Test
     public void testHandleNewSignatureCommandHasBeenBroadcasted() {
-        WithdrawalDetails withdrawalDetails = new WithdrawalDetails("src account id", "to address", 0, System.currentTimeMillis());
+        WithdrawalDetails withdrawalDetails = new WithdrawalDetails("src account id", "to address", 0, System.currentTimeMillis(), 0);
         Transaction transaction = mock(Transaction.class);
         Pair<WithdrawalDetails, Transaction> withdrawal = new Pair<>(withdrawalDetails, transaction);
         when(transactionsStorage.get(anyString())).thenReturn(Result.Companion.of(() -> withdrawal));
@@ -76,7 +76,7 @@ public class NewSignatureEventHandlerTest {
      */
     @Test
     public void testHandleNewSignatureCommandHasNotBeenBroadcasted() {
-        WithdrawalDetails withdrawalDetails = new WithdrawalDetails("src account id", "to address", 0, System.currentTimeMillis());
+        WithdrawalDetails withdrawalDetails = new WithdrawalDetails("src account id", "to address", 0, System.currentTimeMillis(), 0);
         Transaction transaction = mock(Transaction.class);
         Pair<WithdrawalDetails, Transaction> withdrawal = new Pair<>(withdrawalDetails, transaction);
         when(transactionsStorage.get(anyString())).thenReturn(Result.Companion.of(() -> withdrawal));
@@ -94,7 +94,7 @@ public class NewSignatureEventHandlerTest {
      */
     @Test
     public void testHandleNewSignatureCommandBroadcastFailure() {
-        WithdrawalDetails withdrawalDetails = new WithdrawalDetails("src account id", "to address", 0, System.currentTimeMillis());
+        WithdrawalDetails withdrawalDetails = new WithdrawalDetails("src account id", "to address", 0, System.currentTimeMillis(), 0);
         Transaction transaction = mock(Transaction.class);
         Pair<WithdrawalDetails, Transaction> withdrawal = new Pair<>(withdrawalDetails, transaction);
         when(transactionsStorage.get(anyString())).thenReturn(Result.Companion.of(() -> withdrawal));
@@ -117,7 +117,7 @@ public class NewSignatureEventHandlerTest {
      */
     @Test
     public void testHandleNewSignatureCommandGetSignaturesFail() {
-        WithdrawalDetails withdrawalDetails = new WithdrawalDetails("src account id", "to address", 0, System.currentTimeMillis());
+        WithdrawalDetails withdrawalDetails = new WithdrawalDetails("src account id", "to address", 0, System.currentTimeMillis(), 0);
         Transaction transaction = mock(Transaction.class);
         when(transaction.getHashAsString()).thenReturn("abc");
         Pair<WithdrawalDetails, Transaction> withdrawal = new Pair<>(withdrawalDetails, transaction);

@@ -25,12 +25,10 @@ import com.d3.btc.withdrawal.provider.UTXOProvider
 import com.d3.btc.withdrawal.provider.UsedUTXOProvider
 import com.d3.btc.withdrawal.provider.WithdrawalConsensusProvider
 import com.d3.btc.withdrawal.service.BtcRollbackService
+import com.d3.btc.withdrawal.service.FeeService
 import com.d3.btc.withdrawal.service.WithdrawalTransferService
 import com.d3.btc.withdrawal.statistics.WithdrawalStatistics
-import com.d3.btc.withdrawal.transaction.SignCollector
-import com.d3.btc.withdrawal.transaction.TransactionCreator
-import com.d3.btc.withdrawal.transaction.TransactionSigner
-import com.d3.btc.withdrawal.transaction.TransactionsStorage
+import com.d3.btc.withdrawal.transaction.*
 import com.d3.commons.config.RMQConfig
 import com.d3.commons.config.loadRawLocalConfigs
 import com.d3.commons.expansion.ServiceExpansion
@@ -40,6 +38,7 @@ import com.d3.commons.sidechain.iroha.consumer.IrohaConsumerImpl
 import com.d3.commons.sidechain.iroha.consumer.MultiSigIrohaConsumer
 import com.d3.commons.util.createPrettySingleThreadPool
 import com.rabbitmq.client.ConnectionFactory
+import integration.btc.FAILED_WITHDRAW_AMOUNT
 import integration.helper.BtcIntegrationHelperUtil
 import io.grpc.ManagedChannelBuilder
 import jp.co.soramitsu.bootstrap.changelog.ChangelogInterface
@@ -163,6 +162,8 @@ class BtcWithdrawalTestEnvironment(
         irohaApi
     )
 
+    private val feeService = FeeService(btcWithdrawalConfig, withdrawalIrohaConsumerMultiSig)
+
     private val signaturesCollectorIrohaConsumer = IrohaConsumerImpl(
         signaturesCollectorCredential,
         irohaApi
@@ -259,14 +260,25 @@ class BtcWithdrawalTestEnvironment(
             btcRollbackService,
             broadcastsProvider
         )
-    val withdrawalTransferService = WithdrawalTransferService(
+    private val withdrawalTransferService = object : WithdrawalTransferService(
         withdrawalStatistics,
         bitcoinConfig,
         transactionCreator,
-        btcRollbackService,
-        utxoProvider
+        btcRollbackService
+    ) {
+        override fun registerWithdrawal(withdrawalDetails: WithdrawalDetails) {
+            if (withdrawalDetails.amountSat == FAILED_WITHDRAW_AMOUNT) {
+                throw Exception("Failed withdraw test")
+            }
+            super.registerWithdrawal(withdrawalDetails)
+        }
 
-    )
+        override fun registerTx(tx: Transaction) {
+            super.registerTx(tx)
+            createdTransactions[tx.hashAsString] = Pair(System.currentTimeMillis(), tx)
+        }
+    }
+
     val newSignatureEventHandler =
         NewSignatureEventHandler(
             withdrawalStatistics,
@@ -277,6 +289,8 @@ class BtcWithdrawalTestEnvironment(
             peerGroup,
             broadcastsProvider
         )
+
+    private val broadcastTransactionHandler = BroadcastTransactionHandler(feeService)
 
     private val newConsensusDataHandler =
         NewConsensusDataHandler(withdrawalTransferService, withdrawalConsensusProvider, btcRollbackService)
@@ -304,6 +318,7 @@ class BtcWithdrawalTestEnvironment(
             newChangeAddressHandler,
             newConsensusDataHandler,
             newTransactionCreatedHandler,
+            broadcastTransactionHandler,
             WithdrawalServiceExpansion(
                 irohaApi,
                 ServiceExpansion(
