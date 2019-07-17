@@ -17,11 +17,13 @@ import com.d3.btc.provider.address.BtcAddressesProvider
 import com.d3.btc.provider.generation.BtcPublicKeyProvider
 import com.d3.btc.provider.generation.BtcSessionProvider
 import com.d3.btc.provider.network.BtcRegTestConfigProvider
+import com.d3.commons.config.RMQConfig
+import com.d3.commons.config.loadRawLocalConfigs
 import com.d3.commons.expansion.ServiceExpansion
 import com.d3.commons.model.IrohaCredential
 import com.d3.commons.provider.NotaryPeerListProviderImpl
 import com.d3.commons.provider.TriggerProvider
-import com.d3.commons.sidechain.iroha.IrohaChainListener
+import com.d3.commons.sidechain.iroha.ReliableIrohaChainListener
 import com.d3.commons.sidechain.iroha.consumer.IrohaConsumerImpl
 import com.d3.commons.sidechain.iroha.consumer.MultiSigIrohaConsumer
 import com.d3.commons.sidechain.iroha.util.impl.IrohaQueryHelperImpl
@@ -130,9 +132,16 @@ class BtcAddressGenerationTestEnvironment(
         )
     }
 
-    private val irohaListener = IrohaChainListener(
-        irohaApi,
-        registrationCredential
+    private val rmqConfig =
+        loadRawLocalConfigs("rmq", RMQConfig::class.java, "rmq.properties")
+
+    private val irohaListener = ReliableIrohaChainListener(
+        rmqConfig, btcGenerationConfig.irohaBlockQueue,
+        consumerExecutorService = createPrettySingleThreadPool(
+            BTC_ADDRESS_GENERATION_SERVICE_NAME,
+            "rmq-consumer"
+        ),
+        autoAck = true
     )
 
     private val btcAddressesProvider = BtcAddressesProvider(

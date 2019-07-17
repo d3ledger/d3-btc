@@ -45,18 +45,18 @@ class BtcDepositTxHandler(
             if (btcAddress != null) {
                 val btcValue = satToBtc(output.value.value)
                 val event = SideChainEvent.PrimaryBlockChainEvent.ChainAnchoredOnPrimaryChainDeposit(
-                    tx.hashAsString,
+                    hash = tx.hashAsString,
                     /*
                     Due to Iroha time restrictions, tx time must be in range [current time - 1 day; current time + 5 min],
                     while Bitcoin block time must be in range [median time of last 11 blocks; network time + 2 hours].
                     Given these restrictions, block time may be more than 5 minutes ahead of current time.
                     Subtracting 2 hours is just a simple workaround of this problem.
                     */
-                    BigInteger.valueOf(blockTime.time - TWO_HOURS_MILLIS),
-                    btcAddress.info.irohaClient!!,
-                    "$BTC_ASSET_NAME#$BTC_ASSET_DOMAIN",
-                    btcValue.toPlainString(),
-                    ""
+                    time = BigInteger.valueOf(blockTime.time - TWO_HOURS_MILLIS),
+                    user = btcAddress.info.irohaClient!!,
+                    asset = "$BTC_ASSET_NAME#$BTC_ASSET_DOMAIN",
+                    amount = btcValue.toPlainString(),
+                    from = tx.hashAsString
                 )
                 logger.info {
                     "BTC deposit event(tx ${tx.hashAsString}, amount ${btcValue.toPlainString()}) was created. " +

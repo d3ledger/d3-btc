@@ -25,8 +25,10 @@ import iroha.protocol.Endpoint
 import jp.co.soramitsu.iroha.java.IrohaAPI
 import jp.co.soramitsu.iroha.java.Transaction
 import jp.co.soramitsu.iroha.java.Utils
+import jp.co.soramitsu.iroha.java.subscription.WaitForTerminalStatus
 import mu.KLogging
 import java.math.BigDecimal
+import java.util.*
 
 const val DEPOSIT_PATH = "deposit"
 const val WITHDRAWAL_PATH = "withdraw"
@@ -44,6 +46,16 @@ class TestingEndpoint(
     private val irohaAPI: IrohaAPI,
     private val notaryAccountId: String
 ) {
+
+    private val subscriptionStrategy = WaitForTerminalStatus(
+        Arrays.asList(
+            Endpoint.TxStatus.STATELESS_VALIDATION_FAILED,
+            Endpoint.TxStatus.COMMITTED,
+            Endpoint.TxStatus.MST_EXPIRED,
+            Endpoint.TxStatus.REJECTED,
+            Endpoint.TxStatus.UNRECOGNIZED
+        )
+    )
 
     init {
         logger.info { "Start ${serverBundle.ethRefund} test endpoints on port ${serverBundle.port}" }
@@ -71,7 +83,7 @@ class TestingEndpoint(
                     val testWithdrawal = call.receive(TestWithdrawal::class)
                     TestingEndpoint.logger.info { "Testing withdrawal invoked with parameters:${testWithdrawal.address}, ${testWithdrawal.amount}" }
                     withdrawBtc(testWithdrawal).fold({
-                        TestingEndpoint.logger.info { "Bitcoins were withdrawn successfully" }
+                        logger.info { "Bitcoins were withdrawn successfully" }
                         call.respondText("", status = HttpStatusCode.NoContent)
                     },
                         { ex -> call.respondText(ex.message!!, status = HttpStatusCode.BadRequest) }
@@ -81,7 +93,6 @@ class TestingEndpoint(
                     val testTransfer = call.receive(TestTransfer::class)
                     TestingEndpoint.logger.info { "Testing transfer invoked with parameters:${testTransfer.destAccountId}, ${testTransfer.amount}" }
                     transferBtc(testTransfer).fold({
-                        TestingEndpoint.logger.info { "Bitcoins were transferred successfully" }
                         call.respondText("", status = HttpStatusCode.NoContent)
                     },
                         { ex -> call.respondText(ex.message!!, status = HttpStatusCode.BadRequest) }
@@ -109,8 +120,10 @@ class TestingEndpoint(
                 notaryAccountId,
                 testWithdrawal.address,
                 testWithdrawal.amount,
+                testWithdrawal.createdTime,
                 testWithdrawal.publicKey,
-                testWithdrawal.privateKey
+                testWithdrawal.privateKey,
+                testWithdrawal.blocking
             )
         }
     }
@@ -122,8 +135,10 @@ class TestingEndpoint(
                 testTransfer.destAccountId,
                 "test",
                 testTransfer.amount,
+                testTransfer.createdTime,
                 testTransfer.publicKey,
-                testTransfer.privateKey
+                testTransfer.privateKey,
+                testTransfer.blocking
             )
         }
     }
@@ -133,11 +148,13 @@ class TestingEndpoint(
         destAccountId: String,
         description: String,
         amount: String,
+        createdTime: String?,
         publicKey: String,
-        privateKey: String
+        privateKey: String,
+        blocking: Boolean?
     ) {
-        val response = irohaAPI.transaction(
-            Transaction.builder(accountId)
+        val transaction =
+            Transaction.builder(accountId, createdTime?.toLongOrNull() ?: System.currentTimeMillis())
                 .transferAsset(
                     accountId,
                     destAccountId,
@@ -153,9 +170,18 @@ class TestingEndpoint(
                     )
                 )
                 .build()
-        ).lastElement().blockingGet()
-        if (response.txStatus != Endpoint.TxStatus.COMMITTED) {
-            throw Exception("Not committed in Iroha. Got response:\n$response")
+        val hash = Utils.toHex(Utils.hash(transaction))
+        if (blocking == false) {
+            irohaAPI.transaction(transaction)
+            logger.info { "Sent nonblocking tx: $hash" }
+        } else {
+            logger.info { "Sending blocking tx: $hash" }
+            val response = irohaAPI.transaction(transaction, subscriptionStrategy).lastElement().blockingGet()
+            if (response.txStatus != Endpoint.TxStatus.COMMITTED) {
+                logger.error { "Not committed in Iroha. Got response:\n$response" }
+                throw Exception("Not committed in Iroha. Got response:\n$response")
+            }
+            logger.info { "Bitcoins were transferred successfully" }
         }
     }
 
@@ -169,16 +195,20 @@ data class TestDeposit(val address: String, val amount: String)
 
 data class TestWithdrawal(
     val accountId: String,
+    val createdTime: String?,
     val address: String,
     val amount: String,
     val publicKey: String,
-    val privateKey: String
+    val privateKey: String,
+    val blocking: Boolean?
 )
 
 data class TestTransfer(
     val accountId: String,
     val destAccountId: String,
+    val createdTime: String?,
     val amount: String,
     val publicKey: String,
-    val privateKey: String
+    val privateKey: String,
+    val blocking: Boolean?
 )

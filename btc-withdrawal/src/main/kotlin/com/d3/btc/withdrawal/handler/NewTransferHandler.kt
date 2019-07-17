@@ -9,15 +9,14 @@ import com.d3.btc.fee.CurrentFeeRate
 import com.d3.btc.helper.address.isValidBtcAddress
 import com.d3.btc.helper.currency.btcToSat
 import com.d3.btc.withdrawal.config.BtcWithdrawalConfig
+import com.d3.btc.withdrawal.provider.BroadcastsProvider
 import com.d3.btc.withdrawal.provider.WithdrawalConsensusProvider
 import com.d3.btc.withdrawal.service.BtcRollbackService
 import com.d3.btc.withdrawal.statistics.WithdrawalStatistics
-import com.d3.btc.withdrawal.provider.UTXOProvider
 import com.d3.btc.withdrawal.transaction.WithdrawalDetails
 import com.d3.btc.withdrawal.transaction.isDust
 import iroha.protocol.Commands
 import mu.KLogging
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
 
@@ -26,11 +25,11 @@ import java.math.BigDecimal
  */
 @Component
 class NewTransferHandler(
-    @Autowired private val withdrawalStatistics: WithdrawalStatistics,
-    @Autowired private val btcWithdrawalConfig: BtcWithdrawalConfig,
-    @Autowired private val withdrawalConsensusProvider: WithdrawalConsensusProvider,
-    @Autowired private val btcRollbackService: BtcRollbackService,
-    @Autowired private val bitcoinUTXOProvider: UTXOProvider
+    private val withdrawalStatistics: WithdrawalStatistics,
+    private val btcWithdrawalConfig: BtcWithdrawalConfig,
+    private val withdrawalConsensusProvider: WithdrawalConsensusProvider,
+    private val btcRollbackService: BtcRollbackService,
+    private val broadcastsProvider: BroadcastsProvider
 ) {
 
     /**
@@ -47,7 +46,6 @@ class NewTransferHandler(
         val satAmount = btcToSat(btcAmount)
         val withdrawalDetails =
             WithdrawalDetails(sourceAccountId, destinationAddress, satAmount, withdrawalTime)
-
         logger.info {
             "Withdrawal event(" +
                     "from:$sourceAccountId " +
@@ -56,39 +54,47 @@ class NewTransferHandler(
                     "hash:${withdrawalDetails.irohaFriendlyHashCode()})"
         }
 
+        broadcastsProvider.hasBeenBroadcasted(withdrawalDetails)
+            .fold({ broadcasted ->
+                if (broadcasted) {
+                    logger.info("Withdrawal $withdrawalDetails has been broadcasted before")
+                } else {
+                    checkAndStartConsensus(withdrawalDetails)
+                }
+            }, { ex ->
+                btcRollbackService.rollback(withdrawalDetails, "Iroha error")
+                logger.error("Can't execute withdrawal operation due to Iroha error", ex)
+            })
+    }
+
+    /**
+     * Checks if withdrawal is valid and creates withdrawal consensus if possible
+     * @param withdrawalDetails - details of withdrwal
+     */
+    protected fun checkAndStartConsensus(withdrawalDetails: WithdrawalDetails) {
         if (!CurrentFeeRate.isPresent()) {
             logger.warn { "Cannot execute transfer. Fee rate was not set." }
             btcRollbackService.rollback(
-                sourceAccountId,
-                satAmount,
-                withdrawalTime,
-                "Not able to transfer yet"
+                withdrawalDetails, "Not able to transfer yet"
             )
             return
         }
         // Check if withdrawal has valid destination address
-        if (!isValidBtcAddress(destinationAddress)) {
-            logger.warn { "Cannot execute transfer. Destination $destinationAddress is not a valid base58 address." }
+        if (!isValidBtcAddress(withdrawalDetails.toAddress)) {
+            logger.warn { "Cannot execute transfer. Destination '${withdrawalDetails.toAddress}' is not a valid base58 address." }
             btcRollbackService.rollback(
-                sourceAccountId,
-                satAmount,
-                withdrawalTime,
-                "Invalid address"
+                withdrawalDetails, "Invalid address"
             )
             return
         }
         // Check if withdrawal amount is not too little
-        if (isDust(satAmount)) {
+        if (isDust(withdrawalDetails.amountSat)) {
             btcRollbackService.rollback(
-                sourceAccountId,
-                satAmount,
-                withdrawalTime,
-                "Too small amount"
+                withdrawalDetails, "Too small amount"
             )
-            logger.warn { "Can't spend SAT $satAmount, because it's considered a dust" }
+            logger.warn { "Can't spend SAT ${withdrawalDetails.amountSat}, because it's considered a dust" }
             return
         }
-
         // Create consensus
         withdrawalStatistics.incTotalTransfers()
         startConsensusProcess(withdrawalDetails)
@@ -98,7 +104,7 @@ class NewTransferHandler(
      * Starts consensus creation process
      * @param withdrawalDetails - details of withdrawal
      */
-    private fun startConsensusProcess(withdrawalDetails: WithdrawalDetails) {
+    protected fun startConsensusProcess(withdrawalDetails: WithdrawalDetails) {
         withdrawalConsensusProvider.createConsensusData(withdrawalDetails).fold({
             logger.info("Consensus data for $withdrawalDetails has been created")
         }, { ex ->
