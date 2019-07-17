@@ -6,6 +6,7 @@
 package com.d3.btc.withdrawal.provider
 
 import com.d3.btc.config.BitcoinConfig
+import com.d3.btc.helper.format.GsonInstance
 import com.d3.btc.withdrawal.transaction.WithdrawalConsensus
 import com.d3.btc.withdrawal.transaction.WithdrawalDetails
 import com.d3.commons.model.IrohaCredential
@@ -41,7 +42,7 @@ class WithdrawalConsensusProvider(
     private val bitcoinUTXOProvider: UTXOProvider,
     private val bitcoinConfig: BitcoinConfig
 ) {
-    private val gson = Gson()
+    private val gson = GsonInstance.get()
 
     /**
      * Creates consensus data and saves it in Iroha

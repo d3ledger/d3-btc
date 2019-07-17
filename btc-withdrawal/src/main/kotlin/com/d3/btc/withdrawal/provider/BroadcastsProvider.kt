@@ -1,5 +1,6 @@
 package com.d3.btc.withdrawal.provider
 
+import com.d3.btc.helper.format.GsonInstance
 import com.d3.btc.withdrawal.transaction.WithdrawalDetails
 import com.d3.commons.sidechain.iroha.consumer.IrohaConsumer
 import com.d3.commons.sidechain.iroha.util.IrohaQueryHelper
@@ -23,7 +24,7 @@ class BroadcastsProvider(
     private val withdrawalQueryHelper: IrohaQueryHelper
 ) {
 
-    private val gson = Gson()
+    private val gson = GsonInstance.get()
     /**
      * Checks if given withdrawal has been broadcasted before
      * @param withdrawalDetails - details of withdrawal

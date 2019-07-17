@@ -1,5 +1,6 @@
 package com.d3.btc.withdrawal.provider
 
+import com.d3.btc.helper.format.GsonInstance
 import com.d3.btc.helper.input.irohaKey
 import com.d3.btc.helper.output.irohaKey
 import com.d3.btc.withdrawal.transaction.WithdrawalDetails
@@ -25,7 +26,7 @@ open class UsedUTXOProvider(
     private val utxoStorageAccount: String
 ) {
 
-    private val gson = Gson()
+    private val gson = GsonInstance.get()
 
     /**
      * Checks if a given output has been used already

@@ -5,6 +5,7 @@
 
 package com.d3.btc.withdrawal.handler
 
+import com.d3.btc.helper.format.GsonInstance
 import com.d3.btc.withdrawal.service.FeeService
 import com.d3.btc.withdrawal.transaction.WithdrawalDetails
 import com.d3.commons.util.irohaUnEscape
@@ -19,7 +20,7 @@ import org.springframework.stereotype.Component
 @Component
 class BroadcastTransactionHandler(private val feeService: FeeService) {
 
-    private val gson = Gson()
+    private val gson = GsonInstance.get()
 
     /**
      * Handles 'broadcast' events
