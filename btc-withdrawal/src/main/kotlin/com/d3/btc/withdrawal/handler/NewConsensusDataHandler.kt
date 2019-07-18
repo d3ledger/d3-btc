@@ -5,13 +5,13 @@
 
 package com.d3.btc.withdrawal.handler
 
+import com.d3.btc.config.BTC_CONSENSUS_DOMAIN
 import com.d3.btc.helper.address.getSignThreshold
 import com.d3.btc.withdrawal.provider.WithdrawalConsensusProvider
 import com.d3.btc.withdrawal.service.BtcRollbackService
 import com.d3.btc.withdrawal.service.WithdrawalTransferService
 import com.d3.btc.withdrawal.transaction.WithdrawalConsensus
 import com.d3.btc.withdrawal.transaction.WithdrawalDetails
-import com.d3.commons.sidechain.iroha.BTC_CONSENSUS_DOMAIN
 import com.d3.commons.util.irohaUnEscape
 import iroha.protocol.Commands
 import mu.KLogging

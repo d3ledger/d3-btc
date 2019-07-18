@@ -12,7 +12,7 @@ import com.d3.commons.model.IrohaCredential
 import com.d3.commons.notary.IrohaCommand
 import com.d3.commons.notary.IrohaTransaction
 import com.d3.commons.provider.NotaryPeerListProvider
-import com.d3.commons.sidechain.iroha.BTC_CONSENSUS_DOMAIN
+import com.d3.btc.config.BTC_CONSENSUS_DOMAIN
 import com.d3.commons.sidechain.iroha.consumer.IrohaConsumer
 import com.d3.commons.sidechain.iroha.consumer.IrohaConverter
 import com.d3.commons.sidechain.iroha.util.IrohaQueryHelper

@@ -15,11 +15,10 @@ import org.bitcoinj.core.PeerGroup;
 import org.bitcoinj.core.Transaction;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Mock;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static com.d3.commons.sidechain.iroha.IrohaValsKt.BTC_SIGN_COLLECT_DOMAIN;
+import static com.d3.btc.config.BitcoinConfigKt.BTC_SIGN_COLLECT_DOMAIN;
 import static org.mockito.Mockito.*;
 
 public class NewSignatureEventHandlerTest {

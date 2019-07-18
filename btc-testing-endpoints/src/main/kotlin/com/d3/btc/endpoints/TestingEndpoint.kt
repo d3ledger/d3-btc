@@ -5,6 +5,7 @@
 
 package com.d3.btc.endpoints
 
+import com.d3.btc.config.BTC_ASSET
 import com.d3.commons.notary.endpoint.ServerInitializationBundle
 import com.github.jleskovar.btcrpc.BitcoinRpcClient
 import com.github.kittinunf.result.Result
@@ -33,7 +34,6 @@ import java.util.*
 const val DEPOSIT_PATH = "deposit"
 const val WITHDRAWAL_PATH = "withdraw"
 const val TRANSFER_PATH = "transfer"
-const val BTC_ASSET = "btc#bitcoin"
 
 private const val CONFIRMATION_BLOCKS = 6
 

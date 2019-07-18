@@ -19,8 +19,8 @@ import com.d3.btc.withdrawal.config.BtcWithdrawalConfig
 import com.d3.btc.withdrawal.expansion.WithdrawalServiceExpansion
 import com.d3.btc.withdrawal.handler.*
 import com.d3.commons.config.RMQConfig
-import com.d3.commons.sidechain.iroha.BTC_CONSENSUS_DOMAIN
-import com.d3.commons.sidechain.iroha.BTC_SIGN_COLLECT_DOMAIN
+import com.d3.btc.config.BTC_CONSENSUS_DOMAIN
+import com.d3.btc.config.BTC_SIGN_COLLECT_DOMAIN
 import com.d3.commons.sidechain.iroha.ReliableIrohaChainListener
 import com.d3.commons.sidechain.iroha.util.getSetDetailCommands
 import com.d3.commons.sidechain.iroha.util.getTransferCommands

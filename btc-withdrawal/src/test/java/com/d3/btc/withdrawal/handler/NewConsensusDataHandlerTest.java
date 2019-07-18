@@ -14,7 +14,7 @@ import org.junit.Test;
 import java.util.Arrays;
 import java.util.List;
 
-import static com.d3.commons.sidechain.iroha.IrohaValsKt.BTC_CONSENSUS_DOMAIN;
+import static com.d3.btc.config.BitcoinConfigKt.BTC_CONSENSUS_DOMAIN;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.*;
 

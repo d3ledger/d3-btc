@@ -5,6 +5,7 @@
 
 package integration.btc
 
+import com.d3.btc.config.BTC_ASSET
 import com.d3.btc.helper.address.outPutToBase58Address
 import com.d3.btc.helper.currency.satToBtc
 import com.d3.btc.model.BtcAddressType
@@ -17,7 +18,6 @@ import com.d3.commons.util.toHexString
 import com.github.kittinunf.result.failure
 import integration.btc.environment.BtcAddressGenerationTestEnvironment
 import integration.btc.environment.BtcWithdrawalTestEnvironment
-import integration.helper.BTC_ASSET
 import integration.helper.BtcIntegrationHelperUtil
 import integration.registration.RegistrationServiceTestEnvironment
 import kotlinx.coroutines.GlobalScope

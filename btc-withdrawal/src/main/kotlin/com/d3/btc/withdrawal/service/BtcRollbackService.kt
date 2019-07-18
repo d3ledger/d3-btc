@@ -5,6 +5,7 @@
 
 package com.d3.btc.withdrawal.service
 
+import com.d3.btc.config.BTC_ASSET
 import com.d3.btc.helper.currency.satToBtc
 import com.d3.btc.withdrawal.transaction.WithdrawalDetails
 import com.d3.commons.sidechain.iroha.consumer.IrohaConsumer
@@ -12,11 +13,8 @@ import com.d3.commons.sidechain.iroha.consumer.MultiSigIrohaConsumer
 import com.d3.commons.sidechain.iroha.util.ModelUtil
 import com.github.kittinunf.result.flatMap
 import mu.KLogging
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
-
-private const val BTC_ASSET_ID = "btc#bitcoin"
 
 /**
  * Bitcoin rollback service
@@ -54,7 +52,7 @@ class BtcRollbackService(
                 withdrawalConsumer,
                 withdrawalConsumer.creator,
                 accountId,
-                BTC_ASSET_ID,
+                BTC_ASSET,
                 "Rollback. $reason",
                 satToBtc(amountSat).toPlainString(),
                 withdrawalTime,

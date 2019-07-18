@@ -14,7 +14,7 @@ import com.d3.btc.helper.transaction.shortTxHash
 import com.d3.commons.model.IrohaCredential
 import com.d3.commons.notary.IrohaCommand
 import com.d3.commons.notary.IrohaTransaction
-import com.d3.commons.sidechain.iroha.BTC_SIGN_COLLECT_DOMAIN
+import com.d3.btc.config.BTC_SIGN_COLLECT_DOMAIN
 import com.d3.commons.sidechain.iroha.consumer.IrohaConsumer
 import com.d3.commons.sidechain.iroha.consumer.IrohaConverter
 import com.d3.commons.sidechain.iroha.util.ModelUtil
