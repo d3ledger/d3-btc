@@ -5,6 +5,7 @@
 
 package integration.btc
 
+import com.d3.btc.config.BTC_ASSET
 import com.d3.btc.helper.currency.satToBtc
 import com.d3.btc.model.BtcAddressType
 import com.d3.commons.sidechain.iroha.CLIENT_DOMAIN
@@ -15,7 +16,6 @@ import integration.btc.environment.BtcAddressGenerationTestEnvironment
 import integration.btc.environment.BtcNotaryTestEnvironment
 import integration.btc.environment.BtcRegistrationTestEnvironment
 import integration.btc.environment.BtcWithdrawalTestEnvironment
-import integration.helper.BTC_ASSET
 import integration.helper.BtcIntegrationHelperUtil
 import integration.registration.RegistrationServiceTestEnvironment
 import jp.co.soramitsu.crypto.ed25519.Ed25519Sha3

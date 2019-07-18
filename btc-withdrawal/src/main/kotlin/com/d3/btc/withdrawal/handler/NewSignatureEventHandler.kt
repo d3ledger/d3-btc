@@ -5,6 +5,7 @@
 
 package com.d3.btc.withdrawal.handler
 
+import com.d3.btc.config.BTC_SIGN_COLLECT_DOMAIN
 import com.d3.btc.withdrawal.provider.BroadcastsProvider
 import com.d3.btc.withdrawal.provider.UTXOProvider
 import com.d3.btc.withdrawal.service.BtcRollbackService
@@ -12,7 +13,6 @@ import com.d3.btc.withdrawal.statistics.WithdrawalStatistics
 import com.d3.btc.withdrawal.transaction.SignCollector
 import com.d3.btc.withdrawal.transaction.TransactionsStorage
 import com.d3.btc.withdrawal.transaction.WithdrawalDetails
-import com.d3.commons.sidechain.iroha.BTC_SIGN_COLLECT_DOMAIN
 import com.github.kittinunf.result.failure
 import com.github.kittinunf.result.map
 import iroha.protocol.Commands

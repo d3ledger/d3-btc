@@ -5,6 +5,7 @@
 
 package integration.btc
 
+import com.d3.btc.config.BTC_ASSET
 import com.d3.commons.sidechain.iroha.CLIENT_DOMAIN
 import com.d3.commons.util.getRandomString
 import com.d3.commons.util.toHexString
@@ -77,7 +78,7 @@ class BtcRegistrationIntegrationTest {
             }, { ex -> fail("cannot get addresses", ex) })
         assertEquals(
             BigInteger.ZERO.toString(),
-            integrationHelper.getIrohaAccountBalance("$userName@$CLIENT_DOMAIN", "btc#bitcoin")
+            integrationHelper.getIrohaAccountBalance("$userName@$CLIENT_DOMAIN", BTC_ASSET)
         )
     }
 
@@ -114,7 +115,7 @@ class BtcRegistrationIntegrationTest {
             }, { ex -> fail("cannot get addresses", ex) })
         assertEquals(
             BigInteger.ZERO.toString(),
-            integrationHelper.getIrohaAccountBalance("$userName@$CLIENT_DOMAIN", "btc#bitcoin")
+            integrationHelper.getIrohaAccountBalance("$userName@$CLIENT_DOMAIN", BTC_ASSET)
         )
     }
 
@@ -189,7 +190,7 @@ class BtcRegistrationIntegrationTest {
                 }, { ex -> fail("cannot get addresses", ex) })
             assertEquals(
                 BigInteger.ZERO.toString(),
-                integrationHelper.getIrohaAccountBalance("$userName@$CLIENT_DOMAIN", "btc#bitcoin")
+                integrationHelper.getIrohaAccountBalance("$userName@$CLIENT_DOMAIN", BTC_ASSET)
             )
         }
 

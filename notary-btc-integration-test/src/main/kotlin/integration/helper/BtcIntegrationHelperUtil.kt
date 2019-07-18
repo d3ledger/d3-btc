@@ -39,8 +39,6 @@ import java.io.File
 import java.math.BigDecimal
 import java.security.KeyPair
 
-// Btc asset id
-const val BTC_ASSET = "btc#bitcoin"
 // Default node id
 const val NODE_ID = "any id"
 // How many address may be generated in one batch
