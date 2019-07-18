@@ -25,7 +25,7 @@ import com.d3.btc.withdrawal.provider.UTXOProvider
 import com.d3.btc.withdrawal.provider.UsedUTXOProvider
 import com.d3.btc.withdrawal.provider.WithdrawalConsensusProvider
 import com.d3.btc.withdrawal.service.BtcRollbackService
-import com.d3.btc.withdrawal.service.FeeService
+import com.d3.btc.withdrawal.service.WithdrawalFinalizeService
 import com.d3.btc.withdrawal.service.WithdrawalTransferService
 import com.d3.btc.withdrawal.statistics.WithdrawalStatistics
 import com.d3.btc.withdrawal.transaction.*
@@ -162,7 +162,7 @@ class BtcWithdrawalTestEnvironment(
         irohaApi
     )
 
-    private val feeService = FeeService(btcWithdrawalConfig, withdrawalIrohaConsumerMultiSig)
+    private val feeService = WithdrawalFinalizeService(btcWithdrawalConfig, withdrawalIrohaConsumerMultiSig)
 
     private val signaturesCollectorIrohaConsumer = IrohaConsumerImpl(
         signaturesCollectorCredential,

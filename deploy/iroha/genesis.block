@@ -103,7 +103,8 @@
                     "can_get_all_txs",
                     "can_add_signatory",
                     "can_set_quorum",
-                    "can_set_detail"
+                    "can_set_detail",
+                    "can_subtract_asset_qty"
                   ]
                 }
               },

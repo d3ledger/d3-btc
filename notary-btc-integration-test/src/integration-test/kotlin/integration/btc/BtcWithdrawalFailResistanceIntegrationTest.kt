@@ -15,8 +15,10 @@ import com.d3.commons.util.getRandomString
 import com.d3.commons.util.toHexString
 import com.github.kittinunf.result.failure
 import integration.btc.environment.BtcWithdrawalTestEnvironment
+import integration.helper.BTC_PRECISION
 import integration.helper.BtcIntegrationHelperUtil
 import integration.registration.RegistrationServiceTestEnvironment
+import mu.KLogging
 import org.bitcoinj.core.Address
 import org.junit.Assert.assertNotNull
 import org.junit.jupiter.api.*
@@ -129,7 +131,7 @@ class BtcWithdrawalFailResistanceIntegrationTest {
         assertEquals(initTxCount + 1, environment.createdTransactions.size)
         val createdWithdrawalTx = environment.getLastCreatedTxHash()
         environment.signCollector.getSignatures(createdWithdrawalTx).fold({ signatures ->
-            BtcWithdrawalIntegrationTest.logger.info { "signatures $signatures" }
+            logger.info { "signatures $signatures" }
             assertEquals(1, signatures[0]!!.size)
         }, { ex -> fail(ex) })
         environment.utxoProvider.addToBlackList(btcAddressSrc)
@@ -151,6 +153,12 @@ class BtcWithdrawalFailResistanceIntegrationTest {
                 transactionOutput
             ) == changeAddress.toBase58()
         })
-        assertEquals(feeInitialAmount + getFee(amount), integrationHelper.getWithdrawalFees())
+        assertEquals((feeInitialAmount + getFee(amount)).setScale(BTC_PRECISION), integrationHelper.getWithdrawalFees())
+        assertEquals(
+            BigDecimal.valueOf(0).setScale(BTC_PRECISION),
+            integrationHelper.getWithdrawalAccountBalance(environment.btcWithdrawalConfig)
+        )
     }
+
+    companion object : KLogging()
 }

@@ -19,10 +19,12 @@ import com.d3.commons.util.toHexString
 import com.github.kittinunf.result.failure
 import integration.btc.environment.BtcAddressGenerationTestEnvironment
 import integration.btc.environment.BtcWithdrawalTestEnvironment
+import integration.helper.BTC_PRECISION
 import integration.helper.BtcIntegrationHelperUtil
 import integration.registration.RegistrationServiceTestEnvironment
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import mu.KLogging
 import org.bitcoinj.core.Address
 import org.bitcoinj.params.RegTestParams
 import org.junit.jupiter.api.*
@@ -159,6 +161,10 @@ class BtcMultiWithdrawalIntegrationTest {
             integrationHelper.getIrohaAccountBalance(testClientSrc, BTC_ASSET)
         )
         assertEquals(feeInitialAmount, integrationHelper.getWithdrawalFees())
+        assertEquals(
+            BigDecimal.valueOf(0).setScale(BTC_PRECISION),
+            integrationHelper.getWithdrawalAccountBalance(environment.btcWithdrawalConfig)
+        )
         environment.utxoProvider.addToBlackList(btcAddressDest)
     }
 
@@ -213,7 +219,7 @@ class BtcMultiWithdrawalIntegrationTest {
         assertEquals(initTxCount + 1, environment.createdTransactions.size)
         val createdWithdrawalTx = environment.getLastCreatedTxHash()
         environment.signCollector.getSignatures(createdWithdrawalTx).fold({ signatures ->
-            BtcWithdrawalIntegrationTest.logger.info { "signatures $signatures" }
+            logger.info { "signatures $signatures" }
             assertEquals(peers, signatures[0]!!.size)
         }, { ex -> fail(ex) })
         environment.utxoProvider.addToBlackList(btcAddressSrc)
@@ -230,7 +236,11 @@ class BtcMultiWithdrawalIntegrationTest {
                 transactionOutput
             ) == btcAddressDest
         })
-        assertEquals(feeInitialAmount + getFee(amount), integrationHelper.getWithdrawalFees())
+        assertEquals(
+            BigDecimal.valueOf(0).setScale(BTC_PRECISION),
+            integrationHelper.getWithdrawalAccountBalance(environment.btcWithdrawalConfig)
+        )
+        assertEquals((feeInitialAmount + getFee(amount)).setScale(BTC_PRECISION), integrationHelper.getWithdrawalFees())
         //Check that change addresses are watched
         withdrawalEnvironments.forEach { withdrawalEnvironment ->
             val changeAddresses =
@@ -274,4 +284,6 @@ class BtcMultiWithdrawalIntegrationTest {
             }.map { entry -> entry.value }
         return com.d3.btc.helper.address.createMsAddress(notaryKeys, RegTestParams.get()).toBase58()
     }
+
+    companion object : KLogging()
 }

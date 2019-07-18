@@ -42,5 +42,5 @@ interface BtcWithdrawalConfig {
     // Account that is used to store used UTXO
     val utxoStorageAccount: String
     // Account that collects withdrawal fees
-    val withdrawalFeeAccount: String
+    val withdrawalBillingAccount: String
 }

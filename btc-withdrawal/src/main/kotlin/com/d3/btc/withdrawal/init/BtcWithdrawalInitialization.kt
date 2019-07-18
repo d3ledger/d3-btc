@@ -214,7 +214,7 @@ class BtcWithdrawalInitialization(
                     // If description is a valid BTC address, then it's a withdrawal command
                     withdrawalCommand = command
                 } else if (transferCommand.description == FEE_DESCRIPTION) {
-                    // If description is a sha256('Fee'), then it's a fee command
+                    // If description equals to 'withdrawal fee', then it's a fee command
                     feeCommand = command
                 }
             }

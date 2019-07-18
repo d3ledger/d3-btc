@@ -9,13 +9,14 @@ import com.d3.btc.config.BTC_ASSET
 import com.d3.btc.fee.CurrentFeeRate
 import com.d3.btc.helper.address.outPutToBase58Address
 import com.d3.btc.helper.currency.satToBtc
-import com.d3.commons.sidechain.iroha.FEE_DESCRIPTION
 import com.d3.commons.sidechain.iroha.CLIENT_DOMAIN
+import com.d3.commons.sidechain.iroha.FEE_DESCRIPTION
 import com.d3.commons.sidechain.iroha.util.ModelUtil
 import com.d3.commons.util.getRandomString
 import com.d3.commons.util.toHexString
 import com.github.kittinunf.result.failure
 import integration.btc.environment.BtcWithdrawalTestEnvironment
+import integration.helper.BTC_PRECISION
 import integration.helper.BtcIntegrationHelperUtil
 import integration.registration.RegistrationServiceTestEnvironment
 import mu.KLogging
@@ -181,7 +182,11 @@ class BtcWithdrawalIntegrationTest {
         assertTrue(walletFromFile.unspents.any { utxo -> utxo.getAddressFromP2SH(RegTestParams.get()) == changeAddress })
         // Check that change address is watched
         assertTrue(walletFromFile.isAddressWatched(changeAddress))
-        assertEquals(feeInitialAmount + getFee(amount), integrationHelper.getWithdrawalFees())
+        assertEquals((feeInitialAmount + getFee(amount)).setScale(BTC_PRECISION), integrationHelper.getWithdrawalFees())
+        assertEquals(
+            BigDecimal.valueOf(0).setScale(BTC_PRECISION),
+            integrationHelper.getWithdrawalAccountBalance(environment.btcWithdrawalConfig)
+        )
     }
 
     /**
@@ -256,6 +261,10 @@ class BtcWithdrawalIntegrationTest {
         assertEquals(feeInitialAmount + getFee(amount), integrationHelper.getWithdrawalFees())
         environment.utxoProvider.addToBlackList(btcAddressSrc)
         environment.utxoProvider.addToBlackList(btcAddressDest)
+        assertEquals(
+            BigDecimal.valueOf(0).setScale(BTC_PRECISION),
+            integrationHelper.getWithdrawalAccountBalance(environment.btcWithdrawalConfig)
+        )
     }
 
     /**
@@ -331,6 +340,10 @@ class BtcWithdrawalIntegrationTest {
         assertEquals(feeInitialAmount + getFee(amount), integrationHelper.getWithdrawalFees())
         environment.utxoProvider.addToBlackList(btcAddressSrc)
         environment.utxoProvider.addToBlackList(btcAddressDest)
+        assertEquals(
+            BigDecimal.valueOf(0).setScale(BTC_PRECISION),
+            integrationHelper.getWithdrawalAccountBalance(environment.btcWithdrawalConfig)
+        )
     }
 
     /**
@@ -404,7 +417,11 @@ class BtcWithdrawalIntegrationTest {
                 transactionOutput
             ) == changeAddress.toBase58()
         })
-        assertEquals(feeInitialAmount + getFee(amount), integrationHelper.getWithdrawalFees())
+        assertEquals((feeInitialAmount + getFee(amount)).setScale(BTC_PRECISION), integrationHelper.getWithdrawalFees())
+        assertEquals(
+            BigDecimal.valueOf(0).setScale(BTC_PRECISION),
+            integrationHelper.getWithdrawalAccountBalance(environment.btcWithdrawalConfig)
+        )
     }
 
     /**
@@ -462,12 +479,16 @@ class BtcWithdrawalIntegrationTest {
         Thread.sleep(WITHDRAWAL_WAIT_MILLIS)
         assertEquals(initTxCount, environment.createdTransactions.size)
         assertEquals(
-            BigDecimal(initialSrcBalance).setScale(8).toPlainString(),
+            BigDecimal(initialSrcBalance).setScale(BTC_PRECISION).toPlainString(),
             integrationHelper.getIrohaAccountBalance(testClientSrc, BTC_ASSET)
         )
         environment.utxoProvider.addToBlackList(btcAddressSrc)
         environment.utxoProvider.addToBlackList(btcAddressDest)
-        assertEquals(feeInitialAmount, integrationHelper.getWithdrawalFees())
+        assertEquals(feeInitialAmount.setScale(BTC_PRECISION), integrationHelper.getWithdrawalFees())
+        assertEquals(
+            BigDecimal.valueOf(0).setScale(BTC_PRECISION),
+            integrationHelper.getWithdrawalAccountBalance(environment.btcWithdrawalConfig)
+        )
     }
 
     /**
@@ -519,12 +540,16 @@ class BtcWithdrawalIntegrationTest {
         Thread.sleep(WITHDRAWAL_WAIT_MILLIS)
         assertEquals(initTxCount, environment.createdTransactions.size)
         assertEquals(
-            BigDecimal(initialSrcBalance).setScale(8).toPlainString(),
+            BigDecimal(initialSrcBalance).setScale(BTC_PRECISION).toPlainString(),
             integrationHelper.getIrohaAccountBalance(testClientSrc, BTC_ASSET)
         )
         environment.utxoProvider.addToBlackList(btcAddressSrc)
         environment.utxoProvider.addToBlackList(btcAddressDest)
         assertEquals(feeInitialAmount, integrationHelper.getWithdrawalFees())
+        assertEquals(
+            BigDecimal.valueOf(0).setScale(BTC_PRECISION),
+            integrationHelper.getWithdrawalAccountBalance(environment.btcWithdrawalConfig)
+        )
     }
 
     /**
@@ -598,7 +623,11 @@ class BtcWithdrawalIntegrationTest {
         })
         environment.utxoProvider.addToBlackList(btcAddressSrc)
         environment.utxoProvider.addToBlackList(btcAddressDest)
-        assertEquals(feeInitialAmount + getFee(amount), integrationHelper.getWithdrawalFees())
+        assertEquals((feeInitialAmount + getFee(amount)).setScale(BTC_PRECISION), integrationHelper.getWithdrawalFees())
+        assertEquals(
+            BigDecimal.valueOf(0).setScale(BTC_PRECISION),
+            integrationHelper.getWithdrawalAccountBalance(environment.btcWithdrawalConfig)
+        )
     }
 
     /**
@@ -663,7 +692,11 @@ class BtcWithdrawalIntegrationTest {
         )
         environment.utxoProvider.addToBlackList(btcAddressSrc)
         environment.utxoProvider.addToBlackList(btcAddressDest)
-        assertEquals(feeInitialAmount + getFee(amount), integrationHelper.getWithdrawalFees())
+        assertEquals((feeInitialAmount + getFee(amount)).setScale(BTC_PRECISION), integrationHelper.getWithdrawalFees())
+        assertEquals(
+            BigDecimal.valueOf(0).setScale(BTC_PRECISION),
+            integrationHelper.getWithdrawalAccountBalance(environment.btcWithdrawalConfig)
+        )
     }
 
     /**
@@ -748,12 +781,16 @@ class BtcWithdrawalIntegrationTest {
         Thread.sleep(WITHDRAWAL_WAIT_MILLIS)
         assertEquals(initTxCount + 1, environment.createdTransactions.size)
         assertEquals(
-            BigDecimal(initialSrcBalance).setScale(8).toPlainString(),
+            BigDecimal(initialSrcBalance).setScale(BTC_PRECISION).toPlainString(),
             integrationHelper.getIrohaAccountBalance(testClientSrc, BTC_ASSET)
         )
         environment.utxoProvider.addToBlackList(btcAddressSrc)
         environment.utxoProvider.addToBlackList(btcAddressDest)
         assertEquals(feeInitialAmount, integrationHelper.getWithdrawalFees())
+        assertEquals(
+            BigDecimal.valueOf(0).setScale(BTC_PRECISION),
+            integrationHelper.getWithdrawalAccountBalance(environment.btcWithdrawalConfig)
+        )
     }
 
     /**
@@ -803,6 +840,10 @@ class BtcWithdrawalIntegrationTest {
         )
         assertEquals(feeInitialAmount, integrationHelper.getWithdrawalFees())
         environment.utxoProvider.addToBlackList(btcAddressDest)
+        assertEquals(
+            BigDecimal.valueOf(0).setScale(BTC_PRECISION),
+            integrationHelper.getWithdrawalAccountBalance(environment.btcWithdrawalConfig)
+        )
     }
 
     /**
@@ -859,6 +900,10 @@ class BtcWithdrawalIntegrationTest {
         assertEquals(feeInitialAmount, integrationHelper.getWithdrawalFees())
         environment.utxoProvider.addToBlackList(btcAddressSrc)
         environment.utxoProvider.addToBlackList(btcAddressDest)
+        assertEquals(
+            BigDecimal.valueOf(0).setScale(BTC_PRECISION),
+            integrationHelper.getWithdrawalAccountBalance(environment.btcWithdrawalConfig)
+        )
     }
 
     /**
@@ -914,6 +959,10 @@ class BtcWithdrawalIntegrationTest {
         assertEquals(feeInitialAmount, integrationHelper.getWithdrawalFees())
         environment.utxoProvider.addToBlackList(btcAddressSrc)
         environment.utxoProvider.addToBlackList(btcAddressDest)
+        assertEquals(
+            BigDecimal.valueOf(0).setScale(BTC_PRECISION),
+            integrationHelper.getWithdrawalAccountBalance(environment.btcWithdrawalConfig)
+        )
     }
 
     /**
@@ -967,6 +1016,10 @@ class BtcWithdrawalIntegrationTest {
         assertEquals(feeInitialAmount, integrationHelper.getWithdrawalFees())
         environment.utxoProvider.addToBlackList(btcAddressSrc)
         environment.utxoProvider.addToBlackList(btcAddressDest)
+        assertEquals(
+            BigDecimal.valueOf(0).setScale(BTC_PRECISION),
+            integrationHelper.getWithdrawalAccountBalance(environment.btcWithdrawalConfig)
+        )
     }
 
     /**
@@ -1021,6 +1074,10 @@ class BtcWithdrawalIntegrationTest {
         environment.utxoProvider.addToBlackList(btcAddressSrc)
         environment.utxoProvider.addToBlackList(btcAddressDest)
         CurrentFeeRate.setMinimum()
+        assertEquals(
+            BigDecimal.valueOf(0).setScale(BTC_PRECISION),
+            integrationHelper.getWithdrawalAccountBalance(environment.btcWithdrawalConfig)
+        )
     }
 
     /**
@@ -1034,11 +1091,12 @@ class BtcWithdrawalIntegrationTest {
  * @param amount - amount that is used to calculate fee
  * @return fee
  */
-fun getFee(amount: BigDecimal): BigDecimal = amount.multiply(BigDecimal("0.1")).setScale(8, RoundingMode.DOWN)
+fun getFee(amount: BigDecimal): BigDecimal =
+    amount.multiply(BigDecimal("0.1")).setScale(BTC_PRECISION, RoundingMode.DOWN)
 
 /**
  * Calculates amount plus fee
  * @param amount - amount that will be used in calculation process
  * @return amount + fee
  */
-fun getAmountWithFee(amount: BigDecimal) = (amount + getFee(amount)).setScale(8, RoundingMode.DOWN)!!
+fun getAmountWithFee(amount: BigDecimal) = (amount + getFee(amount)).setScale(BTC_PRECISION, RoundingMode.DOWN)!!
