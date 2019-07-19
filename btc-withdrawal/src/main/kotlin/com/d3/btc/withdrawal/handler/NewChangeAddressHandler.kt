@@ -5,11 +5,13 @@
 
 package com.d3.btc.withdrawal.handler
 
+import com.d3.btc.handler.SetAccountDetailHandler
 import com.d3.btc.provider.network.BtcNetworkConfigProvider
+import com.d3.btc.withdrawal.config.BtcWithdrawalConfig
 import iroha.protocol.Commands
 import org.bitcoinj.core.Address
 import org.bitcoinj.wallet.Wallet
-import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 
 /**
@@ -17,21 +19,27 @@ import org.springframework.stereotype.Component
  */
 @Component
 class NewChangeAddressHandler(
-    @Autowired private val transfersWallet: Wallet,
-    @Autowired private val btcNetworkConfigProvider: BtcNetworkConfigProvider
-) {
+    @Qualifier("transferWallet")
+    private val transfersWallet: Wallet,
+    private val btcNetworkConfigProvider: BtcNetworkConfigProvider,
+    private val btcWithdrawalConfig: BtcWithdrawalConfig
+) : SetAccountDetailHandler {
 
     /**
      * Handles change address creation event
-     * @param createChangeAddressCommand - Iroha command with change address details
+     * @param command - Iroha command with change address details
      */
-    fun handleNewChangeAddress(createChangeAddressCommand: Commands.SetAccountDetail) {
+    override fun handle(command: Commands.SetAccountDetail) {
         //Make new change address watched
         transfersWallet.addWatchedAddress(
             Address.fromBase58(
                 btcNetworkConfigProvider.getConfig(),
-                createChangeAddressCommand.key
+                command.key
             )
         )
     }
+
+    override fun filter(command: Commands.SetAccountDetail) =
+        command.accountId == btcWithdrawalConfig.changeAddressesStorageAccount
+
 }

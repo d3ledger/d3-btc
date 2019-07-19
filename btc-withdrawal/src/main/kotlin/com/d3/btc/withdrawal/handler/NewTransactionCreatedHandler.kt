@@ -1,5 +1,7 @@
 package com.d3.btc.withdrawal.handler
 
+import com.d3.btc.config.BTC_SIGN_COLLECT_DOMAIN
+import com.d3.btc.handler.SetAccountDetailHandler
 import com.d3.btc.withdrawal.config.BtcWithdrawalConfig
 import com.d3.btc.withdrawal.provider.BroadcastsProvider
 import com.d3.btc.withdrawal.provider.UTXOProvider
@@ -23,16 +25,16 @@ class NewTransactionCreatedHandler(
     private val btcRollbackService: BtcRollbackService,
     private val bitcoinUTXOProvider: UTXOProvider,
     private val broadcastsProvider: BroadcastsProvider
-) {
+) : SetAccountDetailHandler {
 
     /**
      * Handles "create new transaction" commands
-     * @param createNewTxCommand - command object with created transaction
+     * @param command - command object with created transaction
      */
-    fun handleCreateTransactionCommand(
-        createNewTxCommand: Commands.SetAccountDetail
+    override fun handle(
+        command: Commands.SetAccountDetail
     ) {
-        val txHash = createNewTxCommand.key
+        val txHash = command.key
         var savedWithdrawalDetails: WithdrawalDetails? = null
         var savedTransaction: Transaction? = null
         transactionsStorage.get(txHash).map { (withdrawalDetails, transaction) ->
@@ -63,6 +65,8 @@ class NewTransactionCreatedHandler(
             }
         }
     }
+
+    override fun filter(command: Commands.SetAccountDetail) = command.accountId.endsWith("@$BTC_SIGN_COLLECT_DOMAIN")
 
     /**
      * Logger

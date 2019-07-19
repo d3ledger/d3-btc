@@ -9,6 +9,7 @@ import com.d3.btc.config.BitcoinConfig.Companion.extractHosts
 import com.d3.btc.deposit.config.BTC_DEPOSIT_SERVICE_NAME
 import com.d3.btc.deposit.config.BtcDepositConfig
 import com.d3.btc.dwbridge.BTC_DW_BRIDGE_SERVICE_NAME
+import com.d3.btc.handler.NewBtcClientRegistrationHandler
 import com.d3.btc.provider.BtcChangeAddressProvider
 import com.d3.btc.provider.BtcRegisteredAddressesProvider
 import com.d3.btc.provider.network.BtcNetworkConfigProvider
@@ -16,6 +17,7 @@ import com.d3.btc.wallet.WalletInitializer
 import com.d3.btc.wallet.createWalletIfAbsent
 import com.d3.btc.wallet.loadAutoSaveWallet
 import com.d3.btc.withdrawal.config.BtcWithdrawalConfig
+import com.d3.btc.withdrawal.handler.*
 import com.d3.btc.withdrawal.statistics.WithdrawalStatistics
 import com.d3.commons.config.RMQConfig
 import com.d3.commons.config.loadLocalConfigs
@@ -264,4 +266,29 @@ class BtcDWBridgeAppConfiguration {
 
     @Bean
     fun utxoStorageAccount() = withdrawalConfig.utxoStorageAccount
+
+    /*
+       I could have made it simpler by using `@Autowired handler:List<SetAccountDetailHandler>`,
+       but I'm really worry that there will be unwanted handlers in IoC.
+       This is why I explicitly define handlers that I want to run.
+     */
+    @Bean
+    fun withdrawalHandlers(
+        broadcastTransactionHandler: BroadcastTransactionHandler,
+        newTransactionCreatedHandler: NewTransactionCreatedHandler,
+        newSignatureEventHandler: NewSignatureEventHandler,
+        newConsensusDataHandler: NewConsensusDataHandler,
+        newBtcClientRegistrationHandler: NewBtcClientRegistrationHandler,
+        newChangeAddressHandler: NewChangeAddressHandler
+    ) = listOf(
+        broadcastTransactionHandler,
+        newTransactionCreatedHandler,
+        newSignatureEventHandler,
+        newConsensusDataHandler,
+        newBtcClientRegistrationHandler,
+        newChangeAddressHandler
+    )
+    /**
+     *  ,
+     */
 }

@@ -251,7 +251,7 @@ class BtcWithdrawalTestEnvironment(
         bitcoinConfig
     )
     private val newChangeAddressHandler
-            by lazy { NewChangeAddressHandler(transferWallet, btcNetworkConfigProvider) }
+            by lazy { NewChangeAddressHandler(transferWallet, btcNetworkConfigProvider, btcWithdrawalConfig) }
     private val newTransferHandler =
         NewTransferHandler(
             withdrawalStatistics,
@@ -281,6 +281,8 @@ class BtcWithdrawalTestEnvironment(
 
     val newSignatureEventHandler =
         NewSignatureEventHandler(
+            transferWallet,
+            btcWithdrawalConfig,
             withdrawalStatistics,
             signCollector,
             transactionsStorage,
@@ -290,7 +292,7 @@ class BtcWithdrawalTestEnvironment(
             broadcastsProvider
         )
 
-    private val broadcastTransactionHandler = BroadcastTransactionHandler(feeService)
+    private val broadcastTransactionHandler = BroadcastTransactionHandler(btcWithdrawalConfig, feeService)
 
     private val newConsensusDataHandler =
         NewConsensusDataHandler(withdrawalTransferService, withdrawalConsensusProvider, btcRollbackService)
@@ -312,13 +314,15 @@ class BtcWithdrawalTestEnvironment(
             transferWallet,
             btcChangeAddressProvider,
             btcNetworkConfigProvider,
-            newSignatureEventHandler,
-            NewBtcClientRegistrationHandler(btcNetworkConfigProvider),
             newTransferHandler,
-            newChangeAddressHandler,
-            newConsensusDataHandler,
-            newTransactionCreatedHandler,
-            broadcastTransactionHandler,
+            listOf(
+                newSignatureEventHandler,
+                NewBtcClientRegistrationHandler(btcNetworkConfigProvider, transferWallet),
+                newChangeAddressHandler,
+                newConsensusDataHandler,
+                newTransactionCreatedHandler,
+                broadcastTransactionHandler
+            ),
             WithdrawalServiceExpansion(
                 irohaApi,
                 ServiceExpansion(

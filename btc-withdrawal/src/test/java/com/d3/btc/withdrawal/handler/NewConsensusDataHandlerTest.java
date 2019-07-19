@@ -46,11 +46,11 @@ public class NewConsensusDataHandlerTest {
 
     /**
      * @given instance of NewConsensusDataHandler with WithdrawalConsensusProvider returning true whenever hasBeenEstablished() is called
-     * @when handleNewConsensusCommand() is called
+     * @when handle() is called
      * @then withdraw() is not called
      */
     @Test
-    public void testHandleNewConsensusCommandHasBeenEstablished() {
+    public void testHandleHasBeenEstablished() {
         WithdrawalConsensus withdrawalConsensus = new WithdrawalConsensus(0, 0);
         List<WithdrawalConsensus> withdrawalConsensusList = Arrays.asList(withdrawalConsensus, withdrawalConsensus, withdrawalConsensus);
         Pair<WithdrawalDetails, List<WithdrawalConsensus>> consensus = new Pair<>(withdrawalDetails, withdrawalConsensusList);
@@ -60,17 +60,17 @@ public class NewConsensusDataHandlerTest {
                 .setAccountId("test@" + BTC_CONSENSUS_DOMAIN)
                 .setValue(withdrawalConsensus.toJson())
                 .build();
-        newConsensusDataHandler.handleNewConsensusCommand(newConsensusCommand);
+        newConsensusDataHandler.handle(newConsensusCommand);
         verify(withdrawalTransferService, never()).withdraw(any(), any());
     }
 
     /**
      * @given instance of NewConsensusDataHandler with WithdrawalConsensusProvider returning false whenever hasBeenEstablished() is called
-     * @when handleNewConsensusCommand() is called
+     * @when handle() is called
      * @then withdraw() is called
      */
     @Test
-    public void testHandleNewConsensusCommandHasNotBeenEstablished() {
+    public void testHandleHasNotBeenEstablished() {
         WithdrawalConsensus withdrawalConsensus = new WithdrawalConsensus(0, 0);
         List<WithdrawalConsensus> withdrawalConsensusList = Arrays.asList(withdrawalConsensus, withdrawalConsensus, withdrawalConsensus);
         Pair<WithdrawalDetails, List<WithdrawalConsensus>> consensus = new Pair<>(withdrawalDetails, withdrawalConsensusList);
@@ -80,7 +80,7 @@ public class NewConsensusDataHandlerTest {
                 .setAccountId("test@" + BTC_CONSENSUS_DOMAIN)
                 .setValue(withdrawalConsensus.toJson())
                 .build();
-        newConsensusDataHandler.handleNewConsensusCommand(newConsensusCommand);
+        newConsensusDataHandler.handle(newConsensusCommand);
         verify(withdrawalTransferService).withdraw(any(), any());
     }
 }

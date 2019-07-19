@@ -6,6 +6,7 @@
 package com.d3.btc.withdrawal.handler
 
 import com.d3.btc.config.BTC_CONSENSUS_DOMAIN
+import com.d3.btc.handler.SetAccountDetailHandler
 import com.d3.btc.helper.address.getSignThreshold
 import com.d3.btc.withdrawal.provider.WithdrawalConsensusProvider
 import com.d3.btc.withdrawal.service.BtcRollbackService
@@ -25,13 +26,13 @@ class NewConsensusDataHandler(
     private val withdrawalTransferService: WithdrawalTransferService,
     private val withdrawalConsensusProvider: WithdrawalConsensusProvider,
     private val btcRollbackService: BtcRollbackService
-) {
+) : SetAccountDetailHandler {
 
     /**
      * Handles new consensus command
      * @param addConsensusCommand - new consensus command
      */
-    fun handleNewConsensusCommand(addConsensusCommand: Commands.SetAccountDetail) {
+    override fun handle(addConsensusCommand: Commands.SetAccountDetail) {
         val withdrawalHash = addConsensusCommand.accountId.replace("@$BTC_CONSENSUS_DOMAIN", "")
         val withdrawalConsensus =
             WithdrawalConsensus.fromJson(addConsensusCommand.value.irohaUnEscape())
@@ -65,6 +66,8 @@ class NewConsensusDataHandler(
             logger.error("Cannot create consensus", ex)
         })
     }
+
+    override fun filter(command: Commands.SetAccountDetail) = command.accountId.endsWith("@$BTC_CONSENSUS_DOMAIN")
 
     /**
      * Logger
