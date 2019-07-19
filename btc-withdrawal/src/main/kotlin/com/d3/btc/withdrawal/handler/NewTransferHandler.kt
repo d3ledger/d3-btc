@@ -35,8 +35,14 @@ class NewTransferHandler(
     /**
      * Handles "transfer asset" command
      * @param transferCommand - object with "transfer asset" data: source account, destination account, amount and etc
+     * @param feeCommand - command with fee
+     * @param withdrawalTime - time of withdrawal
      */
-    fun handleTransferCommand(transferCommand: Commands.TransferAsset, withdrawalTime: Long) {
+    fun handleTransferCommand(
+        transferCommand: Commands.TransferAsset,
+        feeCommand: Commands.TransferAsset,
+        withdrawalTime: Long
+    ) {
         if (transferCommand.destAccountId != btcWithdrawalConfig.withdrawalCredential.accountId) {
             return
         }
@@ -44,16 +50,18 @@ class NewTransferHandler(
         val sourceAccountId = transferCommand.srcAccountId
         val btcAmount = BigDecimal(transferCommand.amount)
         val satAmount = btcToSat(btcAmount)
+        val fee = btcToSat(BigDecimal(feeCommand.amount))
         val withdrawalDetails =
-            WithdrawalDetails(sourceAccountId, destinationAddress, satAmount, withdrawalTime)
+            WithdrawalDetails(sourceAccountId, destinationAddress, satAmount, withdrawalTime, fee)
         logger.info {
             "Withdrawal event(" +
                     "from:$sourceAccountId " +
                     "to:$destinationAddress " +
-                    "amount:${btcAmount.toPlainString()}" +
+                    "amount:${btcAmount.toPlainString()} " +
+                    "fee:$fee " +
                     "hash:${withdrawalDetails.irohaFriendlyHashCode()})"
         }
-
+        //TODO check withdrawal before this call
         broadcastsProvider.hasBeenBroadcasted(withdrawalDetails)
             .fold({ broadcasted ->
                 if (broadcasted) {
@@ -69,7 +77,7 @@ class NewTransferHandler(
 
     /**
      * Checks if withdrawal is valid and creates withdrawal consensus if possible
-     * @param withdrawalDetails - details of withdrwal
+     * @param withdrawalDetails - details of withdrawal
      */
     protected fun checkAndStartConsensus(withdrawalDetails: WithdrawalDetails) {
         if (!CurrentFeeRate.isPresent()) {

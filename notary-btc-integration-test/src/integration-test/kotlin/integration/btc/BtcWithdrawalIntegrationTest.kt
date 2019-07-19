@@ -10,11 +10,13 @@ import com.d3.btc.fee.CurrentFeeRate
 import com.d3.btc.helper.address.outPutToBase58Address
 import com.d3.btc.helper.currency.satToBtc
 import com.d3.commons.sidechain.iroha.CLIENT_DOMAIN
+import com.d3.commons.sidechain.iroha.FEE_DESCRIPTION
 import com.d3.commons.sidechain.iroha.util.ModelUtil
 import com.d3.commons.util.getRandomString
 import com.d3.commons.util.toHexString
 import com.github.kittinunf.result.failure
 import integration.btc.environment.BtcWithdrawalTestEnvironment
+import integration.helper.BTC_PRECISION
 import integration.helper.BtcIntegrationHelperUtil
 import integration.registration.RegistrationServiceTestEnvironment
 import mu.KLogging
@@ -26,15 +28,18 @@ import org.junit.jupiter.api.*
 import org.junit.jupiter.api.Assertions.assertNotNull
 import java.io.File
 import java.math.BigDecimal
+import java.math.RoundingMode
 import kotlin.test.assertEquals
 
+val MINIMUM_FEE = BigDecimal("0.00000001")
 const val WITHDRAWAL_WAIT_MILLIS = 20_000L
 private const val TOTAL_TESTS = 14
-private const val FAILED_WITHDRAW_AMOUNT = 6666L
+const val FAILED_WITHDRAW_AMOUNT = 6666L
 private const val FAILED_BROADCAST_AMOUNT = 7777L
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class BtcWithdrawalIntegrationTest {
+
     private val integrationHelper = BtcIntegrationHelperUtil()
 
     private val environment =
@@ -70,34 +75,26 @@ class BtcWithdrawalIntegrationTest {
             environment.btcWithdrawalConfig.btcKeysWalletPath,
             TOTAL_TESTS
         )
-        // This listener emulates a failure
-        environment.withdrawalTransferService.addNewBtcTransactionListener { tx ->
-            if (tx.outputs.any { output -> output.value.value == FAILED_WITHDRAW_AMOUNT }) {
-                throw Exception("Failed withdraw test")
-            }
-        }
         environment.newSignatureEventHandler.addBroadcastTransactionListeners { tx ->
             if (tx.outputs.any { output -> output.value.value == FAILED_BROADCAST_AMOUNT }) {
                 throw Exception("Failed broadcast test")
             }
-        }
-        environment.withdrawalTransferService.addNewBtcTransactionListener { tx ->
-            environment.createdTransactions[tx.hashAsString] = Pair(System.currentTimeMillis(), tx)
         }
         environment.btcWithdrawalInitialization.init().failure { ex -> throw ex }
         environment.utxoProvider.addToBlackList(changeAddress.toBase58())
     }
 
     /**
-     * Test US-001 Withdrawal
      * Note: Iroha and bitcoind must be deployed to pass the test.
      * @given two registered BTC clients. 1st client has 1 BTC in wallet.
      * @when 1st client sends SAT 10000 to 2nd client
      * @then new well constructed BTC transaction and one signature appear.
-     * Transaction is properly signed, sent to Bitcoin network and not considered unsigned anymore
+     * Transaction is properly signed, sent to Bitcoin network and not considered unsigned anymore.
+     * Billing account has 10% of amount as a fee.
      */
     @Test
     fun testWithdrawal() {
+        val feeInitialAmount = integrationHelper.getWithdrawalFees()
         // Generate one block to broadcast all pending transactions
         integrationHelper.generateBtcBlocks(1)
         Thread.sleep(2_000)
@@ -124,19 +121,22 @@ class BtcWithdrawalIntegrationTest {
             )
         integrationHelper.sendBtc(
             btcAddressSrc,
-            1,
+            BigDecimal(1),
             environment.bitcoinConfig.confidenceLevel
         )
         val btcAddressDest = integrationHelper.createBtcAddress()
-        integrationHelper.addIrohaAssetTo(testClientSrc, BTC_ASSET, amount)
-        integrationHelper.transferAssetIrohaFromClient(
+        integrationHelper.addIrohaAssetTo(testClientSrc, BTC_ASSET, getAmountWithFee(amount))
+        integrationHelper.transferAssetIrohaFromClientWithFee(
             testClientSrc,
             testClientSrcKeypair,
             testClientSrc,
             environment.btcWithdrawalConfig.withdrawalCredential.accountId,
             BTC_ASSET,
             btcAddressDest,
-            amount.toPlainString()
+            amount.toPlainString(),
+            BTC_ASSET,
+            getFee(amount).toPlainString(),
+            FEE_DESCRIPTION
         )
         Thread.sleep(WITHDRAWAL_WAIT_MILLIS)
         assertEquals(initTxCount + 1, environment.createdTransactions.size)
@@ -182,6 +182,11 @@ class BtcWithdrawalIntegrationTest {
         assertTrue(walletFromFile.unspents.any { utxo -> utxo.getAddressFromP2SH(RegTestParams.get()) == changeAddress })
         // Check that change address is watched
         assertTrue(walletFromFile.isAddressWatched(changeAddress))
+        assertEquals((feeInitialAmount + getFee(amount)).setScale(BTC_PRECISION), integrationHelper.getWithdrawalFees())
+        assertEquals(
+            BigDecimal.valueOf(0).setScale(BTC_PRECISION),
+            integrationHelper.getWithdrawalAccountBalance(environment.btcWithdrawalConfig)
+        )
     }
 
     /**
@@ -193,8 +198,8 @@ class BtcWithdrawalIntegrationTest {
      */
     @Test
     fun testWithdrawalFailResistance() {
+        val feeInitialAmount = integrationHelper.getWithdrawalFees()
         val initTxCount = environment.createdTransactions.size
-        var amount = satToBtc(FAILED_WITHDRAW_AMOUNT)
         val randomNameSrc = String.getRandomString(9)
         val testClientSrcKeypair = ModelUtil.generateKeypair()
         val testClientSrc = "$randomNameSrc@$CLIENT_DOMAIN"
@@ -211,20 +216,24 @@ class BtcWithdrawalIntegrationTest {
             )
         integrationHelper.sendBtc(
             btcAddressSrc,
-            1,
+            BigDecimal(1),
             environment.bitcoinConfig.confidenceLevel
         )
         val btcAddressDest = integrationHelper.createBtcAddress()
-        integrationHelper.addIrohaAssetTo(testClientSrc, BTC_ASSET, amount)
+        var amount = satToBtc(FAILED_WITHDRAW_AMOUNT)
+        integrationHelper.addIrohaAssetTo(testClientSrc, BTC_ASSET, getAmountWithFee(amount))
         val initialSrcBalance = integrationHelper.getIrohaAccountBalance(testClientSrc, BTC_ASSET)
-        integrationHelper.transferAssetIrohaFromClient(
+        integrationHelper.transferAssetIrohaFromClientWithFee(
             testClientSrc,
             testClientSrcKeypair,
             testClientSrc,
             environment.btcWithdrawalConfig.withdrawalCredential.accountId,
             BTC_ASSET,
             btcAddressDest,
-            amount
+            amount.toPlainString(),
+            BTC_ASSET,
+            getFee(amount).toPlainString(),
+            FEE_DESCRIPTION
         )
         Thread.sleep(WITHDRAWAL_WAIT_MILLIS)
         assertEquals(initTxCount, environment.createdTransactions.size)
@@ -232,21 +241,30 @@ class BtcWithdrawalIntegrationTest {
             initialSrcBalance,
             integrationHelper.getIrohaAccountBalance(testClientSrc, BTC_ASSET)
         )
+        assertEquals(feeInitialAmount, integrationHelper.getWithdrawalFees())
         amount = satToBtc(10000L)
-        integrationHelper.addIrohaAssetTo(testClientSrc, BTC_ASSET, amount)
-        integrationHelper.transferAssetIrohaFromClient(
+        integrationHelper.addIrohaAssetTo(testClientSrc, BTC_ASSET, getAmountWithFee(amount))
+        integrationHelper.transferAssetIrohaFromClientWithFee(
             testClientSrc,
             testClientSrcKeypair,
             testClientSrc,
             environment.btcWithdrawalConfig.withdrawalCredential.accountId,
             BTC_ASSET,
             btcAddressDest,
-            amount
+            amount.toPlainString(),
+            BTC_ASSET,
+            getFee(amount).toPlainString(),
+            FEE_DESCRIPTION
         )
         Thread.sleep(WITHDRAWAL_WAIT_MILLIS)
         assertEquals(initTxCount + 1, environment.createdTransactions.size)
+        assertEquals(feeInitialAmount + getFee(amount), integrationHelper.getWithdrawalFees())
         environment.utxoProvider.addToBlackList(btcAddressSrc)
         environment.utxoProvider.addToBlackList(btcAddressDest)
+        assertEquals(
+            BigDecimal.valueOf(0).setScale(BTC_PRECISION),
+            integrationHelper.getWithdrawalAccountBalance(environment.btcWithdrawalConfig)
+        )
     }
 
     /**
@@ -259,6 +277,7 @@ class BtcWithdrawalIntegrationTest {
      */
     @Test
     fun testWithdrawalFailedNetworkResistance() {
+        val feeInitialAmount = integrationHelper.getWithdrawalFees()
         val initTxCount = environment.createdTransactions.size
         var amount = satToBtc(FAILED_BROADCAST_AMOUNT)
         val randomNameSrc = String.getRandomString(9)
@@ -277,20 +296,23 @@ class BtcWithdrawalIntegrationTest {
             )
         integrationHelper.sendBtc(
             btcAddressSrc,
-            1,
+            BigDecimal(1),
             environment.bitcoinConfig.confidenceLevel
         )
         val btcAddressDest = integrationHelper.createBtcAddress()
-        integrationHelper.addIrohaAssetTo(testClientSrc, BTC_ASSET, amount)
+        integrationHelper.addIrohaAssetTo(testClientSrc, BTC_ASSET, getAmountWithFee(amount))
         val initialSrcBalance = integrationHelper.getIrohaAccountBalance(testClientSrc, BTC_ASSET)
-        integrationHelper.transferAssetIrohaFromClient(
+        integrationHelper.transferAssetIrohaFromClientWithFee(
             testClientSrc,
             testClientSrcKeypair,
             testClientSrc,
             environment.btcWithdrawalConfig.withdrawalCredential.accountId,
             BTC_ASSET,
             btcAddressDest,
-            amount
+            amount.toPlainString(),
+            BTC_ASSET,
+            getFee(amount).toPlainString(),
+            FEE_DESCRIPTION
         )
         Thread.sleep(WITHDRAWAL_WAIT_MILLIS)
         assertEquals(initTxCount + 1, environment.createdTransactions.size)
@@ -298,21 +320,30 @@ class BtcWithdrawalIntegrationTest {
             initialSrcBalance,
             integrationHelper.getIrohaAccountBalance(testClientSrc, BTC_ASSET)
         )
-        amount = satToBtc(10000L)
-        integrationHelper.addIrohaAssetTo(testClientSrc, BTC_ASSET, amount)
-        integrationHelper.transferAssetIrohaFromClient(
+        assertEquals(feeInitialAmount, integrationHelper.getWithdrawalFees())
+        amount = satToBtc(10_000L)
+        integrationHelper.addIrohaAssetTo(testClientSrc, BTC_ASSET, getAmountWithFee(amount))
+        integrationHelper.transferAssetIrohaFromClientWithFee(
             testClientSrc,
             testClientSrcKeypair,
             testClientSrc,
             environment.btcWithdrawalConfig.withdrawalCredential.accountId,
             BTC_ASSET,
             btcAddressDest,
-            amount
+            amount.toPlainString(),
+            BTC_ASSET,
+            getFee(amount).toPlainString(),
+            FEE_DESCRIPTION
         )
         Thread.sleep(WITHDRAWAL_WAIT_MILLIS)
         assertEquals(initTxCount + 2, environment.createdTransactions.size)
+        assertEquals(feeInitialAmount + getFee(amount), integrationHelper.getWithdrawalFees())
         environment.utxoProvider.addToBlackList(btcAddressSrc)
         environment.utxoProvider.addToBlackList(btcAddressDest)
+        assertEquals(
+            BigDecimal.valueOf(0).setScale(BTC_PRECISION),
+            integrationHelper.getWithdrawalAccountBalance(environment.btcWithdrawalConfig)
+        )
     }
 
     /**
@@ -324,6 +355,7 @@ class BtcWithdrawalIntegrationTest {
      */
     @Test
     fun testWithdrawalAddressGenerationOnFly() {
+        val feeInitialAmount = integrationHelper.getWithdrawalFees()
         val initTxCount = environment.createdTransactions.size
         val amount = satToBtc(10000L)
         val randomNameSrc = String.getRandomString(9)
@@ -342,19 +374,22 @@ class BtcWithdrawalIntegrationTest {
         )
         integrationHelper.sendBtc(
             btcAddressSrc,
-            1,
+            BigDecimal(1),
             environment.bitcoinConfig.confidenceLevel
         )
         val btcAddressDest = integrationHelper.createBtcAddress()
-        integrationHelper.addIrohaAssetTo(testClientSrc, BTC_ASSET, amount)
-        integrationHelper.transferAssetIrohaFromClient(
+        integrationHelper.addIrohaAssetTo(testClientSrc, BTC_ASSET, getAmountWithFee(amount))
+        integrationHelper.transferAssetIrohaFromClientWithFee(
             testClientSrc,
             testClientSrcKeypair,
             testClientSrc,
             environment.btcWithdrawalConfig.withdrawalCredential.accountId,
             BTC_ASSET,
             btcAddressDest,
-            amount.toPlainString()
+            amount.toPlainString(),
+            BTC_ASSET,
+            getFee(amount).toPlainString(),
+            FEE_DESCRIPTION
         )
         Thread.sleep(WITHDRAWAL_WAIT_MILLIS)
         assertEquals(initTxCount + 1, environment.createdTransactions.size)
@@ -382,16 +417,22 @@ class BtcWithdrawalIntegrationTest {
                 transactionOutput
             ) == changeAddress.toBase58()
         })
+        assertEquals((feeInitialAmount + getFee(amount)).setScale(BTC_PRECISION), integrationHelper.getWithdrawalFees())
+        assertEquals(
+            BigDecimal.valueOf(0).setScale(BTC_PRECISION),
+            integrationHelper.getWithdrawalAccountBalance(environment.btcWithdrawalConfig)
+        )
     }
 
     /**
      * Note: Iroha and bitcoind must be deployed to pass the test.
      * @given two registered BTC clients. 1st client has 2 BTC as 2 unspents(1+1) in wallet
-     * @when 1st client sends 2 BTC to 2nd client
-     * @then no tx is created, because 1st client has no money for fee
+     * @when 1st client sends 2 BTC-minimum fee(0.00000001) to 2nd client
+     * @then no tx is created, because 1st client has no money for Bitcoin fee
      */
     @Test
     fun testWithdrawalNoMoneyLeftForFee() {
+        val feeInitialAmount = integrationHelper.getWithdrawalFees()
         val initTxCount = environment.createdTransactions.size
         val amount = BigDecimal(2)
         val randomNameSrc = String.getRandomString(9)
@@ -408,46 +449,57 @@ class BtcWithdrawalIntegrationTest {
                 CLIENT_DOMAIN,
                 testClientSrcKeypair
             )
+
         integrationHelper.sendBtc(
             btcAddressSrc,
-            1,
+            BigDecimal(1),
             environment.bitcoinConfig.confidenceLevel
         )
         integrationHelper.sendBtc(
             btcAddressSrc,
-            1,
+            BigDecimal(1),
             environment.bitcoinConfig.confidenceLevel
         )
+
         val btcAddressDest = integrationHelper.createBtcAddress()
         integrationHelper.addIrohaAssetTo(testClientSrc, BTC_ASSET, amount)
         val initialSrcBalance = integrationHelper.getIrohaAccountBalance(testClientSrc, BTC_ASSET)
-        integrationHelper.transferAssetIrohaFromClient(
+        integrationHelper.transferAssetIrohaFromClientWithFee(
             testClientSrc,
             testClientSrcKeypair,
             testClientSrc,
             environment.btcWithdrawalConfig.withdrawalCredential.accountId,
             BTC_ASSET,
             btcAddressDest,
-            amount
+            amount.subtract(MINIMUM_FEE).toPlainString(),
+            BTC_ASSET,
+            MINIMUM_FEE.toPlainString(),
+            FEE_DESCRIPTION
         )
         Thread.sleep(WITHDRAWAL_WAIT_MILLIS)
         assertEquals(initTxCount, environment.createdTransactions.size)
         assertEquals(
-            initialSrcBalance,
+            BigDecimal(initialSrcBalance).setScale(BTC_PRECISION).toPlainString(),
             integrationHelper.getIrohaAccountBalance(testClientSrc, BTC_ASSET)
         )
         environment.utxoProvider.addToBlackList(btcAddressSrc)
         environment.utxoProvider.addToBlackList(btcAddressDest)
+        assertEquals(feeInitialAmount.setScale(BTC_PRECISION), integrationHelper.getWithdrawalFees())
+        assertEquals(
+            BigDecimal.valueOf(0).setScale(BTC_PRECISION),
+            integrationHelper.getWithdrawalAccountBalance(environment.btcWithdrawalConfig)
+        )
     }
 
     /**
      * Note: Iroha and bitcoind must be deployed to pass the test.
      * @given two registered BTC clients. 1st client has 2 BTC in wallet
-     * @when 1st client sends 2 BTC to 2nd client without having enough confirmations
+     * @when 1st client sends 1 BTC to 2nd client without having enough confirmations
      * @then no tx is created, because nobody can use unconfirmed money
      */
     @Test
     fun testWithdrawalNoConfirmedMoney() {
+        val feeInitialAmount = integrationHelper.getWithdrawalFees()
         val initTxCount = environment.createdTransactions.size
         val amount = BigDecimal(2)
         val randomNameSrc = String.getRandomString(9)
@@ -464,42 +516,52 @@ class BtcWithdrawalIntegrationTest {
                 CLIENT_DOMAIN,
                 testClientSrcKeypair
             )
+
         integrationHelper.sendBtc(
             btcAddressSrc,
-            1,
+            amount,
             environment.bitcoinConfig.confidenceLevel - 1
         )
         val btcAddressDest = integrationHelper.createBtcAddress()
         integrationHelper.addIrohaAssetTo(testClientSrc, BTC_ASSET, amount)
         val initialSrcBalance = integrationHelper.getIrohaAccountBalance(testClientSrc, BTC_ASSET)
-        integrationHelper.transferAssetIrohaFromClient(
+        integrationHelper.transferAssetIrohaFromClientWithFee(
             testClientSrc,
             testClientSrcKeypair,
             testClientSrc,
             environment.btcWithdrawalConfig.withdrawalCredential.accountId,
             BTC_ASSET,
             btcAddressDest,
-            amount
+            BigDecimal(1).toPlainString(),
+            BTC_ASSET,
+            MINIMUM_FEE.toPlainString(),
+            FEE_DESCRIPTION
         )
         Thread.sleep(WITHDRAWAL_WAIT_MILLIS)
         assertEquals(initTxCount, environment.createdTransactions.size)
         assertEquals(
-            initialSrcBalance,
+            BigDecimal(initialSrcBalance).setScale(BTC_PRECISION).toPlainString(),
             integrationHelper.getIrohaAccountBalance(testClientSrc, BTC_ASSET)
         )
         environment.utxoProvider.addToBlackList(btcAddressSrc)
         environment.utxoProvider.addToBlackList(btcAddressDest)
+        assertEquals(feeInitialAmount, integrationHelper.getWithdrawalFees())
+        assertEquals(
+            BigDecimal.valueOf(0).setScale(BTC_PRECISION),
+            integrationHelper.getWithdrawalAccountBalance(environment.btcWithdrawalConfig)
+        )
     }
 
     /**
      * Note: Iroha and bitcoind must be deployed to pass the test.
      * @given two registered BTC clients. 1st client has 10 BTC as 2 unspents(5+5) in wallet.
      * @when 1st client sends BTC 6 to 2nd client
-     * @then new well constructed BTC transaction and 2 signatures appear.
+     * @then new well constructed BTC transaction and 2 signatures appears.
      * Transaction is properly signed, sent to Bitcoin network and not considered unsigned anymore
      */
     @Test
     fun testWithdrawalMultipleInputs() {
+        val feeInitialAmount = integrationHelper.getWithdrawalFees()
         val initTxCount = environment.createdTransactions.size
         val amount = BigDecimal(6)
         val randomNameSrc = String.getRandomString(9)
@@ -518,24 +580,27 @@ class BtcWithdrawalIntegrationTest {
             )
         integrationHelper.sendBtc(
             btcAddressSrc,
-            5,
+            BigDecimal(5),
             environment.bitcoinConfig.confidenceLevel
         )
         integrationHelper.sendBtc(
             btcAddressSrc,
-            5,
+            BigDecimal(5),
             environment.bitcoinConfig.confidenceLevel
         )
         val btcAddressDest = integrationHelper.createBtcAddress()
-        integrationHelper.addIrohaAssetTo(testClientSrc, BTC_ASSET, amount)
-        integrationHelper.transferAssetIrohaFromClient(
+        integrationHelper.addIrohaAssetTo(testClientSrc, BTC_ASSET, getAmountWithFee(amount))
+        integrationHelper.transferAssetIrohaFromClientWithFee(
             testClientSrc,
             testClientSrcKeypair,
             testClientSrc,
             environment.btcWithdrawalConfig.withdrawalCredential.accountId,
             BTC_ASSET,
             btcAddressDest,
-            amount.toPlainString()
+            amount.toPlainString(),
+            BTC_ASSET,
+            getFee(amount).toPlainString(),
+            FEE_DESCRIPTION
         )
         Thread.sleep(WITHDRAWAL_WAIT_MILLIS)
         assertEquals(initTxCount + 1, environment.createdTransactions.size)
@@ -558,6 +623,11 @@ class BtcWithdrawalIntegrationTest {
         })
         environment.utxoProvider.addToBlackList(btcAddressSrc)
         environment.utxoProvider.addToBlackList(btcAddressDest)
+        assertEquals((feeInitialAmount + getFee(amount)).setScale(BTC_PRECISION), integrationHelper.getWithdrawalFees())
+        assertEquals(
+            BigDecimal.valueOf(0).setScale(BTC_PRECISION),
+            integrationHelper.getWithdrawalAccountBalance(environment.btcWithdrawalConfig)
+        )
     }
 
     /**
@@ -569,6 +639,7 @@ class BtcWithdrawalIntegrationTest {
      */
     @Test
     fun testWithdrawalWhiteListed() {
+        val feeInitialAmount = integrationHelper.getWithdrawalFees()
         val initTxCount = environment.createdTransactions.size
         val amount = satToBtc(10000L)
         val randomNameSrc = String.getRandomString(9)
@@ -585,16 +656,20 @@ class BtcWithdrawalIntegrationTest {
             testClientSrcKeypair
         )
         val testClientSrc = "$randomNameSrc@$CLIENT_DOMAIN"
-        integrationHelper.sendBtc(btcAddressSrc, 1, 6)
-        integrationHelper.addIrohaAssetTo(testClientSrc, BTC_ASSET, amount)
-        integrationHelper.transferAssetIrohaFromClient(
+        val amountInWalletBtc = BigDecimal(1)
+        integrationHelper.sendBtc(btcAddressSrc, amountInWalletBtc)
+        integrationHelper.addIrohaAssetTo(testClientSrc, BTC_ASSET, getAmountWithFee(amount))
+        integrationHelper.transferAssetIrohaFromClientWithFee(
             testClientSrc,
             testClientSrcKeypair,
             testClientSrc,
             environment.btcWithdrawalConfig.withdrawalCredential.accountId,
             BTC_ASSET,
             btcAddressDest,
-            amount.toPlainString()
+            amount.toPlainString(),
+            BTC_ASSET,
+            getFee(amount).toPlainString(),
+            FEE_DESCRIPTION
         )
         Thread.sleep(WITHDRAWAL_WAIT_MILLIS)
         assertEquals(initTxCount + 1, environment.createdTransactions.size)
@@ -617,19 +692,23 @@ class BtcWithdrawalIntegrationTest {
         )
         environment.utxoProvider.addToBlackList(btcAddressSrc)
         environment.utxoProvider.addToBlackList(btcAddressDest)
-        val createdWithdrawalTx = environment.getLastCreatedTxHash()
+        assertEquals((feeInitialAmount + getFee(amount)).setScale(BTC_PRECISION), integrationHelper.getWithdrawalFees())
+        assertEquals(
+            BigDecimal.valueOf(0).setScale(BTC_PRECISION),
+            integrationHelper.getWithdrawalAccountBalance(environment.btcWithdrawalConfig)
+        )
     }
 
     /**
-     * Test US-002 Withdrawal
      * Note: Iroha and bitcoind must be deployed to pass the test.
-     * @given two registered BTC clients. 1st client has 1 BTC in wallet.
+     * @given two registered BTC clients. 1st client has 1 BTC as one unspent in wallet.
      * @when 1st client sends SAT 10000 to 2nd client twice
      * @then only first transaction is well constructed, because there is no unspent transactions left.
      * First transaction is properly signed, sent to Bitcoin network and not considered unsigned anymore
      */
     @Test
     fun testWithdrawalNoUnspentsLeft() {
+        var feeInitialAmount = integrationHelper.getWithdrawalFees()
         val initTxCount = environment.createdTransactions.size
         val amount = satToBtc(10000L)
         val randomNameSrc = String.getRandomString(9)
@@ -648,23 +727,26 @@ class BtcWithdrawalIntegrationTest {
             )
         integrationHelper.sendBtc(
             btcAddressSrc,
-            1,
+            BigDecimal(1),
             environment.bitcoinConfig.confidenceLevel
         )
         val btcAddressDest = integrationHelper.createBtcAddress()
-        integrationHelper.addIrohaAssetTo(testClientSrc, BTC_ASSET, amount)
-        integrationHelper.transferAssetIrohaFromClient(
+        integrationHelper.addIrohaAssetTo(testClientSrc, BTC_ASSET, getAmountWithFee(amount))
+        integrationHelper.transferAssetIrohaFromClientWithFee(
             testClientSrc,
             testClientSrcKeypair,
             testClientSrc,
             environment.btcWithdrawalConfig.withdrawalCredential.accountId,
             BTC_ASSET,
             btcAddressDest,
-            amount.toPlainString()
+            amount.toPlainString(),
+            BTC_ASSET,
+            getFee(amount).toPlainString(),
+            FEE_DESCRIPTION
         )
         Thread.sleep(WITHDRAWAL_WAIT_MILLIS)
         assertEquals(initTxCount + 1, environment.createdTransactions.size)
-
+        assertEquals(feeInitialAmount + getFee(amount), integrationHelper.getWithdrawalFees())
         val createdWithdrawalTx = environment.getLastCreatedTxHash()
         environment.signCollector.getSignatures(createdWithdrawalTx).fold({ signatures ->
             logger.info { "signatures $signatures" }
@@ -681,29 +763,37 @@ class BtcWithdrawalIntegrationTest {
                 transactionOutput
             ) == changeAddress.toBase58()
         })
-        integrationHelper.addIrohaAssetTo(testClientSrc, BTC_ASSET, amount)
+        feeInitialAmount = integrationHelper.getWithdrawalFees()
+        integrationHelper.addIrohaAssetTo(testClientSrc, BTC_ASSET, getAmountWithFee(amount))
         val initialSrcBalance = integrationHelper.getIrohaAccountBalance(testClientSrc, BTC_ASSET)
-        integrationHelper.transferAssetIrohaFromClient(
+        integrationHelper.transferAssetIrohaFromClientWithFee(
             testClientSrc,
             testClientSrcKeypair,
             testClientSrc,
             environment.btcWithdrawalConfig.withdrawalCredential.accountId,
             BTC_ASSET,
             btcAddressDest,
-            amount.toPlainString()
+            amount.toPlainString(),
+            BTC_ASSET,
+            getFee(amount).toPlainString(),
+            FEE_DESCRIPTION
         )
         Thread.sleep(WITHDRAWAL_WAIT_MILLIS)
         assertEquals(initTxCount + 1, environment.createdTransactions.size)
         assertEquals(
-            initialSrcBalance,
+            BigDecimal(initialSrcBalance).setScale(BTC_PRECISION).toPlainString(),
             integrationHelper.getIrohaAccountBalance(testClientSrc, BTC_ASSET)
         )
         environment.utxoProvider.addToBlackList(btcAddressSrc)
         environment.utxoProvider.addToBlackList(btcAddressDest)
+        assertEquals(feeInitialAmount, integrationHelper.getWithdrawalFees())
+        assertEquals(
+            BigDecimal.valueOf(0).setScale(BTC_PRECISION),
+            integrationHelper.getWithdrawalAccountBalance(environment.btcWithdrawalConfig)
+        )
     }
 
     /**
-     * Test US-003 Withdrawal
      * Note: Iroha and bitcoind must be deployed to pass the test.
      * @given two registered BTC clients. 1st client has no BTC
      * @when 1st client sends SAT 10000 to 2nd client
@@ -711,6 +801,7 @@ class BtcWithdrawalIntegrationTest {
      */
     @Test
     fun testWithdrawalNoMoneyWasSentPreviously() {
+        val feeInitialAmount = integrationHelper.getWithdrawalFees()
         val initTxCount = environment.createdTransactions.size
         val amount = satToBtc(10000L)
         val randomNameSrc = String.getRandomString(9)
@@ -727,16 +818,19 @@ class BtcWithdrawalIntegrationTest {
             testClientSrcKeypair
         )
         val btcAddressDest = integrationHelper.createBtcAddress()
-        integrationHelper.addIrohaAssetTo(testClientSrc, BTC_ASSET, amount)
+        integrationHelper.addIrohaAssetTo(testClientSrc, BTC_ASSET, getAmountWithFee(amount))
         val initialSrcBalance = integrationHelper.getIrohaAccountBalance(testClientSrc, BTC_ASSET)
-        integrationHelper.transferAssetIrohaFromClient(
+        integrationHelper.transferAssetIrohaFromClientWithFee(
             testClientSrc,
             testClientSrcKeypair,
             testClientSrc,
             environment.btcWithdrawalConfig.withdrawalCredential.accountId,
             BTC_ASSET,
             btcAddressDest,
-            amount.toPlainString()
+            amount.toPlainString(),
+            BTC_ASSET,
+            getFee(amount).toPlainString(),
+            FEE_DESCRIPTION
         )
         Thread.sleep(WITHDRAWAL_WAIT_MILLIS)
         assertEquals(initTxCount, environment.createdTransactions.size)
@@ -744,11 +838,15 @@ class BtcWithdrawalIntegrationTest {
             initialSrcBalance,
             integrationHelper.getIrohaAccountBalance(testClientSrc, BTC_ASSET)
         )
+        assertEquals(feeInitialAmount, integrationHelper.getWithdrawalFees())
         environment.utxoProvider.addToBlackList(btcAddressDest)
+        assertEquals(
+            BigDecimal.valueOf(0).setScale(BTC_PRECISION),
+            integrationHelper.getWithdrawalAccountBalance(environment.btcWithdrawalConfig)
+        )
     }
 
     /**
-     * Test US-004 Withdrawal
      * Note: Iroha and bitcoind must be deployed to pass the test.
      * @given two registered BTC clients. 1st client has 1 BTC
      * @when 1st client sends BTC 100 to 2nd client
@@ -756,6 +854,7 @@ class BtcWithdrawalIntegrationTest {
      */
     @Test
     fun testWithdrawalNotEnoughMoney() {
+        val feeInitialAmount = integrationHelper.getWithdrawalFees()
         val initTxCount = environment.createdTransactions.size
         val amount = BigDecimal(100)
         val randomNameSrc = String.getRandomString(9)
@@ -774,20 +873,23 @@ class BtcWithdrawalIntegrationTest {
             )
         integrationHelper.sendBtc(
             btcAddressSrc,
-            1,
+            BigDecimal(1),
             environment.bitcoinConfig.confidenceLevel
         )
         val btcAddressDest = integrationHelper.createBtcAddress()
-        integrationHelper.addIrohaAssetTo(testClientSrc, BTC_ASSET, amount)
+        integrationHelper.addIrohaAssetTo(testClientSrc, BTC_ASSET, getAmountWithFee(amount))
         val initialSrcBalance = integrationHelper.getIrohaAccountBalance(testClientSrc, BTC_ASSET)
-        integrationHelper.transferAssetIrohaFromClient(
+        integrationHelper.transferAssetIrohaFromClientWithFee(
             testClientSrc,
             testClientSrcKeypair,
             testClientSrc,
             environment.btcWithdrawalConfig.withdrawalCredential.accountId,
             BTC_ASSET,
             btcAddressDest,
-            amount
+            amount.toPlainString(),
+            BTC_ASSET,
+            getFee(amount).toPlainString(),
+            FEE_DESCRIPTION
         )
         Thread.sleep(WITHDRAWAL_WAIT_MILLIS)
         assertEquals(
@@ -795,8 +897,13 @@ class BtcWithdrawalIntegrationTest {
             integrationHelper.getIrohaAccountBalance(testClientSrc, BTC_ASSET)
         )
         assertEquals(initTxCount, environment.createdTransactions.size)
+        assertEquals(feeInitialAmount, integrationHelper.getWithdrawalFees())
         environment.utxoProvider.addToBlackList(btcAddressSrc)
         environment.utxoProvider.addToBlackList(btcAddressDest)
+        assertEquals(
+            BigDecimal.valueOf(0).setScale(BTC_PRECISION),
+            integrationHelper.getWithdrawalAccountBalance(environment.btcWithdrawalConfig)
+        )
     }
 
     /**
@@ -807,6 +914,7 @@ class BtcWithdrawalIntegrationTest {
      */
     @Test
     fun testWithdrawalOnlyDustMoney() {
+        val feeInitialAmount = integrationHelper.getWithdrawalFees()
         val initTxCount = environment.createdTransactions.size
         val amount = satToBtc(10000)
         val randomNameSrc = String.getRandomString(9)
@@ -823,21 +931,24 @@ class BtcWithdrawalIntegrationTest {
                 CLIENT_DOMAIN,
                 testClientSrcKeypair
             )
-        for (utxo in 1..100) {
+        repeat(100) {
             integrationHelper.sendSat(btcAddressSrc, 1000, 0)
         }
         integrationHelper.generateBtcBlocks(environment.bitcoinConfig.confidenceLevel)
         val btcAddressDest = integrationHelper.createBtcAddress()
-        integrationHelper.addIrohaAssetTo(testClientSrc, BTC_ASSET, amount)
+        integrationHelper.addIrohaAssetTo(testClientSrc, BTC_ASSET, getAmountWithFee(amount))
         val initialSrcBalance = integrationHelper.getIrohaAccountBalance(testClientSrc, BTC_ASSET)
-        integrationHelper.transferAssetIrohaFromClient(
+        integrationHelper.transferAssetIrohaFromClientWithFee(
             testClientSrc,
             testClientSrcKeypair,
             testClientSrc,
             environment.btcWithdrawalConfig.withdrawalCredential.accountId,
             BTC_ASSET,
             btcAddressDest,
-            amount
+            amount.toPlainString(),
+            BTC_ASSET,
+            getFee(amount).toPlainString(),
+            FEE_DESCRIPTION
         )
         Thread.sleep(WITHDRAWAL_WAIT_MILLIS)
         assertEquals(initTxCount, environment.createdTransactions.size)
@@ -845,8 +956,13 @@ class BtcWithdrawalIntegrationTest {
             initialSrcBalance,
             integrationHelper.getIrohaAccountBalance(testClientSrc, BTC_ASSET)
         )
+        assertEquals(feeInitialAmount, integrationHelper.getWithdrawalFees())
         environment.utxoProvider.addToBlackList(btcAddressSrc)
         environment.utxoProvider.addToBlackList(btcAddressDest)
+        assertEquals(
+            BigDecimal.valueOf(0).setScale(BTC_PRECISION),
+            integrationHelper.getWithdrawalAccountBalance(environment.btcWithdrawalConfig)
+        )
     }
 
     /**
@@ -857,6 +973,7 @@ class BtcWithdrawalIntegrationTest {
      */
     @Test
     fun testWithdrawalSmallAmount() {
+        val feeInitialAmount = integrationHelper.getWithdrawalFees()
         val initTxCount = environment.createdTransactions.size
         val amount = satToBtc(1)
         val randomNameSrc = String.getRandomString(9)
@@ -873,18 +990,22 @@ class BtcWithdrawalIntegrationTest {
                 CLIENT_DOMAIN,
                 testClientSrcKeypair
             )
-        integrationHelper.sendBtc(btcAddressSrc, 1)
+        val amountInWalletBtc = getAmountWithFee(BigDecimal(1))
+        integrationHelper.sendBtc(btcAddressSrc, amountInWalletBtc)
         val btcAddressDest = integrationHelper.createBtcAddress()
-        integrationHelper.addIrohaAssetTo(testClientSrc, BTC_ASSET, amount)
+        integrationHelper.addIrohaAssetTo(testClientSrc, BTC_ASSET, amount + MINIMUM_FEE)
         val initialSrcBalance = integrationHelper.getIrohaAccountBalance(testClientSrc, BTC_ASSET)
-        integrationHelper.transferAssetIrohaFromClient(
+        integrationHelper.transferAssetIrohaFromClientWithFee(
             testClientSrc,
             testClientSrcKeypair,
             testClientSrc,
             environment.btcWithdrawalConfig.withdrawalCredential.accountId,
             BTC_ASSET,
             btcAddressDest,
-            amount
+            amount.toPlainString(),
+            BTC_ASSET,
+            MINIMUM_FEE.toPlainString(),
+            FEE_DESCRIPTION
         )
         Thread.sleep(WITHDRAWAL_WAIT_MILLIS)
         assertEquals(initTxCount, environment.createdTransactions.size)
@@ -892,21 +1013,27 @@ class BtcWithdrawalIntegrationTest {
             initialSrcBalance,
             integrationHelper.getIrohaAccountBalance(testClientSrc, BTC_ASSET)
         )
+        assertEquals(feeInitialAmount, integrationHelper.getWithdrawalFees())
         environment.utxoProvider.addToBlackList(btcAddressSrc)
         environment.utxoProvider.addToBlackList(btcAddressDest)
+        assertEquals(
+            BigDecimal.valueOf(0).setScale(BTC_PRECISION),
+            integrationHelper.getWithdrawalAccountBalance(environment.btcWithdrawalConfig)
+        )
     }
 
     /**
      * Note: Iroha and bitcoind must be deployed to pass the test.
      * @given two registered BTC clients. 1st client has 1 BTC in wallet. Fee rate was not set.
-     * @when 1st client sends SAT 2000 to 2nd client
+     * @when 1st client sends SAT 10000 to 2nd client
      * @then transaction fails, because fee rate was not set
      */
     @Test
     fun testWithdrawalFeeRateWasNotSet() {
         CurrentFeeRate.clear()
+        val feeInitialAmount = integrationHelper.getWithdrawalFees()
         val initTxCount = environment.createdTransactions.size
-        val amount = satToBtc(2000)
+        val amount = satToBtc(10000)
         val randomNameSrc = String.getRandomString(9)
         val testClientSrcKeypair = ModelUtil.generateKeypair()
         val testClientSrc = "$randomNameSrc@$CLIENT_DOMAIN"
@@ -921,18 +1048,21 @@ class BtcWithdrawalIntegrationTest {
                 CLIENT_DOMAIN,
                 testClientSrcKeypair
             )
-        integrationHelper.sendBtc(btcAddressSrc, 1)
+        integrationHelper.sendBtc(btcAddressSrc, BigDecimal(1))
         val btcAddressDest = integrationHelper.createBtcAddress()
-        integrationHelper.addIrohaAssetTo(testClientSrc, BTC_ASSET, amount)
+        integrationHelper.addIrohaAssetTo(testClientSrc, BTC_ASSET, getAmountWithFee(amount))
         val initialSrcBalance = integrationHelper.getIrohaAccountBalance(testClientSrc, BTC_ASSET)
-        integrationHelper.transferAssetIrohaFromClient(
+        integrationHelper.transferAssetIrohaFromClientWithFee(
             testClientSrc,
             testClientSrcKeypair,
             testClientSrc,
             environment.btcWithdrawalConfig.withdrawalCredential.accountId,
             BTC_ASSET,
             btcAddressDest,
-            amount
+            amount.toPlainString(),
+            BTC_ASSET,
+            getFee(amount).toPlainString(),
+            FEE_DESCRIPTION
         )
         Thread.sleep(WITHDRAWAL_WAIT_MILLIS)
         assertEquals(initTxCount, environment.createdTransactions.size)
@@ -940,14 +1070,33 @@ class BtcWithdrawalIntegrationTest {
             initialSrcBalance,
             integrationHelper.getIrohaAccountBalance(testClientSrc, BTC_ASSET)
         )
+        assertEquals(feeInitialAmount, integrationHelper.getWithdrawalFees())
         environment.utxoProvider.addToBlackList(btcAddressSrc)
         environment.utxoProvider.addToBlackList(btcAddressDest)
         CurrentFeeRate.setMinimum()
+        assertEquals(
+            BigDecimal.valueOf(0).setScale(BTC_PRECISION),
+            integrationHelper.getWithdrawalAccountBalance(environment.btcWithdrawalConfig)
+        )
     }
 
     /**
      * Logger
      */
     companion object : KLogging()
-
 }
+
+/**
+ * Calculates fee
+ * @param amount - amount that is used to calculate fee
+ * @return fee
+ */
+fun getFee(amount: BigDecimal): BigDecimal =
+    amount.multiply(BigDecimal("0.1")).setScale(BTC_PRECISION, RoundingMode.DOWN)
+
+/**
+ * Calculates amount plus fee
+ * @param amount - amount that will be used in calculation process
+ * @return amount + fee
+ */
+fun getAmountWithFee(amount: BigDecimal) = (amount + getFee(amount)).setScale(BTC_PRECISION, RoundingMode.DOWN)!!

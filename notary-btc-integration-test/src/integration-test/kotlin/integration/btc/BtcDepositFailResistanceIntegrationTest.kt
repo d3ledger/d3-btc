@@ -126,7 +126,7 @@ class BtcDepositFailResistanceIntegrationTest {
         //Send coins and confirm it with exactly one block
         integrationHelper.sendBtc(
             depositAddress,
-            depositBtcAmount,
+            BigDecimal(depositBtcAmount),
             1
         )
         //Wait until we get a coin
