@@ -1,5 +1,6 @@
 package com.d3.btc.withdrawal.handler;
 
+import com.d3.btc.withdrawal.config.BtcWithdrawalConfig;
 import com.d3.btc.withdrawal.provider.BroadcastsProvider;
 import com.d3.btc.withdrawal.provider.UTXOProvider;
 import com.d3.btc.withdrawal.service.BtcRollbackService;
@@ -13,6 +14,7 @@ import kotlin.Pair;
 import kotlin.Unit;
 import org.bitcoinj.core.PeerGroup;
 import org.bitcoinj.core.Transaction;
+import org.bitcoinj.wallet.Wallet;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -31,9 +33,13 @@ public class NewSignatureEventHandlerTest {
     private BtcRollbackService btcRollbackService;
     private UTXOProvider utxoProvider;
     private NewSignatureEventHandler newSignatureEventHandler;
+    private Wallet transferWallet;
+    private BtcWithdrawalConfig btcWithdrawalConfig;
 
     @Before
     public void setUp() {
+        btcWithdrawalConfig = mock(BtcWithdrawalConfig.class);
+        transferWallet = mock(Wallet.class);
         withdrawalStatistics = new WithdrawalStatistics(new AtomicInteger(), new AtomicInteger(), new AtomicInteger());
         signCollector = mock(SignCollector.class);
         transactionsStorage = mock(TransactionsStorage.class);
@@ -41,7 +47,10 @@ public class NewSignatureEventHandlerTest {
         broadcastsProvider = mock(BroadcastsProvider.class);
         btcRollbackService = mock(BtcRollbackService.class);
         utxoProvider = mock(UTXOProvider.class);
+
         newSignatureEventHandler = spy(new NewSignatureEventHandler(
+                transferWallet,
+                btcWithdrawalConfig,
                 withdrawalStatistics,
                 signCollector,
                 transactionsStorage,
@@ -53,47 +62,47 @@ public class NewSignatureEventHandlerTest {
 
     /**
      * @given instance of NewSignatureEventHandler with BroadcastsProvider that returns true whenever hasBeenBroadcasted() is called
-     * @when handleNewSignatureCommand() is called
+     * @when handle() is called
      * @then broadcastIfEnoughSignatures() is not called
      */
     @Test
-    public void testHandleNewSignatureCommandHasBeenBroadcasted() {
+    public void testHandleHasBeenBroadcasted() {
         WithdrawalDetails withdrawalDetails = new WithdrawalDetails("src account id", "to address", 0, System.currentTimeMillis(), 0);
         Transaction transaction = mock(Transaction.class);
         Pair<WithdrawalDetails, Transaction> withdrawal = new Pair<>(withdrawalDetails, transaction);
         when(transactionsStorage.get(anyString())).thenReturn(Result.Companion.of(() -> withdrawal));
         when(broadcastsProvider.hasBeenBroadcasted(any(WithdrawalDetails.class))).thenReturn(Result.Companion.of(() -> true));
-        doNothing().when(newSignatureEventHandler).broadcastIfEnoughSignatures(any(), any(), any());
+        doNothing().when(newSignatureEventHandler).broadcastIfEnoughSignatures(any(), any());
         Commands.SetAccountDetail newSignatureDetail = Commands.SetAccountDetail.newBuilder().setAccountId("test@" + BTC_SIGN_COLLECT_DOMAIN).build();
-        newSignatureEventHandler.handleNewSignatureCommand(newSignatureDetail, () -> null);
-        verify(newSignatureEventHandler, never()).broadcastIfEnoughSignatures(any(), any(), any());
+        newSignatureEventHandler.handle(newSignatureDetail);
+        verify(newSignatureEventHandler, never()).broadcastIfEnoughSignatures(any(), any());
     }
 
     /**
      * @given instance of NewSignatureEventHandler with BroadcastsProvider that returns false whenever hasBeenBroadcasted() is called
-     * @when handleNewSignatureCommand() is called
+     * @when handle() is called
      * @then broadcastIfEnoughSignatures() is called
      */
     @Test
-    public void testHandleNewSignatureCommandHasNotBeenBroadcasted() {
+    public void testHandleHasNotBeenBroadcasted() {
         WithdrawalDetails withdrawalDetails = new WithdrawalDetails("src account id", "to address", 0, System.currentTimeMillis(), 0);
         Transaction transaction = mock(Transaction.class);
         Pair<WithdrawalDetails, Transaction> withdrawal = new Pair<>(withdrawalDetails, transaction);
         when(transactionsStorage.get(anyString())).thenReturn(Result.Companion.of(() -> withdrawal));
         when(broadcastsProvider.hasBeenBroadcasted(any(WithdrawalDetails.class))).thenReturn(Result.Companion.of(() -> false));
-        doNothing().when(newSignatureEventHandler).broadcastIfEnoughSignatures(any(), any(), any());
+        doNothing().when(newSignatureEventHandler).broadcastIfEnoughSignatures(any(), any());
         Commands.SetAccountDetail newSignatureDetail = Commands.SetAccountDetail.newBuilder().setAccountId("test@" + BTC_SIGN_COLLECT_DOMAIN).build();
-        newSignatureEventHandler.handleNewSignatureCommand(newSignatureDetail, () -> null);
-        verify(newSignatureEventHandler).broadcastIfEnoughSignatures(any(), any(), any());
+        newSignatureEventHandler.handle(newSignatureDetail);
+        verify(newSignatureEventHandler).broadcastIfEnoughSignatures(any(), any());
     }
 
     /**
      * @given instance of NewSignatureEventHandler with BroadcastsProvider that fails whenever hasBeenBroadcasted() is called
-     * @when handleNewSignatureCommand() is called
+     * @when handle() is called
      * @then broadcastIfEnoughSignatures() is not called, rollback() and unregisterUnspents() are called
      */
     @Test
-    public void testHandleNewSignatureCommandBroadcastFailure() {
+    public void testHandleBroadcastFailure() {
         WithdrawalDetails withdrawalDetails = new WithdrawalDetails("src account id", "to address", 0, System.currentTimeMillis(), 0);
         Transaction transaction = mock(Transaction.class);
         Pair<WithdrawalDetails, Transaction> withdrawal = new Pair<>(withdrawalDetails, transaction);
@@ -102,21 +111,21 @@ public class NewSignatureEventHandlerTest {
         when(broadcastsProvider.hasBeenBroadcasted(any(WithdrawalDetails.class))).thenReturn(Result.Companion.of(() -> {
             throw new RuntimeException("Broadcast failure");
         }));
-        doNothing().when(newSignatureEventHandler).broadcastIfEnoughSignatures(any(), any(), any());
+        doNothing().when(newSignatureEventHandler).broadcastIfEnoughSignatures(any(), any());
         Commands.SetAccountDetail newSignatureDetail = Commands.SetAccountDetail.newBuilder().setAccountId("test@" + BTC_SIGN_COLLECT_DOMAIN).build();
-        newSignatureEventHandler.handleNewSignatureCommand(newSignatureDetail, () -> null);
-        verify(newSignatureEventHandler, never()).broadcastIfEnoughSignatures(any(), any(), any());
+        newSignatureEventHandler.handle(newSignatureDetail);
+        verify(newSignatureEventHandler, never()).broadcastIfEnoughSignatures(any(), any());
         verify(btcRollbackService).rollback(any(), any());
         verify(utxoProvider).unregisterUnspents(any(), any());
     }
 
     /**
      * @given instance of NewSignatureEventHandler with SignCollector that fails whenever getSignatures() is called
-     * @when handleNewSignatureCommand() is called
+     * @when handle() is called
      * @then rollback() and unregisterUnspents() are called
      */
     @Test
-    public void testHandleNewSignatureCommandGetSignaturesFail() {
+    public void testHandleGetSignaturesFail() {
         WithdrawalDetails withdrawalDetails = new WithdrawalDetails("src account id", "to address", 0, System.currentTimeMillis(), 0);
         Transaction transaction = mock(Transaction.class);
         when(transaction.getHashAsString()).thenReturn("abc");
@@ -128,8 +137,8 @@ public class NewSignatureEventHandlerTest {
             throw new RuntimeException("Cannot get signatures");
         }));
         Commands.SetAccountDetail newSignatureDetail = Commands.SetAccountDetail.newBuilder().setAccountId("test@" + BTC_SIGN_COLLECT_DOMAIN).build();
-        newSignatureEventHandler.handleNewSignatureCommand(newSignatureDetail, () -> null);
-        verify(newSignatureEventHandler).broadcastIfEnoughSignatures(any(), any(), any());
+        newSignatureEventHandler.handle(newSignatureDetail);
+        verify(newSignatureEventHandler).broadcastIfEnoughSignatures(any(), any());
         verify(btcRollbackService).rollback(any(), any());
         verify(utxoProvider).unregisterUnspents(any(), any());
     }

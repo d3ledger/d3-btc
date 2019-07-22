@@ -6,7 +6,7 @@
 package com.d3.btc.withdrawal.init
 
 import com.d3.btc.fee.CurrentFeeRate
-import com.d3.btc.handler.NewBtcClientRegistrationHandler
+import com.d3.btc.handler.SetAccountDetailHandler
 import com.d3.btc.healthcheck.HealthyService
 import com.d3.btc.helper.address.isValidBtcAddress
 import com.d3.btc.helper.network.addPeerConnectionStatusListener
@@ -18,11 +18,9 @@ import com.d3.btc.wallet.checkWalletNetwork
 import com.d3.btc.withdrawal.config.BTC_WITHDRAWAL_SERVICE_NAME
 import com.d3.btc.withdrawal.config.BtcWithdrawalConfig
 import com.d3.btc.withdrawal.expansion.WithdrawalServiceExpansion
-import com.d3.btc.withdrawal.handler.*
-import com.d3.commons.sidechain.iroha.FEE_DESCRIPTION
+import com.d3.btc.withdrawal.handler.NewTransferHandler
 import com.d3.commons.config.RMQConfig
-import com.d3.btc.config.BTC_CONSENSUS_DOMAIN
-import com.d3.btc.config.BTC_SIGN_COLLECT_DOMAIN
+import com.d3.commons.sidechain.iroha.FEE_DESCRIPTION
 import com.d3.commons.sidechain.iroha.ReliableIrohaChainListener
 import com.d3.commons.sidechain.iroha.util.getSetDetailCommands
 import com.d3.commons.sidechain.iroha.util.getTransferTransactions
@@ -37,9 +35,9 @@ import mu.KLogging
 import org.bitcoinj.core.PeerGroup
 import org.bitcoinj.utils.BriefLogFormatter
 import org.bitcoinj.wallet.Wallet
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 import java.io.Closeable
-import java.io.File
 
 /*
     Class that initiates listeners that will be used to handle Bitcoin withdrawal logic
@@ -51,13 +49,9 @@ class BtcWithdrawalInitialization(
     private val transferWallet: Wallet,
     private val btcChangeAddressProvider: BtcChangeAddressProvider,
     private val btcNetworkConfigProvider: BtcNetworkConfigProvider,
-    private val newSignatureEventHandler: NewSignatureEventHandler,
-    private val newBtcClientRegistrationHandler: NewBtcClientRegistrationHandler,
     private val newTransferHandler: NewTransferHandler,
-    private val newChangeAddressHandler: NewChangeAddressHandler,
-    private val newConsensusDataHandler: NewConsensusDataHandler,
-    private val newTransactionCreatedHandler: NewTransactionCreatedHandler,
-    private val broadcastTransactionHandler: BroadcastTransactionHandler,
+    @Qualifier("withdrawalHandlers")
+    private val accountDetailHandlers: List<SetAccountDetailHandler>,
     private val withdrawalServiceExpansion: WithdrawalServiceExpansion,
     rmqConfig: RMQConfig
 ) : HealthyService(), Closeable {
@@ -102,7 +96,6 @@ class BtcWithdrawalInitialization(
             }
     }
 
-    //TODO refactor handlers
     /**
      * Handles Iroha blocks
      * @param block - Iroha block
@@ -120,39 +113,13 @@ class BtcWithdrawalInitialization(
                 )
             }
         }
-        // Handle 'broadcast' events
-        getSetDetailCommands(block).filter { command -> isBroadcast(command) }
-            .forEach { command ->
-                broadcastTransactionHandler.handleBroadcastCommand(command.setAccountDetail)
+        // Handle other commands
+        getSetDetailCommands(block).map { it.setAccountDetail }
+            .forEach { setAccountDetailCommand ->
+                accountDetailHandlers.forEach { handler ->
+                    handler.handleFiltered(setAccountDetailCommand)
+                }
             }
-        // Handle 'create new transaction' events
-        getSetDetailCommands(block).filter { command -> isNewTransactionCreated(command) }
-            .forEach { command ->
-                newTransactionCreatedHandler.handleCreateTransactionCommand(command.setAccountDetail)
-            }
-        // Handle signature appearance commands
-        getSetDetailCommands(block).filter { command -> isNewWithdrawalSignature(command) }
-            .forEach { command ->
-                newSignatureEventHandler.handleNewSignatureCommand(
-                    command.setAccountDetail
-                ) { transferWallet.saveToFile(File(btcWithdrawalConfig.btcTransfersWalletPath)) }
-            }
-        // Handle 'set new consensus' events
-        getSetDetailCommands(block).filter { command -> isNewConsensus(command) }
-            .forEach { command ->
-                newConsensusDataHandler.handleNewConsensusCommand(command.setAccountDetail)
-            }
-        // Handle newly registered Bitcoin addresses. We need it to update transferWallet object.
-        getSetDetailCommands(block).forEach { command ->
-            newBtcClientRegistrationHandler.handleNewClientCommand(command, transferWallet)
-        }
-        // Handle newly generated Bitcoin change addresses. We need it to update transferWallet object.
-        getSetDetailCommands(block).filter { command ->
-            command.hasSetAccountDetail() &&
-                    command.setAccountDetail.accountId == btcWithdrawalConfig.changeAddressesStorageAccount
-        }.forEach { command ->
-            newChangeAddressHandler.handleNewChangeAddress(command.setAccountDetail)
-        }
     }
 
     // Calls apply and then acknowledges it safely
@@ -186,18 +153,6 @@ class BtcWithdrawalInitialization(
             Thread.sleep(5_000)
         }
     }
-
-    private fun isNewWithdrawalSignature(command: Commands.Command) =
-        command.hasSetAccountDetail() && command.setAccountDetail.accountId.endsWith("@$BTC_SIGN_COLLECT_DOMAIN")
-
-    private fun isNewTransactionCreated(command: Commands.Command) =
-        command.hasSetAccountDetail() && command.setAccountDetail.accountId == btcWithdrawalConfig.txStorageAccount
-
-    private fun isNewConsensus(command: Commands.Command) =
-        command.hasSetAccountDetail() && command.setAccountDetail.accountId.endsWith("@$BTC_CONSENSUS_DOMAIN")
-
-    private fun isBroadcast(command: Commands.Command) =
-        command.hasSetAccountDetail() && command.setAccountDetail.accountId == btcWithdrawalConfig.broadcastsCredential.accountId
 
     /**
      * Returns withdrawal commands from transaction if form of Pair(withdrawal command, fee command)

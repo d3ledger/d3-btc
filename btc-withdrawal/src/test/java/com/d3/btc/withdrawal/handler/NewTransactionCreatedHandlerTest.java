@@ -48,11 +48,11 @@ public class NewTransactionCreatedHandlerTest {
 
     /**
      * @given instance of NewTransactionCreatedHandler with BroadcastsProvider that returns true whenever hasBeenBroadcasted() is called
-     * @when handleCreateTransactionCommand() is called
+     * @when handle() is called
      * @then transactions are ignored and not signed
      */
     @Test
-    public void testHandleCreateTransactionCommandHasBeenBroadcasted() {
+    public void testHandleHasBeenBroadcasted() {
         when(transactionsStorage.get(anyString())).thenReturn(Result.Companion.of(() -> {
             WithdrawalDetails withdrawalDetails = new WithdrawalDetails(
                     "source account",
@@ -65,17 +65,17 @@ public class NewTransactionCreatedHandlerTest {
         }));
         when(broadcastsProvider.hasBeenBroadcasted(any(WithdrawalDetails.class))).thenReturn(Result.Companion.of(() -> true));
         Commands.SetAccountDetail createdTxCommand = Commands.SetAccountDetail.newBuilder().setKey("abc").build();
-        newTransactionCreatedHandler.handleCreateTransactionCommand(createdTxCommand);
+        newTransactionCreatedHandler.handle(createdTxCommand);
         verify(signCollector, never()).signAndSave(any(), any());
     }
 
     /**
      * @given instance of NewTransactionCreatedHandler with BroadcastsProvider that returns false whenever hasBeenBroadcasted() is called
-     * @when handleCreateTransactionCommand() is called
+     * @when handle() is called
      * @then transactions are signed
      */
     @Test
-    public void testHandleCreateTransactionCommandHasNotBeenBroadcasted() {
+    public void testHandleHasNotBeenBroadcasted() {
         when(transactionsStorage.get(anyString())).thenReturn(Result.Companion.of(() -> {
             WithdrawalDetails withdrawalDetails = new WithdrawalDetails(
                     "source account",
@@ -88,17 +88,17 @@ public class NewTransactionCreatedHandlerTest {
         }));
         when(broadcastsProvider.hasBeenBroadcasted(any(WithdrawalDetails.class))).thenReturn(Result.Companion.of(() -> false));
         Commands.SetAccountDetail createdTxCommand = Commands.SetAccountDetail.newBuilder().setKey("abc").build();
-        newTransactionCreatedHandler.handleCreateTransactionCommand(createdTxCommand);
+        newTransactionCreatedHandler.handle(createdTxCommand);
         verify(signCollector).signAndSave(any(), any());
     }
 
     /**
      * @given instance of NewTransactionCreatedHandler with BroadcastsProvider that fails whenever hasBeenBroadcasted() is called
-     * @when handleCreateTransactionCommand() is called
+     * @when handle() is called
      * @then transactions are not signed, rollback() and unregisterUnspents() are called
      */
     @Test
-    public void testHandleCreateTransactionCommandBroadcastFail() {
+    public void testHandleBroadcastFail() {
         when(transactionsStorage.get(anyString())).thenReturn(Result.Companion.of(() -> {
             WithdrawalDetails withdrawalDetails = new WithdrawalDetails(
                     "source account",
@@ -114,7 +114,7 @@ public class NewTransactionCreatedHandlerTest {
             throw new RuntimeException("Broadcast failure");
         }));
         Commands.SetAccountDetail createdTxCommand = Commands.SetAccountDetail.newBuilder().setKey("abc").build();
-        newTransactionCreatedHandler.handleCreateTransactionCommand(createdTxCommand);
+        newTransactionCreatedHandler.handle(createdTxCommand);
         verify(signCollector, never()).signAndSave(any(), any());
         verify(btcRollbackService).rollback(any(WithdrawalDetails.class), any());
         verify(utxoProvider).unregisterUnspents(any(), any());

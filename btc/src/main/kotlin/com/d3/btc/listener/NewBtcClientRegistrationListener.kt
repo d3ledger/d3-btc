@@ -12,7 +12,6 @@ import io.reactivex.schedulers.Schedulers
 import iroha.protocol.BlockOuterClass
 import mu.KLogging
 import org.bitcoinj.wallet.Wallet
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 import java.util.concurrent.ExecutorService
@@ -22,9 +21,9 @@ import java.util.concurrent.ExecutorService
  */
 @Component
 class NewBtcClientRegistrationListener(
-    @Autowired private val newBtcClientRegistrationHandler: NewBtcClientRegistrationHandler,
+    private val newBtcClientRegistrationHandler: NewBtcClientRegistrationHandler,
     @Qualifier("registeredClientsListenerExecutor")
-    @Autowired private val registeredClientsListenerExecutor: ExecutorService
+    private val registeredClientsListenerExecutor: ExecutorService
 ) {
     /**
      * Listens to newly registered Bitcoin addresses and adds addresses to current wallet object
@@ -37,8 +36,8 @@ class NewBtcClientRegistrationListener(
         irohaObservable.subscribeOn(
             Schedulers.from(registeredClientsListenerExecutor)
         ).subscribe({ block ->
-            getSetDetailCommands(block).forEach { command ->
-                newBtcClientRegistrationHandler.handleNewClientCommand(command, wallet)
+            getSetDetailCommands(block).map { command -> command.setAccountDetail }.forEach { setAccountDetailCommand ->
+                newBtcClientRegistrationHandler.handleFiltered(setAccountDetailCommand)
             }
         }, { ex ->
             logger.error("Error on subscribe", ex)
