@@ -6,6 +6,9 @@
 package com.d3.btc.generation.config
 
 import com.d3.btc.generation.BTC_ADDRESS_GENERATION_SERVICE_NAME
+import com.d3.btc.generation.handler.BtcAddressGenerationTriggerHandler
+import com.d3.btc.generation.handler.BtcAddressRegisteredHandler
+import com.d3.btc.generation.handler.NewKeyHandler
 import com.d3.btc.provider.BtcChangeAddressProvider
 import com.d3.btc.provider.network.BtcNetworkConfigProvider
 import com.d3.btc.wallet.createWalletIfAbsent
@@ -163,4 +166,11 @@ class BtcAddressGenerationAppConfiguration {
             btcAddressGenerationConfig.expansionTriggerCreatorAccountId,
             generationIrohaAPI()
         )
+
+    @Bean
+    fun addressGenerationHandlers(
+        newKeyHandler: NewKeyHandler,
+        btcAddressRegisteredHandler: BtcAddressRegisteredHandler,
+        btcAddressGenerationTriggerHandler: BtcAddressGenerationTriggerHandler
+    ) = listOf(newKeyHandler, btcAddressRegisteredHandler, btcAddressGenerationTriggerHandler)
 }
