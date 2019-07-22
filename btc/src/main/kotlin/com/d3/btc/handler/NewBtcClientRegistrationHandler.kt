@@ -22,7 +22,7 @@ class NewBtcClientRegistrationHandler(
     private val btcNetworkConfigProvider: BtcNetworkConfigProvider,
     @Qualifier("transferWallet")
     private val wallet: Wallet
-) : SetAccountDetailHandler {
+) : SetAccountDetailHandler() {
 
     /**
      * Handles newly registered Bitcoin addresses and adds addresses to current wallet object

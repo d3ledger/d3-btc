@@ -23,7 +23,7 @@ class NewChangeAddressHandler(
     private val transfersWallet: Wallet,
     private val btcNetworkConfigProvider: BtcNetworkConfigProvider,
     private val btcWithdrawalConfig: BtcWithdrawalConfig
-) : SetAccountDetailHandler {
+) : SetAccountDetailHandler() {
 
     /**
      * Handles change address creation event

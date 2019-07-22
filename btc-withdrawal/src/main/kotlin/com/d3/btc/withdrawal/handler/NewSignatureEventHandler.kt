@@ -42,7 +42,7 @@ class NewSignatureEventHandler(
     private val btcRollbackService: BtcRollbackService,
     private val peerGroup: PeerGroup,
     private val broadcastsProvider: BroadcastsProvider
-) : SetAccountDetailHandler {
+) : SetAccountDetailHandler() {
 
     private val broadcastTransactionListeners = CopyOnWriteArrayList<(tx: Transaction) -> Unit>()
 

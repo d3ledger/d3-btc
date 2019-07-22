@@ -25,7 +25,7 @@ class NewTransactionCreatedHandler(
     private val btcRollbackService: BtcRollbackService,
     private val bitcoinUTXOProvider: UTXOProvider,
     private val broadcastsProvider: BroadcastsProvider
-) : SetAccountDetailHandler {
+) : SetAccountDetailHandler() {
 
     /**
      * Handles "create new transaction" commands

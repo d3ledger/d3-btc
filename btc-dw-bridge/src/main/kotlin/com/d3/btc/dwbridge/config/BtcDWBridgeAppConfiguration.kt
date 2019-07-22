@@ -288,7 +288,4 @@ class BtcDWBridgeAppConfiguration {
         newBtcClientRegistrationHandler,
         newChangeAddressHandler
     )
-    /**
-     *  ,
-     */
 }

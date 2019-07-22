@@ -117,9 +117,7 @@ class BtcWithdrawalInitialization(
         getSetDetailCommands(block).map { it.setAccountDetail }
             .forEach { setAccountDetailCommand ->
                 accountDetailHandlers.forEach { handler ->
-                    if (handler.filter(setAccountDetailCommand)) {
-                        handler.handle(setAccountDetailCommand)
-                    }
+                    handler.handleFiltered(setAccountDetailCommand)
                 }
             }
     }

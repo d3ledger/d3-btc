@@ -26,7 +26,7 @@ class NewConsensusDataHandler(
     private val withdrawalTransferService: WithdrawalTransferService,
     private val withdrawalConsensusProvider: WithdrawalConsensusProvider,
     private val btcRollbackService: BtcRollbackService
-) : SetAccountDetailHandler {
+) : SetAccountDetailHandler() {
 
     /**
      * Handles new consensus command

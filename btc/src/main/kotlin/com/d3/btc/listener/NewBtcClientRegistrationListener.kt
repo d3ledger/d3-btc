@@ -37,9 +37,7 @@ class NewBtcClientRegistrationListener(
             Schedulers.from(registeredClientsListenerExecutor)
         ).subscribe({ block ->
             getSetDetailCommands(block).map { command -> command.setAccountDetail }.forEach { setAccountDetailCommand ->
-                if (newBtcClientRegistrationHandler.filter(setAccountDetailCommand)) {
-                    newBtcClientRegistrationHandler.handle(setAccountDetailCommand)
-                }
+                newBtcClientRegistrationHandler.handleFiltered(setAccountDetailCommand)
             }
         }, { ex ->
             logger.error("Error on subscribe", ex)

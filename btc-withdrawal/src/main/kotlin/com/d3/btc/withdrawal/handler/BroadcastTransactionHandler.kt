@@ -22,7 +22,7 @@ import org.springframework.stereotype.Component
 class BroadcastTransactionHandler(
     private val btcWithdrawalConfig: BtcWithdrawalConfig,
     private val withdrawalFinalizeService: WithdrawalFinalizeService
-) : SetAccountDetailHandler {
+) : SetAccountDetailHandler() {
 
     private val gson = GsonInstance.get()
 
