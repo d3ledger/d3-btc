@@ -8,6 +8,9 @@ package integration.btc.environment
 import com.d3.btc.generation.BTC_ADDRESS_GENERATION_SERVICE_NAME
 import com.d3.btc.generation.config.BtcAddressGenerationConfig
 import com.d3.btc.generation.expansion.AddressGenerationServiceExpansion
+import com.d3.btc.generation.handler.BtcAddressGenerationTriggerHandler
+import com.d3.btc.generation.handler.BtcAddressRegisteredHandler
+import com.d3.btc.generation.handler.NewKeyHandler
 import com.d3.btc.generation.init.BtcAddressGenerationInitialization
 import com.d3.btc.generation.trigger.AddressGenerationTrigger
 import com.d3.btc.provider.BtcChangeAddressProvider
@@ -177,11 +180,15 @@ class BtcAddressGenerationTestEnvironment(
         btcChangeAddressesProvider
     )
 
+    private val newKeyHandler =
+        NewKeyHandler(btcGenerationConfig, keysWallet, registrationQueryHelper, btcPublicKeyProvider())
+    private val btcAddressRegisteredHandler = BtcAddressRegisteredHandler(addressGenerationTrigger, btcGenerationConfig)
+    private val btcAddressGenerationTriggerHandler =
+        BtcAddressGenerationTriggerHandler(btcGenerationConfig, keysWallet, btcPublicKeyProvider())
+
     val btcAddressGenerationInitialization = BtcAddressGenerationInitialization(
         keysWallet,
-        registrationQueryHelper,
         btcGenerationConfig,
-        btcPublicKeyProvider(),
         irohaListener,
         addressGenerationTrigger,
         btcNetworkConfigProvider,
@@ -192,7 +199,8 @@ class BtcAddressGenerationTestEnvironment(
                 ChangelogInterface.superuserAccountId,
                 irohaApi
             ), mstRegistrationCredential
-        )
+        ),
+        listOf(newKeyHandler, btcAddressGenerationTriggerHandler, btcAddressRegisteredHandler)
     )
 
     /**
