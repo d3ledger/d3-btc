@@ -103,7 +103,8 @@
                     "can_get_all_txs",
                     "can_add_signatory",
                     "can_set_quorum",
-                    "can_set_detail"
+                    "can_set_detail",
+                    "can_subtract_asset_qty"
                   ]
                 }
               },
@@ -323,6 +324,13 @@
                 "createAccount": {
                   "accountName": "client_accounts",
                   "domainId": "notary",
+                  "publicKey": "0000000000000000000000000000000000000000000000000000000000000000"
+                }
+              },
+              {
+                "createAccount": {
+                  "accountName": "withdrawal_billing",
+                  "domainId": "d3",
                   "publicKey": "0000000000000000000000000000000000000000000000000000000000000000"
                 }
               },

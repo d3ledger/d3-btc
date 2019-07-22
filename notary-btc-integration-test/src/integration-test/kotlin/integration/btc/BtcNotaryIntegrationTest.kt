@@ -5,11 +5,11 @@
 
 package integration.btc
 
+import com.d3.btc.config.BTC_ASSET
 import com.d3.commons.sidechain.iroha.CLIENT_DOMAIN
 import com.d3.commons.util.getRandomString
 import com.github.kittinunf.result.failure
 import integration.btc.environment.BtcNotaryTestEnvironment
-import integration.helper.BTC_ASSET
 import integration.helper.BtcIntegrationHelperUtil
 import integration.registration.RegistrationServiceTestEnvironment
 import org.bitcoinj.wallet.Wallet
@@ -73,7 +73,7 @@ class BtcNotaryIntegrationTest {
             BTC_ASSET
         )
         val btcAmount = 1
-        integrationHelper.sendBtc(btcAddress, btcAmount)
+        integrationHelper.sendBtc(btcAddress, BigDecimal(btcAmount))
         Thread.sleep(DEPOSIT_WAIT_MILLIS)
         val newBalance = integrationHelper.getIrohaAccountBalance(testClient, BTC_ASSET)
         assertEquals(
@@ -114,7 +114,7 @@ class BtcNotaryIntegrationTest {
         )
         val btcAmount = 1
         for (deposit in 1..totalDeposits) {
-            integrationHelper.sendBtc(btcAddress, btcAmount)
+            integrationHelper.sendBtc(btcAddress, BigDecimal(btcAmount))
             Thread.sleep(DEPOSIT_WAIT_MILLIS)
         }
         val newBalance = integrationHelper.getIrohaAccountBalance(testClient, BTC_ASSET)
@@ -160,7 +160,7 @@ class BtcNotaryIntegrationTest {
         val sendBtcThreads = ArrayList<Thread>()
         for (deposit in 1..totalDeposits) {
             val sendBtcThread = Thread {
-                integrationHelper.sendBtc(btcAddress, btcAmount, 0)
+                integrationHelper.sendBtc(btcAddress, BigDecimal(btcAmount), 0)
             }
             sendBtcThreads.add(sendBtcThread)
             sendBtcThread.start()
@@ -209,7 +209,7 @@ class BtcNotaryIntegrationTest {
         val btcAmount = 1
         integrationHelper.sendBtc(
             btcAddress,
-            btcAmount,
+            BigDecimal(btcAmount),
             environment.bitcoinConfig.confidenceLevel - 1
         )
         Thread.sleep(DEPOSIT_WAIT_MILLIS)
@@ -248,7 +248,7 @@ class BtcNotaryIntegrationTest {
             BTC_ASSET
         )
         val btcAmount = 1
-        integrationHelper.sendBtc(btcAddress, btcAmount, 0)
+        integrationHelper.sendBtc(btcAddress, BigDecimal(btcAmount), 0)
         Thread.sleep(DEPOSIT_WAIT_MILLIS)
         for (confirmation in 1..environment.bitcoinConfig.confidenceLevel) {
             Thread.sleep(150)

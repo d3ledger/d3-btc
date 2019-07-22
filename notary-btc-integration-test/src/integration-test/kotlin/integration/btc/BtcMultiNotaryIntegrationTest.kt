@@ -5,11 +5,11 @@
 
 package integration.btc
 
+import com.d3.btc.config.BTC_ASSET
 import com.d3.commons.sidechain.iroha.CLIENT_DOMAIN
 import com.d3.commons.util.getRandomString
 import com.github.kittinunf.result.failure
 import integration.btc.environment.BtcNotaryTestEnvironment
-import integration.helper.BTC_ASSET
 import integration.helper.BtcIntegrationHelperUtil
 import integration.registration.RegistrationServiceTestEnvironment
 import kotlinx.coroutines.GlobalScope
@@ -94,7 +94,7 @@ class BtcMultiNotaryIntegrationTest {
             BTC_ASSET
         )
         val btcAmount = 1
-        integrationHelper.sendBtc(btcAddress, btcAmount)
+        integrationHelper.sendBtc(btcAddress, BigDecimal(btcAmount))
         Thread.sleep(DEPOSIT_WAIT_MILLIS * peers)
         val newBalance = integrationHelper.getIrohaAccountBalance(testClient, BTC_ASSET)
         assertEquals(

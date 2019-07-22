@@ -5,6 +5,7 @@
 
 package com.d3.btc.withdrawal.handler
 
+import com.d3.btc.config.BTC_SIGN_COLLECT_DOMAIN
 import com.d3.btc.withdrawal.provider.BroadcastsProvider
 import com.d3.btc.withdrawal.provider.UTXOProvider
 import com.d3.btc.withdrawal.service.BtcRollbackService
@@ -12,7 +13,6 @@ import com.d3.btc.withdrawal.statistics.WithdrawalStatistics
 import com.d3.btc.withdrawal.transaction.SignCollector
 import com.d3.btc.withdrawal.transaction.TransactionsStorage
 import com.d3.btc.withdrawal.transaction.WithdrawalDetails
-import com.d3.commons.sidechain.iroha.BTC_SIGN_COLLECT_DOMAIN
 import com.github.kittinunf.result.failure
 import com.github.kittinunf.result.map
 import iroha.protocol.Commands
@@ -104,6 +104,7 @@ class NewSignatureEventHandler(
                 logger.info { "Not enough signatures were collected for tx $originalHash" }
                 return
             }
+            var successfullyBroadcasted = false
             logger.info { "Tx $originalHash has enough signatures" }
             signCollector.fillTxWithSignatures(tx, signatures)
                 .map {
@@ -113,22 +114,28 @@ class NewSignatureEventHandler(
                     }
                     //Wait until it is broadcasted to all the connected peers
                     peerGroup.broadcastTransaction(tx).future().get()
+                    successfullyBroadcasted = true
                 }.map {
                     onBroadcastSuccess()
                 }.map {
-                    // Mark withdrwal as 'broadcasted'
+                    // Mark withdrawal as 'broadcasted'
                     broadcastsProvider.markAsBroadcasted(withdrawalDetails)
-                }.fold({
+                }
+                .fold({
                     logger.info { "Tx ${tx.hashAsString} was successfully broadcasted" }
                     withdrawalStatistics.incSucceededTransfers()
                 }, { ex ->
                     withdrawalStatistics.incFailedTransfers()
                     logger.error("Cannot complete tx $originalHash", ex)
-                    btcRollbackService.rollback(
-                        withdrawalDetails, "Cannot complete Bitcoin transaction"
-                    )
-                    bitcoinUTXOProvider.unregisterUnspents(tx, withdrawalDetails)
-                        .failure { e -> logger.error("Cannot unregister unspents", e) }
+                    if (successfullyBroadcasted) {
+                        logger.warn("Cannot rollback $withdrawalDetails because it has been successfully broadcasted recently")
+                    } else {
+                        btcRollbackService.rollback(
+                            withdrawalDetails, "Cannot complete Bitcoin transaction"
+                        )
+                        bitcoinUTXOProvider.unregisterUnspents(tx, withdrawalDetails)
+                            .failure { e -> logger.error("Cannot unregister unspents", e) }
+                    }
                 })
 
         }, { ex ->

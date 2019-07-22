@@ -5,6 +5,8 @@
 
 package com.d3.btc.endpoints
 
+import com.d3.btc.config.BTC_ASSET
+import com.d3.btc.helper.format.GsonInstance
 import com.d3.commons.notary.endpoint.ServerInitializationBundle
 import com.github.jleskovar.btcrpc.BitcoinRpcClient
 import com.github.kittinunf.result.Result
@@ -13,7 +15,6 @@ import io.ktor.application.call
 import io.ktor.application.install
 import io.ktor.features.CORS
 import io.ktor.features.ContentNegotiation
-import io.ktor.gson.gson
 import io.ktor.http.HttpStatusCode
 import io.ktor.request.receive
 import io.ktor.response.respondText
@@ -33,7 +34,6 @@ import java.util.*
 const val DEPOSIT_PATH = "deposit"
 const val WITHDRAWAL_PATH = "withdraw"
 const val TRANSFER_PATH = "transfer"
-const val BTC_ASSET = "btc#bitcoin"
 
 private const val CONFIRMATION_BLOCKS = 6
 
@@ -67,7 +67,7 @@ class TestingEndpoint(
                 allowCredentials = true
             }
             install(ContentNegotiation) {
-                gson()
+                GsonInstance.get()
             }
             routing {
                 post(serverBundle.ethRefund + "/$DEPOSIT_PATH") {

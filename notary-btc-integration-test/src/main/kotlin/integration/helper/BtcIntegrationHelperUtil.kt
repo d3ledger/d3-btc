@@ -5,6 +5,7 @@
 
 package integration.helper
 
+import com.d3.btc.config.BTC_ASSET
 import com.d3.btc.config.BitcoinConfig
 import com.d3.btc.helper.address.createMsAddress
 import com.d3.btc.helper.currency.satToBtc
@@ -17,6 +18,7 @@ import com.d3.btc.provider.address.BtcAddressesProvider
 import com.d3.btc.provider.network.BtcNetworkConfigProvider
 import com.d3.btc.registration.strategy.BtcRegistrationStrategyImpl
 import com.d3.btc.wallet.WalletInitializer
+import com.d3.btc.withdrawal.config.BtcWithdrawalConfig
 import com.d3.commons.notary.IrohaCommand
 import com.d3.commons.notary.IrohaOrderedBatch
 import com.d3.commons.notary.IrohaTransaction
@@ -39,8 +41,7 @@ import java.io.File
 import java.math.BigDecimal
 import java.security.KeyPair
 
-// Btc asset id
-const val BTC_ASSET = "btc#bitcoin"
+const val BTC_PRECISION=8
 // Default node id
 const val NODE_ID = "any id"
 // How many address may be generated in one batch
@@ -55,6 +56,18 @@ class BtcIntegrationHelperUtil(peers: Int = 1) : IrohaIntegrationHelperUtil(peer
     private val mstRegistrationIrohaConsumer by lazy {
         IrohaConsumerImpl(accountHelper.mstRegistrationAccount, irohaAPI)
     }
+
+    /**
+     * Returns withdrawal fees
+     */
+    fun getWithdrawalFees() = BigDecimal(getIrohaAccountBalance("withdrawal_billing@d3", BTC_ASSET)).setScale(BTC_PRECISION)
+
+    /**
+     * Returns withdrawal account balance
+     */
+    fun getWithdrawalAccountBalance(btcWithdrawalConfig: BtcWithdrawalConfig) =
+        BigDecimal(getIrohaAccountBalance(btcWithdrawalConfig.withdrawalCredential.accountId, BTC_ASSET)).setScale(BTC_PRECISION)
+
 
     private val rpcClient by lazy {
         BitcoinRpcClientFactory.createClient(
@@ -276,9 +289,9 @@ class BtcIntegrationHelperUtil(peers: Int = 1) : IrohaIntegrationHelperUtil(peer
     /**
      * Sends btc to a given address
      */
-    fun sendBtc(address: String, amount: Int, confirmations: Int = 6) {
+    fun sendBtc(address: String, amount: BigDecimal, confirmations: Int = 6) {
         logger.info { "Send $amount BTC to $address" }
-        rpcClient.sendToAddress(address = address, amount = BigDecimal(amount))
+        rpcClient.sendToAddress(address = address, amount = amount)
         generateBtcBlocks(confirmations)
     }
 

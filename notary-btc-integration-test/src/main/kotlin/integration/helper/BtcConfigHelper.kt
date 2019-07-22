@@ -82,6 +82,7 @@ class BtcConfigHelper(
                 "withdrawal.properties"
             ).get()
         return object : BtcWithdrawalConfig {
+            override val withdrawalBillingAccount = btcWithdrawalConfig.withdrawalBillingAccount
             override val broadcastsCredential = accountHelper.createCredentialRawConfig(broadcastCredential)
             override val utxoStorageAccount = utxoStorageAccountCredential.accountId
             override val txStorageAccount = txStorageAccountCredential.accountId

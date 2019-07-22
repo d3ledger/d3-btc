@@ -5,6 +5,10 @@
 
 package com.d3.btc.config
 
+const val BTC_ASSET = "btc#bitcoin"
+const val BTC_SIGN_COLLECT_DOMAIN = "btcSignCollect"
+const val BTC_CONSENSUS_DOMAIN = "btcConsensus"
+
 /**
  * Bitcoin configurations
  */

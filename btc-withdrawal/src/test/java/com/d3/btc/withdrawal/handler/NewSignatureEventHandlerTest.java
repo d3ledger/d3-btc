@@ -15,11 +15,10 @@ import org.bitcoinj.core.PeerGroup;
 import org.bitcoinj.core.Transaction;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Mock;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static com.d3.commons.sidechain.iroha.IrohaValsKt.BTC_SIGN_COLLECT_DOMAIN;
+import static com.d3.btc.config.BitcoinConfigKt.BTC_SIGN_COLLECT_DOMAIN;
 import static org.mockito.Mockito.*;
 
 public class NewSignatureEventHandlerTest {
@@ -59,7 +58,7 @@ public class NewSignatureEventHandlerTest {
      */
     @Test
     public void testHandleNewSignatureCommandHasBeenBroadcasted() {
-        WithdrawalDetails withdrawalDetails = new WithdrawalDetails("src account id", "to address", 0, System.currentTimeMillis());
+        WithdrawalDetails withdrawalDetails = new WithdrawalDetails("src account id", "to address", 0, System.currentTimeMillis(), 0);
         Transaction transaction = mock(Transaction.class);
         Pair<WithdrawalDetails, Transaction> withdrawal = new Pair<>(withdrawalDetails, transaction);
         when(transactionsStorage.get(anyString())).thenReturn(Result.Companion.of(() -> withdrawal));
@@ -77,7 +76,7 @@ public class NewSignatureEventHandlerTest {
      */
     @Test
     public void testHandleNewSignatureCommandHasNotBeenBroadcasted() {
-        WithdrawalDetails withdrawalDetails = new WithdrawalDetails("src account id", "to address", 0, System.currentTimeMillis());
+        WithdrawalDetails withdrawalDetails = new WithdrawalDetails("src account id", "to address", 0, System.currentTimeMillis(), 0);
         Transaction transaction = mock(Transaction.class);
         Pair<WithdrawalDetails, Transaction> withdrawal = new Pair<>(withdrawalDetails, transaction);
         when(transactionsStorage.get(anyString())).thenReturn(Result.Companion.of(() -> withdrawal));
@@ -95,7 +94,7 @@ public class NewSignatureEventHandlerTest {
      */
     @Test
     public void testHandleNewSignatureCommandBroadcastFailure() {
-        WithdrawalDetails withdrawalDetails = new WithdrawalDetails("src account id", "to address", 0, System.currentTimeMillis());
+        WithdrawalDetails withdrawalDetails = new WithdrawalDetails("src account id", "to address", 0, System.currentTimeMillis(), 0);
         Transaction transaction = mock(Transaction.class);
         Pair<WithdrawalDetails, Transaction> withdrawal = new Pair<>(withdrawalDetails, transaction);
         when(transactionsStorage.get(anyString())).thenReturn(Result.Companion.of(() -> withdrawal));
@@ -118,7 +117,7 @@ public class NewSignatureEventHandlerTest {
      */
     @Test
     public void testHandleNewSignatureCommandGetSignaturesFail() {
-        WithdrawalDetails withdrawalDetails = new WithdrawalDetails("src account id", "to address", 0, System.currentTimeMillis());
+        WithdrawalDetails withdrawalDetails = new WithdrawalDetails("src account id", "to address", 0, System.currentTimeMillis(), 0);
         Transaction transaction = mock(Transaction.class);
         when(transaction.getHashAsString()).thenReturn("abc");
         Pair<WithdrawalDetails, Transaction> withdrawal = new Pair<>(withdrawalDetails, transaction);

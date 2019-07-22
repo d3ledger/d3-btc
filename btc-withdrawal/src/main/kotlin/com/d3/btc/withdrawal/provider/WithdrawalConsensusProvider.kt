@@ -6,13 +6,14 @@
 package com.d3.btc.withdrawal.provider
 
 import com.d3.btc.config.BitcoinConfig
+import com.d3.btc.helper.format.GsonInstance
 import com.d3.btc.withdrawal.transaction.WithdrawalConsensus
 import com.d3.btc.withdrawal.transaction.WithdrawalDetails
 import com.d3.commons.model.IrohaCredential
 import com.d3.commons.notary.IrohaCommand
 import com.d3.commons.notary.IrohaTransaction
 import com.d3.commons.provider.NotaryPeerListProvider
-import com.d3.commons.sidechain.iroha.BTC_CONSENSUS_DOMAIN
+import com.d3.btc.config.BTC_CONSENSUS_DOMAIN
 import com.d3.commons.sidechain.iroha.consumer.IrohaConsumer
 import com.d3.commons.sidechain.iroha.consumer.IrohaConverter
 import com.d3.commons.sidechain.iroha.util.IrohaQueryHelper
@@ -36,12 +37,12 @@ class WithdrawalConsensusProvider(
     @Qualifier("consensusIrohaConsumer")
     private val consensusIrohaConsumer: IrohaConsumer,
     @Qualifier("withdrawalQueryHelper")
-    private val withdrwalQueryHelper: IrohaQueryHelper,
+    private val withdrawalQueryHelper: IrohaQueryHelper,
     private val peerListProvider: NotaryPeerListProvider,
     private val bitcoinUTXOProvider: UTXOProvider,
     private val bitcoinConfig: BitcoinConfig
 ) {
-    private val gson = Gson()
+    private val gson = GsonInstance.get()
 
     /**
      * Creates consensus data and saves it in Iroha
@@ -86,7 +87,7 @@ class WithdrawalConsensusProvider(
      * @return consensus data in form of (withdrawal details, list of consensus data from all the nodes)
      */
     fun getConsensus(withdrawalHash: String): Result<Pair<WithdrawalDetails, List<WithdrawalConsensus>>, Exception> {
-        return withdrwalQueryHelper.getAccountDetails(
+        return withdrawalQueryHelper.getAccountDetails(
             consensusIrohaConsumer.creator,
             consensusIrohaConsumer.creator,
             withdrawalHash
@@ -97,7 +98,7 @@ class WithdrawalConsensusProvider(
                 throw IllegalStateException("Withdrawal details data is not present for hash $withdrawalHash")
             }
         }.fanout {
-            withdrwalQueryHelper.getAccountDetails(
+            withdrawalQueryHelper.getAccountDetails(
                 "$withdrawalHash@$BTC_CONSENSUS_DOMAIN",
                 consensusIrohaConsumer.creator
             )
@@ -116,7 +117,7 @@ class WithdrawalConsensusProvider(
      * @return true if consensus has been established before
      */
     fun hasBeenEstablished(withdrawalHash: String): Result<Boolean, Exception> {
-        return withdrwalQueryHelper.getAccountDetails(
+        return withdrawalQueryHelper.getAccountDetails(
             consensusIrohaConsumer.creator,
             withdrawalCredential.accountId,
             withdrawalHash

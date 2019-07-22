@@ -5,6 +5,7 @@
 
 package com.d3.btc.withdrawal.transaction
 
+import com.d3.btc.helper.format.GsonInstance
 import com.d3.btc.helper.input.irohaKey
 import com.d3.btc.helper.output.info
 import com.d3.btc.helper.transaction.shortTxHash
@@ -18,14 +19,13 @@ import com.d3.commons.util.unHex
 import com.github.kittinunf.result.Result
 import com.github.kittinunf.result.flatMap
 import com.github.kittinunf.result.map
-import com.google.gson.Gson
 import jp.co.soramitsu.iroha.java.Utils
 import mu.KLogging
 import org.bitcoinj.core.Transaction
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 
-private val gson = Gson()
+private val gson = GsonInstance.get()
 
 /*
  * Class that is used to store transactions
@@ -44,8 +44,6 @@ class TransactionsStorage(
     @Qualifier("consensusIrohaCredential")
     private val consensusIrohaCredential: IrohaCredential
 ) {
-
-    private val gson = Gson()
     /**
      * Saves transactions
      * @param withdrawalDetails - details of withdrawal(account id, amount and time)
@@ -117,5 +115,4 @@ private data class WithdrawalTransaction(val withdrawalDetails: WithdrawalDetail
     companion object {
         fun fromJson(json: String) = gson.fromJson(json, WithdrawalTransaction::class.java)!!
     }
-
 }
