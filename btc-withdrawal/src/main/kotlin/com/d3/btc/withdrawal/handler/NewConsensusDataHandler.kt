@@ -30,12 +30,12 @@ class NewConsensusDataHandler(
 
     /**
      * Handles new consensus command
-     * @param addConsensusCommand - new consensus command
+     * @param command - new consensus command
      */
-    override fun handle(addConsensusCommand: Commands.SetAccountDetail) {
-        val withdrawalHash = addConsensusCommand.accountId.replace("@$BTC_CONSENSUS_DOMAIN", "")
+    override fun handle(command: Commands.SetAccountDetail) {
+        val withdrawalHash = command.accountId.replace("@$BTC_CONSENSUS_DOMAIN", "")
         val withdrawalConsensus =
-            WithdrawalConsensus.fromJson(addConsensusCommand.value.irohaUnEscape())
+            WithdrawalConsensus.fromJson(command.value.irohaUnEscape())
         withdrawalConsensusProvider.hasBeenEstablished(withdrawalHash).fold({ established ->
             if (established) {
                 logger.info("Withdrawal consensus has been already established")

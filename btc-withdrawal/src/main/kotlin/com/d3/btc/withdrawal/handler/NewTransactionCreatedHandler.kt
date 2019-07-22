@@ -66,7 +66,7 @@ class NewTransactionCreatedHandler(
         }
     }
 
-    override fun filter(command: Commands.SetAccountDetail) = command.accountId.endsWith("@$BTC_SIGN_COLLECT_DOMAIN")
+    override fun filter(command: Commands.SetAccountDetail) = command.accountId == btcWithdrawalConfig.txStorageAccount
 
     /**
      * Logger
