@@ -77,13 +77,14 @@ class BtcNotaryTestEnvironment(
         notaryConfig.iroha.port,
         notaryCredential
     )
-    private val transferWallet = loadAutoSaveWallet(notaryConfig.btcTransferWalletPath)
+    private val transferWallet by lazy { loadAutoSaveWallet(notaryConfig.btcTransferWalletPath) }
 
-    private val newBtcClientRegistrationListener =
+    private val newBtcClientRegistrationListener by lazy {
         NewBtcClientRegistrationListener(
             NewBtcClientRegistrationHandler(btcNetworkConfigProvider, transferWallet),
             createPrettySingleThreadPool(BTC_DEPOSIT_SERVICE_NAME, "reg-clients-listener")
         )
+    }
 
     private val peerGroup by lazy {
         createPeerGroup(transferWallet)
