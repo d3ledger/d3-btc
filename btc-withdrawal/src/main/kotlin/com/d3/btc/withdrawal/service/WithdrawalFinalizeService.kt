@@ -47,22 +47,22 @@ class WithdrawalFinalizeService(
      * @return transaction
      */
     private fun createFinalizeTransaction(withdrawalDetails: WithdrawalDetails, quorum: Int): Transaction {
-        return Transaction
-            .builder(withdrawalConsumer.creator)
+        val transactionBuilder = Transaction.builder(withdrawalConsumer.creator)
+        if (withdrawalDetails.withdrawalFeeSat != 0L) {
             // Pay fees to the corresponding account
-            .transferAsset(
+            transactionBuilder.transferAsset(
                 withdrawalConsumer.creator,
                 btcWithdrawalConfig.withdrawalBillingAccount,
                 BTC_ASSET_ID,
                 "Fee",
                 satToBtc(withdrawalDetails.withdrawalFeeSat).toPlainString()
             )
-            // Burn withdrawal account money to keep 2WP consistent
-            .subtractAssetQuantity(
-                BTC_ASSET_ID, satToBtc(withdrawalDetails.amountSat)
-            )
+        }
+        // Burn withdrawal account money to keep 2WP consistent
+        transactionBuilder
+            .subtractAssetQuantity(BTC_ASSET_ID, satToBtc(withdrawalDetails.amountSat))
             .setCreatedTime(withdrawalDetails.withdrawalTime)
             .setQuorum(quorum)
-            .build()
+        return transactionBuilder.build()
     }
 }
