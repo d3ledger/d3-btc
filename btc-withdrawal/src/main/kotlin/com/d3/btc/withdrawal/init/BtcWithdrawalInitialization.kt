@@ -38,6 +38,7 @@ import org.bitcoinj.wallet.Wallet
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 import java.io.Closeable
+import java.math.BigDecimal
 
 /*
     Class that initiates listeners that will be used to handle Bitcoin withdrawal logic
@@ -105,10 +106,10 @@ class BtcWithdrawalInitialization(
         withdrawalServiceExpansion.expand(block)
         // Handle transfer commands
         getTransferTransactions(block, btcWithdrawalConfig.withdrawalCredential.accountId).forEach { transaction ->
-            getWithdrawalCommands(transaction)?.let { (withdrawalCommand, feeCommand) ->
+            getWithdrawalCommands(transaction)?.let { withdrawalCommand ->
                 newTransferHandler.handleTransferCommand(
-                    withdrawalCommand.transferAsset,
-                    feeCommand.transferAsset,
+                    withdrawalCommand.command.transferAsset,
+                    withdrawalCommand.feeInBtc,
                     block.blockV1.payload.createdTime
                 )
             }
@@ -155,11 +156,11 @@ class BtcWithdrawalInitialization(
     }
 
     /**
-     * Returns withdrawal commands from transaction if form of Pair(withdrawal command, fee command)
+     * Returns withdrawal command and fee from transaction
      * @param transaction - transaction that will be used to get commands from
-     * @return pair of commands or null if no appropriate commands were found
+     * @return withdrawal command and fee from transaction or null if no appropriate commands were found
      */
-    private fun getWithdrawalCommands(transaction: TransactionOuterClass.Transaction): Pair<Commands.Command, Commands.Command>? {
+    private fun getWithdrawalCommands(transaction: TransactionOuterClass.Transaction): WithdrawalCommandWithFee? {
         var withdrawalCommand: Commands.Command? = null
         var feeCommand: Commands.Command? = null
         transaction.payload.reducedPayload.commandsList.forEach { command ->
@@ -174,11 +175,17 @@ class BtcWithdrawalInitialization(
                 }
             }
         }
-        // If no commands were found
-        if (withdrawalCommand == null || feeCommand == null) {
+        // If no withdrawal command was found
+        if (withdrawalCommand == null) {
             return null
         }
-        return Pair(withdrawalCommand!!, feeCommand!!)
+        val feeInBtc = if (feeCommand == null) {
+            // If no fee command was found
+            BigDecimal.ZERO
+        } else {
+            feeCommand!!.transferAsset.amount.toBigDecimal()
+        }
+        return WithdrawalCommandWithFee(withdrawalCommand!!, feeInBtc)
     }
 
     override fun close() {
@@ -192,3 +199,8 @@ class BtcWithdrawalInitialization(
      */
     companion object : KLogging()
 }
+
+/**
+ * Data class that stores withdrawal command and withdrawal fee value in Bitcoin
+ */
+private data class WithdrawalCommandWithFee(val command: Commands.Command, val feeInBtc: BigDecimal)
