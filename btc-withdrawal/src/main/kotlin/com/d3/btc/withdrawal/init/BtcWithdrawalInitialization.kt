@@ -106,7 +106,7 @@ class BtcWithdrawalInitialization(
         withdrawalServiceExpansion.expand(block)
         // Handle transfer commands
         getTransferTransactions(block, btcWithdrawalConfig.withdrawalCredential.accountId).forEach { transaction ->
-            getWithdrawalCommands(transaction)?.let { withdrawalCommand ->
+            getWithdrawalCommand(transaction)?.let { withdrawalCommand ->
                 newTransferHandler.handleTransferCommand(
                     withdrawalCommand.command.transferAsset,
                     withdrawalCommand.feeInBtc,
@@ -160,7 +160,7 @@ class BtcWithdrawalInitialization(
      * @param transaction - transaction that will be used to get commands from
      * @return withdrawal command and fee from transaction or null if no appropriate commands were found
      */
-    private fun getWithdrawalCommands(transaction: TransactionOuterClass.Transaction): WithdrawalCommandWithFee? {
+    private fun getWithdrawalCommand(transaction: TransactionOuterClass.Transaction): WithdrawalCommandWithFee? {
         var withdrawalCommand: Commands.Command? = null
         var feeCommand: Commands.Command? = null
         transaction.payload.reducedPayload.commandsList.forEach { command ->

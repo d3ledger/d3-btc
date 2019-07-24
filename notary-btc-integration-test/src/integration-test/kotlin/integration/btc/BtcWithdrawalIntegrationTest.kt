@@ -230,7 +230,7 @@ class BtcWithdrawalIntegrationTest {
             environment.bitcoinConfig.confidenceLevel
         )
         val btcAddressDest = integrationHelper.createBtcAddress()
-        integrationHelper.addIrohaAssetTo(testClientSrc, BTC_ASSET, getAmountWithFee(amount))
+        integrationHelper.addIrohaAssetTo(testClientSrc, BTC_ASSET, amount)
         integrationHelper.transferAssetIrohaFromClient(
             testClientSrc,
             testClientSrcKeypair,
