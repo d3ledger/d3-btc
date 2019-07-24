@@ -40,7 +40,7 @@ class BtcRollbackService(
                 withdrawalConsumer.creator,
                 withdrawalDetails.sourceAccountId,
                 BTC_ASSET,
-                rollbackMessage.substring(0, min(rollbackMessage.length, 64)).toLowerCase(),
+                rollbackMessage.take(64).toLowerCase(),
                 satToBtc(amountToRollbackSat).toPlainString(),
                 withdrawalDetails.withdrawalTime,
                 quorum
