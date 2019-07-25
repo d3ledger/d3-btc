@@ -8,7 +8,7 @@ package com.d3.btc.withdrawal.handler
 import com.d3.btc.handler.SetAccountDetailHandler
 import com.d3.btc.helper.format.GsonInstance
 import com.d3.btc.withdrawal.config.BtcWithdrawalConfig
-import com.d3.btc.withdrawal.service.WithdrawalFinalizeService
+import com.d3.btc.withdrawal.service.BtcWithdrawalFinalizeService
 import com.d3.btc.withdrawal.transaction.WithdrawalDetails
 import com.d3.commons.util.irohaUnEscape
 import iroha.protocol.Commands
@@ -21,7 +21,7 @@ import org.springframework.stereotype.Component
 @Component
 class BroadcastTransactionHandler(
     private val btcWithdrawalConfig: BtcWithdrawalConfig,
-    private val withdrawalFinalizeService: WithdrawalFinalizeService
+    private val btcWithdrawalFinalizeService: BtcWithdrawalFinalizeService
 ) : SetAccountDetailHandler() {
 
     private val gson = GsonInstance.get()
@@ -32,7 +32,7 @@ class BroadcastTransactionHandler(
      */
     override fun handle(command: Commands.SetAccountDetail) {
         val withdrawalDetails = gson.fromJson(command.value.irohaUnEscape(), WithdrawalDetails::class.java)
-        withdrawalFinalizeService.finalize(withdrawalDetails)
+        btcWithdrawalFinalizeService.finalize(withdrawalDetails)
             .fold(
                 { logger.info("Withdrawal $withdrawalDetails has been finalized") },
                 { ex -> logger.error("Cannot finalize withdrawal $withdrawalDetails", ex) }
