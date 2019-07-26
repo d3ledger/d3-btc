@@ -25,7 +25,7 @@ import com.d3.btc.withdrawal.provider.UTXOProvider
 import com.d3.btc.withdrawal.provider.UsedUTXOProvider
 import com.d3.btc.withdrawal.provider.WithdrawalConsensusProvider
 import com.d3.btc.withdrawal.service.BtcRollbackService
-import com.d3.btc.withdrawal.service.WithdrawalFinalizeService
+import com.d3.btc.withdrawal.service.BtcWithdrawalFinalizeService
 import com.d3.btc.withdrawal.service.WithdrawalTransferService
 import com.d3.btc.withdrawal.statistics.WithdrawalStatistics
 import com.d3.btc.withdrawal.transaction.*
@@ -34,6 +34,7 @@ import com.d3.commons.config.loadRawLocalConfigs
 import com.d3.commons.expansion.ServiceExpansion
 import com.d3.commons.model.IrohaCredential
 import com.d3.commons.provider.NotaryPeerListProviderImpl
+import com.d3.commons.service.WithdrawalFinalizer
 import com.d3.commons.sidechain.iroha.consumer.IrohaConsumerImpl
 import com.d3.commons.sidechain.iroha.consumer.MultiSigIrohaConsumer
 import com.d3.commons.util.createPrettySingleThreadPool
@@ -162,7 +163,10 @@ class BtcWithdrawalTestEnvironment(
         irohaApi
     )
 
-    private val feeService = WithdrawalFinalizeService(btcWithdrawalConfig, withdrawalIrohaConsumerMultiSig)
+    private val withdrawalFinalizer =
+        WithdrawalFinalizer(withdrawalIrohaConsumerMultiSig, btcWithdrawalConfig.withdrawalBillingAccount)
+
+    private val btcWithdrawalFinalizer = BtcWithdrawalFinalizeService(withdrawalFinalizer)
 
     private val signaturesCollectorIrohaConsumer = IrohaConsumerImpl(
         signaturesCollectorCredential,
@@ -292,7 +296,7 @@ class BtcWithdrawalTestEnvironment(
             broadcastsProvider
         )
 
-    private val broadcastTransactionHandler = BroadcastTransactionHandler(btcWithdrawalConfig, feeService)
+    private val broadcastTransactionHandler = BroadcastTransactionHandler(btcWithdrawalConfig, btcWithdrawalFinalizer)
 
     private val newConsensusDataHandler =
         NewConsensusDataHandler(withdrawalTransferService, withdrawalConsensusProvider, btcRollbackService)

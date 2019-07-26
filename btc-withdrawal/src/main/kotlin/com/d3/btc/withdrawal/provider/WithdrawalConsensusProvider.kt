@@ -6,7 +6,7 @@
 package com.d3.btc.withdrawal.provider
 
 import com.d3.btc.config.BitcoinConfig
-import com.d3.btc.helper.format.GsonInstance
+import com.d3.commons.util.GsonInstance
 import com.d3.btc.withdrawal.transaction.WithdrawalConsensus
 import com.d3.btc.withdrawal.transaction.WithdrawalDetails
 import com.d3.commons.model.IrohaCredential

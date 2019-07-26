@@ -6,9 +6,12 @@
 package com.d3.btc.monitoring
 
 import com.github.kittinunf.result.Result
+import com.google.gson.GsonBuilder
 import org.springframework.jmx.export.annotation.ManagedAttribute
 import org.springframework.jmx.export.annotation.ManagedResource
-import com.d3.commons.util.toJson
+
+
+private val gson = GsonBuilder().setPrettyPrinting().create()
 
 /*
  *  Class that was developed to help you monitor things
@@ -29,10 +32,10 @@ abstract class Monitoring {
     fun getMonitoring(): String {
         val objectToMonitor = monitor()
         if (objectToMonitor !is Result<Any, Exception>) {
-            return String.toJson(objectToMonitor)
+            return gson.toJson(objectToMonitor)
         }
         return objectToMonitor.fold(
-            { data -> String.toJson(data) },
+            { data -> gson.toJson(data) },
             { ex -> throw ex })
     }
 }

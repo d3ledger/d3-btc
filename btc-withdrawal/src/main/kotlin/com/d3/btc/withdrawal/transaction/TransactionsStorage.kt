@@ -5,7 +5,7 @@
 
 package com.d3.btc.withdrawal.transaction
 
-import com.d3.btc.helper.format.GsonInstance
+import com.d3.commons.util.GsonInstance
 import com.d3.btc.helper.input.irohaKey
 import com.d3.btc.helper.output.info
 import com.d3.btc.helper.transaction.shortTxHash
