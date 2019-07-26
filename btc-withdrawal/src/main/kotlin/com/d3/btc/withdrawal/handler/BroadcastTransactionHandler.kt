@@ -6,10 +6,10 @@
 package com.d3.btc.withdrawal.handler
 
 import com.d3.btc.handler.SetAccountDetailHandler
-import com.d3.btc.helper.format.GsonInstance
 import com.d3.btc.withdrawal.config.BtcWithdrawalConfig
 import com.d3.btc.withdrawal.service.BtcWithdrawalFinalizeService
 import com.d3.btc.withdrawal.transaction.WithdrawalDetails
+import com.d3.commons.util.GsonInstance
 import com.d3.commons.util.irohaUnEscape
 import iroha.protocol.Commands
 import mu.KLogging

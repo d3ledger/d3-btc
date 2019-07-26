@@ -5,11 +5,11 @@
 
 package com.d3.btc.healthcheck
 
-import com.d3.btc.helper.format.GsonInstance
 import io.ktor.application.call
 import io.ktor.application.install
 import io.ktor.features.CORS
 import io.ktor.features.ContentNegotiation
+import io.ktor.gson.gson
 import io.ktor.http.HttpStatusCode
 import io.ktor.response.respond
 import io.ktor.routing.get
@@ -40,7 +40,7 @@ class HealthCheckEndpoint(
                 anyHost()
             }
             install(ContentNegotiation) {
-                GsonInstance.get()
+               gson()
             }
             routing {
                 get("/actuator/health") {
