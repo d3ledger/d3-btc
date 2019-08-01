@@ -33,7 +33,8 @@ class BtcWithdrawalFinalizeService(private val withdrawalFinalizer: WithdrawalFi
                 satToBtc(withdrawalDetails.withdrawalFeeSat),
                 BTC_ASSET,
                 withdrawalDetails.sourceAccountId,
-                withdrawalDetails.withdrawalTime
+                withdrawalDetails.withdrawalTime,
+                withdrawalDetails.toAddress
             )
         ).map { Unit }
     }
