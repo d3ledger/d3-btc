@@ -24,6 +24,7 @@ import com.d3.commons.sidechain.iroha.FEE_DESCRIPTION
 import com.d3.commons.sidechain.iroha.ReliableIrohaChainListener
 import com.d3.commons.sidechain.iroha.util.getSetDetailCommands
 import com.d3.commons.sidechain.iroha.util.getTransferTransactions
+import com.d3.commons.sidechain.iroha.util.getWithdrawalTransactions
 import com.d3.commons.util.createPrettySingleThreadPool
 import com.github.kittinunf.result.Result
 import com.github.kittinunf.result.flatMap
@@ -105,7 +106,7 @@ class BtcWithdrawalInitialization(
         // Expand the withdrawal service if there is a need to do so
         withdrawalServiceExpansion.expand(block)
         // Handle transfer commands
-        getTransferTransactions(block, btcWithdrawalConfig.withdrawalCredential.accountId).forEach { transaction ->
+        getWithdrawalTransactions(block, btcWithdrawalConfig.withdrawalCredential.accountId).forEach { transaction ->
             getWithdrawalCommand(transaction)?.let { withdrawalCommand ->
                 newTransferHandler.handleTransferCommand(
                     withdrawalCommand.command.transferAsset,
