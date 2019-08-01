@@ -32,6 +32,10 @@ class BroadcastTransactionHandler(
      */
     override fun handle(command: Commands.SetAccountDetail) {
         val withdrawalDetails = gson.fromJson(command.value.irohaUnEscape(), WithdrawalDetails::class.java)
+        if (withdrawalDetails == null) {
+            logger.error("Cannot handle 'null' withdrawal")
+            return
+        }
         btcWithdrawalFinalizeService.finalize(withdrawalDetails)
             .fold(
                 { logger.info("Withdrawal $withdrawalDetails has been finalized") },
