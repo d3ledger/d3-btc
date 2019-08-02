@@ -8,7 +8,6 @@ package com.d3.btc.withdrawal.init
 import com.d3.btc.fee.CurrentFeeRate
 import com.d3.btc.handler.SetAccountDetailHandler
 import com.d3.btc.healthcheck.HealthyService
-import com.d3.btc.helper.address.isValidBtcAddress
 import com.d3.btc.helper.network.addPeerConnectionStatusListener
 import com.d3.btc.helper.network.startChainDownload
 import com.d3.btc.peer.SharedPeerGroup
@@ -23,7 +22,6 @@ import com.d3.commons.config.RMQConfig
 import com.d3.commons.sidechain.iroha.FEE_DESCRIPTION
 import com.d3.commons.sidechain.iroha.ReliableIrohaChainListener
 import com.d3.commons.sidechain.iroha.util.getSetDetailCommands
-import com.d3.commons.sidechain.iroha.util.getTransferTransactions
 import com.d3.commons.sidechain.iroha.util.getWithdrawalTransactions
 import com.d3.commons.util.createPrettySingleThreadPool
 import com.github.kittinunf.result.Result
@@ -40,6 +38,8 @@ import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 import java.io.Closeable
 import java.math.BigDecimal
+
+private const val ONE_DAY_MILLIS = 1000 * 60 * 60 * 24
 
 /*
     Class that initiates listeners that will be used to handle Bitcoin withdrawal logic
@@ -103,10 +103,17 @@ class BtcWithdrawalInitialization(
      * @param block - Iroha block
      */
     private fun handleIrohaBlock(block: BlockOuterClass.Block) {
+        if ((System.currentTimeMillis() - block.blockV1.payload.createdTime) > ONE_DAY_MILLIS) {
+            logger.warn("Ignore old block ${block.blockV1.payload.height}")
+            return
+        }
         // Expand the withdrawal service if there is a need to do so
         withdrawalServiceExpansion.expand(block)
         // Handle transfer commands
-        getWithdrawalTransactions(block, btcWithdrawalConfig.withdrawalCredential.accountId).forEach { transaction ->
+        getWithdrawalTransactions(
+            block,
+            btcWithdrawalConfig.withdrawalCredential.accountId
+        ).forEach { transaction ->
             getWithdrawalCommand(transaction)?.let { withdrawalCommand ->
                 newTransferHandler.handleTransferCommand(
                     withdrawalCommand.command.transferAsset,
@@ -128,6 +135,8 @@ class BtcWithdrawalInitialization(
     private fun safeApplyAck(apply: () -> Unit, ack: () -> Unit) {
         try {
             apply()
+        } catch (e: Exception) {
+            logger.error("Cannot apply", e)
         } finally {
             ack()
         }
