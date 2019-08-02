@@ -1,7 +1,7 @@
 buildscript {
     ext.kotlin_version = '1.3.21'
     ext.ktor_version = '1.0.0'
-    ext.notary_version = 'a287bb16aefbd0ade479edb7e74380e721790101'
+    ext.notary_version = 'deb14bdf00b31133aa843c1098df7eb99be397a4'
     repositories {
         mavenCentral()
         jcenter()
