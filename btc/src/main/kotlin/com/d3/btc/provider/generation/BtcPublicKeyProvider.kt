@@ -9,11 +9,12 @@ import com.d3.btc.helper.address.createMsAddress
 import com.d3.btc.model.AddressInfo
 import com.d3.btc.model.BtcAddressType
 import com.d3.btc.provider.network.BtcNetworkConfigProvider
-import com.d3.commons.provider.NotaryPeerListProvider
 import com.d3.commons.sidechain.iroha.consumer.IrohaConsumer
+import com.d3.commons.sidechain.iroha.util.IrohaQueryHelper
 import com.d3.commons.sidechain.iroha.util.ModelUtil
 import com.d3.commons.util.getRandomId
 import com.github.kittinunf.result.Result
+import com.github.kittinunf.result.fanout
 import com.github.kittinunf.result.map
 import mu.KLogging
 import org.bitcoinj.wallet.Wallet
@@ -22,8 +23,8 @@ import org.springframework.stereotype.Component
 
 /**
  *  Bitcoin keys provider
+ *  @param queryHelper - query helper that is used to get number of peers
  *  @param keysWallet - bitcoin wallet
- *  @param notaryPeerListProvider - provider to query all current notaries
  *  @param notaryAccount - Iroha account of notary service.
  *  Used to store free BTC addresses that can be registered by clients later
  *  @param changeAddressStorageAccount - Iroha account used to store change addresses
@@ -33,8 +34,9 @@ import org.springframework.stereotype.Component
  */
 @Component
 class BtcPublicKeyProvider(
+    private val queryHelper: IrohaQueryHelper,
+    @Qualifier("keysWallet")
     private val keysWallet: Wallet,
-    private val notaryPeerListProvider: NotaryPeerListProvider,
     @Qualifier("notaryAccount")
     private val notaryAccount: String,
     @Qualifier("changeAddressStorageAccount")
@@ -87,10 +89,11 @@ class BtcPublicKeyProvider(
         nodeId: String,
         onMsAddressCreated: () -> Unit
     ): Result<Unit, Exception> {
-        return multiSigConsumer.getConsumerQuorum().map { quorum ->
-            val peers = notaryPeerListProvider.getPeerList().size
+        return queryHelper.getPeersCount().fanout {
+            multiSigConsumer.getConsumerQuorum()
+        }.map { (peers, quorum) ->
             if (peers == 0) {
-                throw IllegalStateException("No peers to create btc multisignature address")
+                throw IllegalStateException("No peers to create btc multisig address")
             } else if (notaryKeys.size != peers) {
                 logger.info {
                     "Not enough keys are collected to generate a multisig address(${notaryKeys.size}" +

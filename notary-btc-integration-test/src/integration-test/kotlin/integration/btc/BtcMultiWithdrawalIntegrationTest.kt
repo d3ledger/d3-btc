@@ -60,7 +60,6 @@ class BtcMultiWithdrawalIntegrationTest {
         val testNames = ArrayList<String>()
         repeat(peers) { peer ->
             testNames.add("multi_withdrawal_${String.getRandomString(5)}_$peer")
-            integrationHelper.addBtcNotary("test_notary_$peer", "test")
         }
         var peerCount = 0
         integrationHelper.accountHelper.btcWithdrawalAccounts
@@ -73,7 +72,8 @@ class BtcMultiWithdrawalIntegrationTest {
                         integrationHelper,
                         testName,
                         btcWithdrawalConfig = withdrawalConfig,
-                        withdrawalCredential = withdrawalAccount
+                        withdrawalCredential = withdrawalAccount,
+                        peers = peers
                     )
                 withdrawalEnvironments.add(environment)
                 val blockStorageFolder =
@@ -93,7 +93,8 @@ class BtcMultiWithdrawalIntegrationTest {
                     0,
                     testName
                 ),
-                mstRegistrationCredential = mstRegistrationAccount
+                mstRegistrationCredential = mstRegistrationAccount,
+                peers = peers
             )
             addressGenerationEnvironments.add(environment)
             GlobalScope.launch {

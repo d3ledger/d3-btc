@@ -51,7 +51,6 @@ class BtcMultiNotaryIntegrationTest {
                 blockStorageFolder.deleteRecursively()
                 //Recreate folder
                 blockStorageFolder.mkdirs()
-                integrationHelper.addBtcNotary(testName, "test")
 
             }
         integrationHelper.generateBtcInitialBlocks()

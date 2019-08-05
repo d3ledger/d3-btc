@@ -55,8 +55,6 @@ class BtcConfigHelper(
             override val changeAddressesStorageAccount =
                 accountHelper.changeAddressesStorageAccount.accountId
             override val healthCheckPort = btcAddressGenConfig.healthCheckPort
-            override val notaryListStorageAccount = accountHelper.notaryListStorageAccount.accountId
-            override val notaryListSetterAccount = accountHelper.notaryAccount.accountId
             override val mstRegistrationAccount =
                 accountHelper.createCredentialRawConfig(accountHelper.mstRegistrationAccount)
             override val pubKeyTriggerAccount = btcAddressGenConfig.pubKeyTriggerAccount
@@ -91,8 +89,6 @@ class BtcConfigHelper(
             override val irohaBlockQueue = testName + "_" + String.getRandomString(5)
             override val btcKeysWalletPath = createWalletFile("keys.$testName")
             override val btcTransfersWalletPath = createWalletFile("transfers.$testName")
-            override val notaryListStorageAccount = accountHelper.notaryListStorageAccount.accountId
-            override val notaryListSetterAccount = accountHelper.notaryAccount.accountId
             override val signatureCollectorCredential =
                 accountHelper.createCredentialRawConfig(accountHelper.btcWithdrawalSignatureCollectorAccount)
             override val changeAddressesStorageAccount =

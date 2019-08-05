@@ -29,7 +29,6 @@ import com.d3.commons.config.loadRawLocalConfigs
 import com.d3.commons.expansion.ServiceExpansion
 import com.d3.commons.model.IrohaCredential
 import com.d3.commons.notary.NotaryImpl
-import com.d3.commons.provider.NotaryPeerListProviderImpl
 import com.d3.commons.service.WithdrawalFinalizer
 import com.d3.commons.sidechain.SideChainEvent
 import com.d3.commons.sidechain.iroha.consumer.IrohaConsumerImpl
@@ -264,14 +263,6 @@ class BtcDWBridgeAppConfiguration {
 
     @Bean
     fun btcHosts() = extractHosts(dwBridgeConfig.bitcoin)
-
-    @Bean
-    fun notaryPeerListProvider() =
-        NotaryPeerListProviderImpl(
-            withdrawalQueryHelper(),
-            withdrawalConfig.notaryListStorageAccount,
-            withdrawalConfig.notaryListSetterAccount
-        )
 
     @Bean
     fun btcAddressStorage() = BtcAddressStorage(btcRegisteredAddressesProvider(), btcChangeAddressProvider())

@@ -41,13 +41,13 @@ import java.io.File
 import java.math.BigDecimal
 import java.security.KeyPair
 
-const val BTC_PRECISION=8
+const val BTC_PRECISION = 8
 // Default node id
 const val NODE_ID = "any id"
 // How many address may be generated in one batch
 private const val GENERATED_ADDRESSES_PER_BATCH = 5
 // How many blocks to generate to make Bitcoin regtest node able to send money
-private const val BTC_INITAL_BLOCKS = 101
+private const val BTC_INITIAL_BLOCKS = 101
 
 class BtcIntegrationHelperUtil(peers: Int = 1) : IrohaIntegrationHelperUtil(peers) {
 
@@ -60,13 +60,16 @@ class BtcIntegrationHelperUtil(peers: Int = 1) : IrohaIntegrationHelperUtil(peer
     /**
      * Returns withdrawal fees
      */
-    fun getWithdrawalFees() = BigDecimal(getIrohaAccountBalance("withdrawal_billing@d3", BTC_ASSET)).setScale(BTC_PRECISION)
+    fun getWithdrawalFees() =
+        BigDecimal(getIrohaAccountBalance("withdrawal_billing@d3", BTC_ASSET)).setScale(BTC_PRECISION)
 
     /**
      * Returns withdrawal account balance
      */
     fun getWithdrawalAccountBalance(btcWithdrawalConfig: BtcWithdrawalConfig) =
-        BigDecimal(getIrohaAccountBalance(btcWithdrawalConfig.withdrawalCredential.accountId, BTC_ASSET)).setScale(BTC_PRECISION)
+        BigDecimal(getIrohaAccountBalance(btcWithdrawalConfig.withdrawalCredential.accountId, BTC_ASSET)).setScale(
+            BTC_PRECISION
+        )
 
 
     private val rpcClient by lazy {
@@ -320,10 +323,10 @@ class BtcIntegrationHelperUtil(peers: Int = 1) : IrohaIntegrationHelperUtil(peer
      */
     fun generateBtcInitialBlocks() {
         val currentBlockCount = rpcClient.getBlockCount()
-        if (currentBlockCount >= BTC_INITAL_BLOCKS) {
+        if (currentBlockCount >= BTC_INITIAL_BLOCKS) {
             logger.info { "No need to create initial blocks" }
         } else {
-            generateBtcBlocks(BTC_INITAL_BLOCKS - currentBlockCount)
+            generateBtcBlocks(BTC_INITIAL_BLOCKS - currentBlockCount)
             logger.info { "Initial blocks were generated" }
         }
     }
@@ -333,23 +336,6 @@ class BtcIntegrationHelperUtil(peers: Int = 1) : IrohaIntegrationHelperUtil(peer
             return "block was"
         }
         return "blocks were"
-    }
-
-    //TODO This must be in IrohaIntegrationHelper
-    private val notaryIrohaConsumer by lazy {
-        IrohaConsumerImpl(accountHelper.notaryAccount, irohaAPI)
-    }
-
-    /**
-     * Add notary to notary list provider. [name] is a string to identify a multisig notary account
-     */
-    fun addBtcNotary(name: String, address: String) {
-        ModelUtil.setAccountDetail(
-            notaryIrohaConsumer,
-            accountHelper.notaryListStorageAccount.accountId,
-            name,
-            address
-        )
     }
 
     /**

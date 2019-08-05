@@ -43,7 +43,6 @@ class BtcDepositFailResistanceIntegrationTest {
         //Recreate folder
         blockStorageFolder.mkdirs()
         integrationHelper.generateBtcInitialBlocks()
-        integrationHelper.addBtcNotary("test_notary", "test_notary_address")
         environment.reverseChainAdapter.init().failure { ex -> throw ex }
     }
 

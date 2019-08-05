@@ -28,12 +28,15 @@ import com.d3.chainadapter.client.ReliableIrohaChainListener
 import com.d3.commons.config.loadRawLocalConfigs
 import com.d3.commons.expansion.ServiceExpansion
 import com.d3.commons.model.IrohaCredential
-import com.d3.commons.provider.NotaryPeerListProviderImpl
 import com.d3.commons.provider.TriggerProvider
 import com.d3.commons.sidechain.iroha.consumer.IrohaConsumerImpl
 import com.d3.commons.sidechain.iroha.consumer.MultiSigIrohaConsumer
 import com.d3.commons.sidechain.iroha.util.impl.IrohaQueryHelperImpl
 import com.d3.commons.util.createPrettySingleThreadPool
+import com.github.kittinunf.result.Result
+import com.nhaarman.mockito_kotlin.doReturn
+import com.nhaarman.mockito_kotlin.spy
+import com.nhaarman.mockito_kotlin.whenever
 import integration.btc.WAIT_PREGEN_PROCESS_MILLIS
 import integration.helper.BtcIntegrationHelperUtil
 import io.grpc.ManagedChannelBuilder
@@ -65,6 +68,7 @@ class BtcAddressGenerationTestEnvironment(
             btcGenerationConfig.mstRegistrationAccount.privkey
         )
     )
+    , private val peers: Int = 1
 ) : Closeable {
 
     private val keysWallet = Wallet.loadFromFile(File(btcGenerationConfig.btcKeysWalletPath))
@@ -119,21 +123,22 @@ class BtcAddressGenerationTestEnvironment(
 
     private val btcNetworkConfigProvider = BtcRegTestConfigProvider()
 
-    private val registrationQueryHelper = IrohaQueryHelperImpl(
-        irohaApi,
-        registrationCredential.accountId,
-        registrationCredential.keyPair
-    )
+    private val registrationQueryHelper by lazy {
+        val irohaQueryHelper = spy(
+            IrohaQueryHelperImpl(
+                irohaApi,
+                registrationCredential.accountId,
+                registrationCredential.keyPair
+            )
+        )
+        doReturn(Result.of { peers }).whenever(irohaQueryHelper).getPeersCount()
+        irohaQueryHelper
+    }
 
     private fun btcPublicKeyProvider(): BtcPublicKeyProvider {
-        val notaryPeerListProvider = NotaryPeerListProviderImpl(
-            registrationQueryHelper,
-            btcGenerationConfig.notaryListStorageAccount,
-            btcGenerationConfig.notaryListSetterAccount
-        )
         return BtcPublicKeyProvider(
+            registrationQueryHelper,
             keysWallet,
-            notaryPeerListProvider,
             btcGenerationConfig.notaryAccount,
             btcGenerationConfig.changeAddressesStorageAccount,
             multiSigConsumer,
