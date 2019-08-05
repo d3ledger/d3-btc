@@ -17,8 +17,6 @@ import com.d3.commons.config.loadLocalConfigs
 import com.d3.commons.config.loadRawLocalConfigs
 import com.d3.commons.expansion.ServiceExpansion
 import com.d3.commons.model.IrohaCredential
-import com.d3.commons.provider.NotaryPeerListProvider
-import com.d3.commons.provider.NotaryPeerListProviderImpl
 import com.d3.commons.sidechain.iroha.ReliableIrohaChainListener
 import com.d3.commons.sidechain.iroha.consumer.IrohaConsumerImpl
 import com.d3.commons.sidechain.iroha.consumer.MultiSigIrohaConsumer
@@ -116,14 +114,6 @@ class BtcAddressGenerationAppConfiguration {
         return Wallet.loadFromFile(File(walletPath))!!
     }
 
-    @Bean
-    fun notaryPeerListProvider(): NotaryPeerListProvider {
-        return NotaryPeerListProviderImpl(
-            registrationQueryHelper(),
-            btcAddressGenerationConfig.notaryListStorageAccount,
-            btcAddressGenerationConfig.notaryListSetterAccount
-        )
-    }
 
     @Bean
     fun sessionConsumer() = IrohaConsumerImpl(registrationCredential, generationIrohaAPI())

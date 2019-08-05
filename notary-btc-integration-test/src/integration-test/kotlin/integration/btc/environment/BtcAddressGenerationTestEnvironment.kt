@@ -27,7 +27,6 @@ import com.d3.commons.config.RMQConfig
 import com.d3.commons.config.loadRawLocalConfigs
 import com.d3.commons.expansion.ServiceExpansion
 import com.d3.commons.model.IrohaCredential
-import com.d3.commons.provider.NotaryPeerListProviderImpl
 import com.d3.commons.provider.TriggerProvider
 import com.d3.commons.sidechain.iroha.ReliableIrohaChainListener
 import com.d3.commons.sidechain.iroha.consumer.IrohaConsumerImpl
@@ -126,14 +125,9 @@ class BtcAddressGenerationTestEnvironment(
     )
 
     private fun btcPublicKeyProvider(): BtcPublicKeyProvider {
-        val notaryPeerListProvider = NotaryPeerListProviderImpl(
-            registrationQueryHelper,
-            btcGenerationConfig.notaryListStorageAccount,
-            btcGenerationConfig.notaryListSetterAccount
-        )
         return BtcPublicKeyProvider(
+            registrationQueryHelper,
             keysWallet,
-            notaryPeerListProvider,
             btcGenerationConfig.notaryAccount,
             btcGenerationConfig.changeAddressesStorageAccount,
             multiSigConsumer,

@@ -9,22 +9,22 @@ import com.d3.btc.helper.address.createMsAddress
 import com.d3.btc.model.AddressInfo
 import com.d3.btc.model.BtcAddressType
 import com.d3.btc.provider.network.BtcNetworkConfigProvider
-import com.d3.commons.provider.NotaryPeerListProvider
 import com.d3.commons.sidechain.iroha.consumer.IrohaConsumer
+import com.d3.commons.sidechain.iroha.util.IrohaQueryHelper
 import com.d3.commons.sidechain.iroha.util.ModelUtil
 import com.d3.commons.util.getRandomId
 import com.github.kittinunf.result.Result
+import com.github.kittinunf.result.fanout
 import com.github.kittinunf.result.map
 import mu.KLogging
 import org.bitcoinj.wallet.Wallet
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 
 /**
  *  Bitcoin keys provider
+ *  @param queryHelper - query helper that is used to get number of peers
  *  @param keysWallet - bitcoin wallet
- *  @param notaryPeerListProvider - provider to query all current notaries
  *  @param notaryAccount - Iroha account of notary service.
  *  Used to store free BTC addresses that can be registered by clients later
  *  @param changeAddressStorageAccount - Iroha account used to store change addresses
@@ -34,17 +34,18 @@ import org.springframework.stereotype.Component
  */
 @Component
 class BtcPublicKeyProvider(
-    @Autowired private val keysWallet: Wallet,
-    @Autowired private val notaryPeerListProvider: NotaryPeerListProvider,
+    private val queryHelper: IrohaQueryHelper,
+    @Qualifier("keysWallet")
+    private val keysWallet: Wallet,
     @Qualifier("notaryAccount")
-    @Autowired private val notaryAccount: String,
+    private val notaryAccount: String,
     @Qualifier("changeAddressStorageAccount")
-    @Autowired private val changeAddressStorageAccount: String,
+    private val changeAddressStorageAccount: String,
     @Qualifier("multiSigConsumer")
-    @Autowired private val multiSigConsumer: IrohaConsumer,
+    private val multiSigConsumer: IrohaConsumer,
     @Qualifier("sessionConsumer")
-    @Autowired private val sessionConsumer: IrohaConsumer,
-    @Autowired private val btcNetworkConfigProvider: BtcNetworkConfigProvider
+    private val sessionConsumer: IrohaConsumer,
+    private val btcNetworkConfigProvider: BtcNetworkConfigProvider
 ) {
     init {
         logger.info { "BtcPublicKeyProvider was successfully initialized" }
@@ -88,10 +89,11 @@ class BtcPublicKeyProvider(
         nodeId: String,
         onMsAddressCreated: () -> Unit
     ): Result<Unit, Exception> {
-        return multiSigConsumer.getConsumerQuorum().map { quorum ->
-            val peers = notaryPeerListProvider.getPeerList().size
+        return queryHelper.getPeersCount().fanout {
+            multiSigConsumer.getConsumerQuorum()
+        }.map { (peers, quorum) ->
             if (peers == 0) {
-                throw IllegalStateException("No peers to create btc multisignature address")
+                throw IllegalStateException("No peers to create btc multisig address")
             } else if (notaryKeys.size != peers) {
                 logger.info {
                     "Not enough keys are collected to generate a multisig address(${notaryKeys.size}" +

@@ -55,8 +55,6 @@ class BtcConfigHelper(
             override val changeAddressesStorageAccount =
                 accountHelper.changeAddressesStorageAccount.accountId
             override val healthCheckPort = btcAddressGenConfig.healthCheckPort
-            override val notaryListStorageAccount = accountHelper.notaryListStorageAccount.accountId
-            override val notaryListSetterAccount = accountHelper.notaryAccount.accountId
             override val mstRegistrationAccount =
                 accountHelper.createCredentialRawConfig(accountHelper.mstRegistrationAccount)
             override val pubKeyTriggerAccount = btcAddressGenConfig.pubKeyTriggerAccount
