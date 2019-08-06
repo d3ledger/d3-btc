@@ -8,14 +8,12 @@ package com.d3.btc.withdrawal.service
 import com.d3.btc.config.BTC_ASSET
 import com.d3.btc.helper.currency.satToBtc
 import com.d3.btc.withdrawal.transaction.WithdrawalDetails
-import com.d3.commons.sidechain.iroha.ROLLBACK_DESCRIPTION
+import com.d3.commons.service.RollbackService
+import com.d3.commons.service.WithdrawalFinalizationDetails
 import com.d3.commons.sidechain.iroha.consumer.MultiSigIrohaConsumer
-import com.d3.commons.sidechain.iroha.util.ModelUtil
-import com.github.kittinunf.result.flatMap
 import mu.KLogging
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
-import kotlin.math.min
 
 /**
  * Bitcoin rollback service
@@ -26,29 +24,32 @@ class BtcRollbackService(
     private val withdrawalConsumer: MultiSigIrohaConsumer
 ) {
 
+    private val rollbackService = RollbackService(withdrawalConsumer)
+
     /**
      * Rollbacks given amount of money to a particular Iroha account
      * @param withdrawalDetails - details of withdrawal to rollback
      * @param reason - reason of rollback
      */
     fun rollback(withdrawalDetails: WithdrawalDetails, reason: String) {
-        val amountToRollbackSat = withdrawalDetails.amountSat + withdrawalDetails.withdrawalFeeSat
-        val rollbackMessage = "$ROLLBACK_DESCRIPTION. $reason"
-        withdrawalConsumer.getConsumerQuorum().flatMap { quorum ->
-            ModelUtil.transferAssetIroha(
-                withdrawalConsumer,
-                withdrawalConsumer.creator,
-                withdrawalDetails.sourceAccountId,
-                BTC_ASSET,
-                rollbackMessage.take(64).toLowerCase(),
-                satToBtc(amountToRollbackSat).toPlainString(),
-                withdrawalDetails.withdrawalTime,
-                quorum
-            )
-        }.fold(
+        val withdrawalFinalizationDetails = WithdrawalFinalizationDetails(
+            satToBtc(withdrawalDetails.amountSat),
+            BTC_ASSET,
+            satToBtc(withdrawalDetails.withdrawalFeeSat),
+            BTC_ASSET,
+            withdrawalDetails.sourceAccountId,
+            withdrawalDetails.withdrawalTime,
+            withdrawalDetails.toAddress
+        )
+
+        rollbackService.rollback(withdrawalFinalizationDetails, reason).fold(
             {
                 logger.info {
-                    "Rollback(accountId:${withdrawalDetails.sourceAccountId}, amount:${satToBtc(amountToRollbackSat).toPlainString()}) was committed"
+                    "Rollback withdrawal(accountId:${withdrawalDetails.sourceAccountId}, amount:${satToBtc(
+                        withdrawalDetails.amountSat
+                    ).toPlainString()}) fee(accountId:${withdrawalDetails.sourceAccountId}, amount:${satToBtc(
+                        withdrawalDetails.withdrawalFeeSat
+                    ).toPlainString()}) was committed"
                 }
             },
             { ex -> logger.error("Cannot perform rollback", ex) })
