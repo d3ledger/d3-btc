@@ -13,8 +13,8 @@ import com.d3.btc.handler.SetAccountDetailHandler
 import com.d3.btc.healthcheck.HealthyService
 import com.d3.btc.provider.network.BtcNetworkConfigProvider
 import com.d3.btc.wallet.checkWalletNetwork
+import com.d3.chainadapter.client.ReliableIrohaChainListener
 import com.d3.commons.sidechain.iroha.CLIENT_DOMAIN
-import com.d3.commons.sidechain.iroha.ReliableIrohaChainListener
 import com.d3.commons.sidechain.iroha.util.getCreateAccountCommands
 import com.d3.commons.sidechain.iroha.util.getSetDetailCommands
 import com.d3.commons.util.createPrettySingleThreadPool

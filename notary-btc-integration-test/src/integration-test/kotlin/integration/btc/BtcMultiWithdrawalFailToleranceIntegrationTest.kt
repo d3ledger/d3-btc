@@ -9,7 +9,7 @@ import com.d3.btc.config.BTC_ASSET
 import com.d3.btc.helper.address.outPutToBase58Address
 import com.d3.btc.helper.currency.satToBtc
 import com.d3.btc.model.BtcAddressType
-import com.d3.commons.config.RMQConfig
+import com.d3.chainadapter.client.RMQConfig
 import com.d3.commons.model.IrohaCredential
 import com.d3.commons.sidechain.iroha.CLIENT_DOMAIN
 import com.d3.commons.sidechain.iroha.FEE_DESCRIPTION
