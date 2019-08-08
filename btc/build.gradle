@@ -10,6 +10,8 @@ apply plugin: "kotlin-spring" // See https://kotlinlang.org/docs/reference/compi
 dependencies {
     //TODO change version after D3 release
     compile "com.github.d3ledger.notary:notary-commons:$notary_version"
+    // Chain adapter
+    compile "com.github.d3ledger.chain-adapter:chain-adapter-client:$chain_adapter_client_version"
     //bitcoin
     compile 'org.bitcoinj:bitcoinj-core:0.14.7'
     // https://mvnrepository.com/artifact/org.iq80.leveldb/leveldb

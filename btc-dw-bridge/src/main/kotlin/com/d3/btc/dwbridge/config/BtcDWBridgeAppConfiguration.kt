@@ -19,7 +19,7 @@ import com.d3.btc.wallet.loadAutoSaveWallet
 import com.d3.btc.withdrawal.config.BtcWithdrawalConfig
 import com.d3.btc.withdrawal.handler.*
 import com.d3.btc.withdrawal.statistics.WithdrawalStatistics
-import com.d3.commons.config.RMQConfig
+import com.d3.chainadapter.client.RMQConfig
 import com.d3.commons.config.loadLocalConfigs
 import com.d3.commons.config.loadRawLocalConfigs
 import com.d3.commons.expansion.ServiceExpansion

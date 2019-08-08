@@ -29,7 +29,7 @@ import com.d3.btc.withdrawal.service.BtcWithdrawalFinalizeService
 import com.d3.btc.withdrawal.service.WithdrawalTransferService
 import com.d3.btc.withdrawal.statistics.WithdrawalStatistics
 import com.d3.btc.withdrawal.transaction.*
-import com.d3.commons.config.RMQConfig
+import com.d3.chainadapter.client.RMQConfig
 import com.d3.commons.config.loadRawLocalConfigs
 import com.d3.commons.expansion.ServiceExpansion
 import com.d3.commons.model.IrohaCredential

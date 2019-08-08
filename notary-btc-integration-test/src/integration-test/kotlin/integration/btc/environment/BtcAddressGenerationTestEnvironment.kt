@@ -23,13 +23,13 @@ import com.d3.btc.provider.generation.ADDRESS_GENERATION_TIME_KEY
 import com.d3.btc.provider.generation.BtcPublicKeyProvider
 import com.d3.btc.provider.generation.BtcSessionProvider
 import com.d3.btc.provider.network.BtcRegTestConfigProvider
-import com.d3.commons.config.RMQConfig
+import com.d3.chainadapter.client.RMQConfig
+import com.d3.chainadapter.client.ReliableIrohaChainListener
 import com.d3.commons.config.loadRawLocalConfigs
 import com.d3.commons.expansion.ServiceExpansion
 import com.d3.commons.model.IrohaCredential
 import com.d3.commons.provider.NotaryPeerListProviderImpl
 import com.d3.commons.provider.TriggerProvider
-import com.d3.commons.sidechain.iroha.ReliableIrohaChainListener
 import com.d3.commons.sidechain.iroha.consumer.IrohaConsumerImpl
 import com.d3.commons.sidechain.iroha.consumer.MultiSigIrohaConsumer
 import com.d3.commons.sidechain.iroha.util.impl.IrohaQueryHelperImpl
