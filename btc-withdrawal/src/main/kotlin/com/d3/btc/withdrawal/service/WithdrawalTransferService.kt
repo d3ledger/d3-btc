@@ -6,7 +6,6 @@
 package com.d3.btc.withdrawal.service
 
 import com.d3.btc.config.BitcoinConfig
-import com.d3.btc.monitoring.Monitoring
 import com.d3.btc.withdrawal.statistics.WithdrawalStatistics
 import com.d3.btc.withdrawal.transaction.TransactionCreator
 import com.d3.btc.withdrawal.transaction.WithdrawalConsensus
@@ -28,9 +27,7 @@ class WithdrawalTransferService(
     private val bitcoinConfig: BitcoinConfig,
     private val transactionCreator: TransactionCreator,
     private val btcRollbackService: BtcRollbackService
-) : Monitoring() {
-    override fun monitor() = withdrawalStatistics
-
+) {
     /**
      * Starts withdrawal process. Consists of the following steps:
      * 1) Create transaction

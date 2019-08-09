@@ -7,7 +7,6 @@ package com.d3.btc.provider
 
 import com.d3.btc.model.AddressInfo
 import com.d3.btc.model.BtcAddress
-import com.d3.btc.monitoring.Monitoring
 import com.d3.commons.sidechain.iroha.util.IrohaQueryHelper
 import com.github.kittinunf.result.Result
 import com.github.kittinunf.result.map
@@ -19,9 +18,7 @@ open class BtcChangeAddressProvider(
     private val queryHelper: IrohaQueryHelper,
     private val mstRegistrationAccount: String,
     private val changeAddressesStorageAccount: String
-) : Monitoring() {
-    override fun monitor() = getAllChangeAddresses()
-
+) {
     /**
      * Returns all change addresses
      */
