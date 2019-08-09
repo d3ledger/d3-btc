@@ -21,6 +21,7 @@ import mu.KLogging
 import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import org.springframework.context.annotation.ComponentScan
 import org.springframework.context.annotation.EnableMBeanExport
+import kotlin.system.exitProcess
 
 const val BTC_DW_BRIDGE_SERVICE_NAME = "btc-dw-bridge"
 
@@ -52,7 +53,7 @@ private val logger = KLogging().logger
 /**
  * Function that starts deposit and withdrawal services concurrently
  */
-fun main(args: Array<String>) {
+fun main() {
     Result.of {
         // Create block storage folder
         createFolderIfDoesntExist(dwBridgeConfig.bitcoin.blockStoragePath)
@@ -68,7 +69,7 @@ fun main(args: Array<String>) {
             context.getBean(BtcWithdrawalInitialization::class.java).init()
                 .failure { ex ->
                     logger.error("Error in withdrawal service", ex)
-                    System.exit(1)
+                    exitProcess(1)
                 }
         }
 
@@ -76,14 +77,14 @@ fun main(args: Array<String>) {
         GlobalScope.launch {
             context.getBean(BtcNotaryInitialization::class.java).init {
                 logger.error("Iroha failure. Exit.")
-                System.exit(1)
+                exitProcess(1)
             }.failure { ex ->
                 logger.error("Error in deposit service", ex)
-                System.exit(1)
+                exitProcess(1)
             }
         }
     }.failure { ex ->
         logger.error("Cannot run btc deposit/withdrawal bridge", ex)
-        System.exit(1)
+        exitProcess(1)
     }
 }
