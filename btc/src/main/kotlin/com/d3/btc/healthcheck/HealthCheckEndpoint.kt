@@ -14,11 +14,14 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.response.respond
 import io.ktor.routing.get
 import io.ktor.routing.routing
+import io.ktor.server.engine.ApplicationEngine
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
+import java.io.Closeable
+import java.util.concurrent.TimeUnit
 
 /**
  * Health check endpoint
@@ -26,21 +29,23 @@ import org.springframework.stereotype.Component
 @Component
 class HealthCheckEndpoint(
     @Qualifier("healthCheckPort")
-    @Autowired private val healthCheckPort: Int,
-    @Autowired private val serviceInitHealthCheck: ServiceInitHealthCheck
-) {
+    private val healthCheckPort: Int,
+    private val serviceInitHealthCheck: ServiceInitHealthCheck
+) : Closeable {
+
+    private val server: ApplicationEngine
 
     /**
-     * Initiates ktor based helath check server
+     * Initiates ktor based health check server
      */
     init {
-        val server = embeddedServer(Netty, port = healthCheckPort) {
+        server = embeddedServer(Netty, port = healthCheckPort) {
             install(CORS)
             {
                 anyHost()
             }
             install(ContentNegotiation) {
-               gson()
+                gson()
             }
             routing {
                 get("/actuator/health") {
@@ -65,5 +70,9 @@ class HealthCheckEndpoint(
         } else {
             Pair("DOWN", HttpStatusCode.InternalServerError)
         }
+    }
+
+    override fun close() {
+        server.stop(gracePeriod = 5, timeout = 5, timeUnit = TimeUnit.SECONDS)
     }
 }

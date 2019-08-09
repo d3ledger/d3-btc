@@ -19,7 +19,11 @@ interface BtcDWBridgeConfig {
 
     val iroha: IrohaConfig
 
+    // Health check port
     val healthCheckPort: Int
+
+    // Port for web services
+    val webPort: Int
 
     val dnsSeedAddress: String?
 }

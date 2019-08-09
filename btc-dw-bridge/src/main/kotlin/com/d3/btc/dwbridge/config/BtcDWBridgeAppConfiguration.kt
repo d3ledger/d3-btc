@@ -133,6 +133,9 @@ class BtcDWBridgeAppConfiguration {
     fun healthCheckPort() = dwBridgeConfig.healthCheckPort
 
     @Bean
+    fun webPort() = dwBridgeConfig.webPort
+
+    @Bean
     fun irohaAPI(): IrohaAPI {
         val irohaAPI = IrohaAPI(dwBridgeConfig.iroha.hostname, dwBridgeConfig.iroha.port)
         /**
