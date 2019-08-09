@@ -2,6 +2,8 @@ package integration.btc
 
 import com.d3.btc.config.BitcoinConfig
 import com.d3.btc.dwbridge.monitoring.BitcoinMonitoringEndpoint
+import com.d3.btc.dwbridge.monitoring.dto.UTXOSetBtc
+import com.d3.commons.util.GsonInstance
 import integration.helper.BtcIntegrationHelperUtil
 import org.bitcoinj.core.BlockChain
 import org.bitcoinj.core.PeerGroup
@@ -9,14 +11,18 @@ import org.bitcoinj.params.RegTestParams
 import org.bitcoinj.store.MemoryBlockStore
 import org.bitcoinj.wallet.Wallet
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import java.math.BigDecimal
 import java.net.InetAddress
+import kotlin.test.assertNotNull
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class BitcoinMonitoringEndpointIntegrationTest {
+
+    private val gson = GsonInstance.get()
 
     private val integrationHelperUtil = BtcIntegrationHelperUtil()
 
@@ -43,11 +49,11 @@ class BitcoinMonitoringEndpointIntegrationTest {
 
     /**
      * @given running BTC monitoring web service
-     * @when 'monitoring/availableSumBtc' API method is called
-     * @then properly calculated sum of BTC is returned
+     * @when BTC transactions appear
+     * @then properly calculated monitoring data is returned
      */
     @Test
-    fun testMonitorBtcSum() {
+    fun testMonitorBtc() {
         integrationHelperUtil.generateBtcInitialBlocks()
         val addressA = transferWallet.currentReceiveAddress()
         val addressB = transferWallet.currentReceiveAddress()
@@ -66,13 +72,61 @@ class BitcoinMonitoringEndpointIntegrationTest {
             integrationHelperUtil.sendBtc(addressB.toBase58(), BigDecimal(2), confirmations = 0)
             integrationHelperUtil.generateBtcBlocks(bitcoinConfig.confidenceLevel)
             integrationHelperUtil.sendBtc(addressC.toBase58(), BigDecimal(3), confirmations = 0)
-            integrationHelperUtil.generateBtcBlocks(bitcoinConfig.confidenceLevel - 5)
-            val response = khttp.get("http://127.0.0.1:$webPort/monitoring/availableSumBtc")
+            integrationHelperUtil.generateBtcBlocks(bitcoinConfig.confidenceLevel - 1)
+
+            // Check sum
+            var response = khttp.get("http://127.0.0.1:$webPort/monitoring/availableSumBtc")
             assertEquals(200, response.statusCode)
-            val sum = response.jsonObject.getBigDecimal("btc")
+            var sum = response.jsonObject.getBigDecimal("sumBtc")
             assertEquals(BigDecimal(3), sum)
+
+            // Check UTXO set
+            response = khttp.get("http://127.0.0.1:$webPort/monitoring/utxo")
+            assertEquals(200, response.statusCode)
+            var utxoSet = gson.fromJson(response.jsonObject.toString(), UTXOSetBtc::class.java)
+            assertEquals(2, utxoSet.utxoList.size)
+            // A and B addresses are here
+            assertNotNull(utxoSet.utxoList.find { utxo -> utxo.receiverAddress == addressA.toBase58() })
+            assertNotNull(utxoSet.utxoList.find { utxo -> utxo.receiverAddress == addressB.toBase58() })
+            // Check that every UTXO has enough confirmations
+            assertTrue(utxoSet.utxoList.all { utxo -> utxo.confirmations >= bitcoinConfig.confidenceLevel })
+            // Check sum and sum from UTXO set
+            assertEquals(sum, getUTXOSetSum(utxoSet))
+
+            // Change confirmation value from 6 to 5
+            val confirmations = 5
+            //Check sum with defined 'confirmation' param
+            response = khttp.get("http://127.0.0.1:$webPort/monitoring/availableSumBtc?confirmations=$confirmations")
+            assertEquals(200, response.statusCode)
+            sum = response.jsonObject.getBigDecimal("sumBtc")
+            assertEquals(BigDecimal(6), sum)
+
+            // Check UTXO set
+            response = khttp.get("http://127.0.0.1:$webPort/monitoring/utxo?confirmations=$confirmations")
+            assertEquals(200, response.statusCode)
+            utxoSet = gson.fromJson(response.jsonObject.toString(), UTXOSetBtc::class.java)
+            assertEquals(3, utxoSet.utxoList.size)
+            // A, B and C addresses are here
+            assertNotNull(utxoSet.utxoList.find { utxo -> utxo.receiverAddress == addressA.toBase58() })
+            assertNotNull(utxoSet.utxoList.find { utxo -> utxo.receiverAddress == addressB.toBase58() })
+            assertNotNull(utxoSet.utxoList.find { utxo -> utxo.receiverAddress == addressC.toBase58() })
+            // Check that every UTXO has enough confirmations
+            assertTrue(utxoSet.utxoList.all { utxo -> utxo.confirmations >= confirmations })
+            // Check sum and sum from UTXO set
+            assertEquals(sum, getUTXOSetSum(utxoSet))
         } finally {
             peerGroup.stop()
         }
+    }
+
+    /**
+     * Returns sum of BTC from given UTXO set
+     * @param utxoSetBtc - UXTO set
+     * @return sum value
+     */
+    private fun getUTXOSetSum(utxoSetBtc: UTXOSetBtc): BigDecimal {
+        var sumBtc = BigDecimal.ZERO
+        utxoSetBtc.utxoList.forEach { utxo -> sumBtc += utxo.btcAmount }
+        return sumBtc
     }
 }
