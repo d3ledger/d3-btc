@@ -75,9 +75,9 @@ class BitcoinMonitoringEndpointIntegrationTest {
             integrationHelperUtil.generateBtcBlocks(bitcoinConfig.confidenceLevel - 1)
 
             // Check sum
-            var response = khttp.get("http://127.0.0.1:$webPort/monitoring/availableSumBtc")
+            var response = khttp.get("http://127.0.0.1:$webPort/monitoring/sumBtc")
             assertEquals(200, response.statusCode)
-            var sum = response.jsonObject.getBigDecimal("sumBtc")
+            var sum = BigDecimal(response.jsonObject.getString("sumBtc"))
             assertEquals(BigDecimal(3), sum)
 
             // Check UTXO set
@@ -96,9 +96,9 @@ class BitcoinMonitoringEndpointIntegrationTest {
             // Change confirmation value from 6 to 5
             val confirmations = 5
             //Check sum with defined 'confirmation' param
-            response = khttp.get("http://127.0.0.1:$webPort/monitoring/availableSumBtc?confirmations=$confirmations")
+            response = khttp.get("http://127.0.0.1:$webPort/monitoring/sumBtc?confirmations=$confirmations")
             assertEquals(200, response.statusCode)
-            sum = response.jsonObject.getBigDecimal("sumBtc")
+            sum = BigDecimal(response.jsonObject.getString("sumBtc"))
             assertEquals(BigDecimal(6), sum)
 
             // Check UTXO set
@@ -126,7 +126,7 @@ class BitcoinMonitoringEndpointIntegrationTest {
      */
     private fun getUTXOSetSum(utxoSetBtc: UTXOSetBtc): BigDecimal {
         var sumBtc = BigDecimal.ZERO
-        utxoSetBtc.utxoList.forEach { utxo -> sumBtc += utxo.btcAmount }
+        utxoSetBtc.utxoList.forEach { utxo -> sumBtc += BigDecimal(utxo.btcAmount) }
         return sumBtc
     }
 }
