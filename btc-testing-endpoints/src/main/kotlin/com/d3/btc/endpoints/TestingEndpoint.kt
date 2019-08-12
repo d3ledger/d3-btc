@@ -15,6 +15,7 @@ import io.ktor.application.call
 import io.ktor.application.install
 import io.ktor.features.CORS
 import io.ktor.features.ContentNegotiation
+import io.ktor.gson.gson
 import io.ktor.http.HttpStatusCode
 import io.ktor.request.receive
 import io.ktor.response.respondText
@@ -60,14 +61,18 @@ class TestingEndpoint(
     init {
         logger.info { "Start ${serverBundle.ethRefund} test endpoints on port ${serverBundle.port}" }
 
-        val server = embeddedServer(Netty, port = serverBundle.port) {
+        val server = embeddedServer(Netty, port = serverBundle.port, configure = {
+            connectionGroupSize = 2048
+            workerGroupSize = 2048
+            callGroupSize = 4096
+        }) {
             install(CORS)
             {
                 anyHost()
                 allowCredentials = true
             }
             install(ContentNegotiation) {
-                GsonInstance.get()
+                gson()
             }
             routing {
                 post(serverBundle.ethRefund + "/$DEPOSIT_PATH") {
