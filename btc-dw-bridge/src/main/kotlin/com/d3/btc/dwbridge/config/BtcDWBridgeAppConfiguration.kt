@@ -19,13 +19,14 @@ import com.d3.btc.wallet.loadAutoSaveWallet
 import com.d3.btc.withdrawal.config.BtcWithdrawalConfig
 import com.d3.btc.withdrawal.handler.*
 import com.d3.btc.withdrawal.statistics.WithdrawalStatistics
-import com.d3.commons.config.RMQConfig
+import com.d3.chainadapter.client.RMQConfig
 import com.d3.commons.config.loadLocalConfigs
 import com.d3.commons.config.loadRawLocalConfigs
 import com.d3.commons.expansion.ServiceExpansion
 import com.d3.commons.model.IrohaCredential
 import com.d3.commons.notary.NotaryImpl
 import com.d3.commons.provider.NotaryPeerListProviderImpl
+import com.d3.commons.service.WithdrawalFinalizer
 import com.d3.commons.sidechain.SideChainEvent
 import com.d3.commons.sidechain.iroha.IrohaChainListener
 import com.d3.commons.sidechain.iroha.consumer.IrohaConsumerImpl
@@ -130,6 +131,9 @@ class BtcDWBridgeAppConfiguration {
 
     @Bean
     fun healthCheckPort() = dwBridgeConfig.healthCheckPort
+
+    @Bean
+    fun webPort() = dwBridgeConfig.webPort
 
     @Bean
     fun irohaAPI(): IrohaAPI {
@@ -288,4 +292,8 @@ class BtcDWBridgeAppConfiguration {
         newBtcClientRegistrationHandler,
         newChangeAddressHandler
     )
+
+    @Bean
+    fun withdrawalFinalizer() =
+        WithdrawalFinalizer(withdrawalConsumerMultiSig(), withdrawalConfig.withdrawalBillingAccount)
 }

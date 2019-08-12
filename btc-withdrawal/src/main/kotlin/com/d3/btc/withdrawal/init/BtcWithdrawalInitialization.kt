@@ -8,7 +8,6 @@ package com.d3.btc.withdrawal.init
 import com.d3.btc.fee.CurrentFeeRate
 import com.d3.btc.handler.SetAccountDetailHandler
 import com.d3.btc.healthcheck.HealthyService
-import com.d3.btc.helper.address.isValidBtcAddress
 import com.d3.btc.helper.network.addPeerConnectionStatusListener
 import com.d3.btc.helper.network.startChainDownload
 import com.d3.btc.peer.SharedPeerGroup
@@ -19,11 +18,11 @@ import com.d3.btc.withdrawal.config.BTC_WITHDRAWAL_SERVICE_NAME
 import com.d3.btc.withdrawal.config.BtcWithdrawalConfig
 import com.d3.btc.withdrawal.expansion.WithdrawalServiceExpansion
 import com.d3.btc.withdrawal.handler.NewTransferHandler
-import com.d3.commons.config.RMQConfig
+import com.d3.chainadapter.client.RMQConfig
+import com.d3.chainadapter.client.ReliableIrohaChainListener
 import com.d3.commons.sidechain.iroha.FEE_DESCRIPTION
-import com.d3.commons.sidechain.iroha.ReliableIrohaChainListener
 import com.d3.commons.sidechain.iroha.util.getSetDetailCommands
-import com.d3.commons.sidechain.iroha.util.getTransferTransactions
+import com.d3.commons.sidechain.iroha.util.getWithdrawalTransactions
 import com.d3.commons.util.createPrettySingleThreadPool
 import com.github.kittinunf.result.Result
 import com.github.kittinunf.result.flatMap
@@ -38,6 +37,9 @@ import org.bitcoinj.wallet.Wallet
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 import java.io.Closeable
+import java.math.BigDecimal
+
+private const val ONE_DAY_MILLIS = 1000 * 60 * 60 * 24
 
 /*
     Class that initiates listeners that will be used to handle Bitcoin withdrawal logic
@@ -101,14 +103,21 @@ class BtcWithdrawalInitialization(
      * @param block - Iroha block
      */
     private fun handleIrohaBlock(block: BlockOuterClass.Block) {
+        if ((System.currentTimeMillis() - block.blockV1.payload.createdTime) > ONE_DAY_MILLIS) {
+            logger.warn("Ignore old block ${block.blockV1.payload.height}")
+            return
+        }
         // Expand the withdrawal service if there is a need to do so
         withdrawalServiceExpansion.expand(block)
         // Handle transfer commands
-        getTransferTransactions(block, btcWithdrawalConfig.withdrawalCredential.accountId).forEach { transaction ->
-            getWithdrawalCommands(transaction)?.let { (withdrawalCommand, feeCommand) ->
+        getWithdrawalTransactions(
+            block,
+            btcWithdrawalConfig.withdrawalCredential.accountId
+        ).forEach { transaction ->
+            getWithdrawalCommand(transaction)?.let { withdrawalCommand ->
                 newTransferHandler.handleTransferCommand(
-                    withdrawalCommand.transferAsset,
-                    feeCommand.transferAsset,
+                    withdrawalCommand.command.transferAsset,
+                    withdrawalCommand.feeInBtc,
                     block.blockV1.payload.createdTime
                 )
             }
@@ -126,6 +135,8 @@ class BtcWithdrawalInitialization(
     private fun safeApplyAck(apply: () -> Unit, ack: () -> Unit) {
         try {
             apply()
+        } catch (e: Exception) {
+            logger.error("Cannot apply", e)
         } finally {
             ack()
         }
@@ -155,30 +166,35 @@ class BtcWithdrawalInitialization(
     }
 
     /**
-     * Returns withdrawal commands from transaction if form of Pair(withdrawal command, fee command)
+     * Returns withdrawal command and fee from transaction
      * @param transaction - transaction that will be used to get commands from
-     * @return pair of commands or null if no appropriate commands were found
+     * @return withdrawal command and fee from transaction or null if no appropriate commands were found
      */
-    private fun getWithdrawalCommands(transaction: TransactionOuterClass.Transaction): Pair<Commands.Command, Commands.Command>? {
+    private fun getWithdrawalCommand(transaction: TransactionOuterClass.Transaction): WithdrawalCommandWithFee? {
         var withdrawalCommand: Commands.Command? = null
         var feeCommand: Commands.Command? = null
         transaction.payload.reducedPayload.commandsList.forEach { command ->
             if (command.hasTransferAsset()) {
                 val transferCommand = command.transferAsset
-                if (isValidBtcAddress(transferCommand.description)) {
-                    // If description is a valid BTC address, then it's a withdrawal command
-                    withdrawalCommand = command
-                } else if (transferCommand.description == FEE_DESCRIPTION) {
+                if (transferCommand.description == FEE_DESCRIPTION) {
                     // If description equals to 'withdrawal fee', then it's a fee command
                     feeCommand = command
+                } else {
+                    withdrawalCommand = command
                 }
             }
         }
-        // If no commands were found
-        if (withdrawalCommand == null || feeCommand == null) {
+        // If no withdrawal command was found
+        if (withdrawalCommand == null) {
             return null
         }
-        return Pair(withdrawalCommand!!, feeCommand!!)
+        val feeInBtc = if (feeCommand == null) {
+            // If no fee command was found
+            BigDecimal.ZERO
+        } else {
+            feeCommand!!.transferAsset.amount.toBigDecimal()
+        }
+        return WithdrawalCommandWithFee(withdrawalCommand!!, feeInBtc)
     }
 
     override fun close() {
@@ -192,3 +208,8 @@ class BtcWithdrawalInitialization(
      */
     companion object : KLogging()
 }
+
+/**
+ * Data class that stores withdrawal command and withdrawal fee value in Bitcoin
+ */
+private data class WithdrawalCommandWithFee(val command: Commands.Command, val feeInBtc: BigDecimal)

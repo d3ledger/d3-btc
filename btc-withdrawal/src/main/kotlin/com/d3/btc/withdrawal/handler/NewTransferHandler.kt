@@ -35,12 +35,12 @@ class NewTransferHandler(
     /**
      * Handles "transfer asset" command
      * @param transferCommand - object with "transfer asset" data: source account, destination account, amount and etc
-     * @param feeCommand - command with fee
+     * @param feeInBtc - amount of fee for withdrawal in Bitcoin. May be zero.
      * @param withdrawalTime - time of withdrawal
      */
     fun handleTransferCommand(
         transferCommand: Commands.TransferAsset,
-        feeCommand: Commands.TransferAsset,
+        feeInBtc:BigDecimal ,
         withdrawalTime: Long
     ) {
         if (transferCommand.destAccountId != btcWithdrawalConfig.withdrawalCredential.accountId) {
@@ -50,7 +50,7 @@ class NewTransferHandler(
         val sourceAccountId = transferCommand.srcAccountId
         val btcAmount = BigDecimal(transferCommand.amount)
         val satAmount = btcToSat(btcAmount)
-        val fee = btcToSat(BigDecimal(feeCommand.amount))
+        val fee = btcToSat(feeInBtc)
         val withdrawalDetails =
             WithdrawalDetails(sourceAccountId, destinationAddress, satAmount, withdrawalTime, fee)
         logger.info {

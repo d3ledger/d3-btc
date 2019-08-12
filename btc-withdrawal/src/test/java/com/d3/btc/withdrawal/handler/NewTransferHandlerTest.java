@@ -14,6 +14,7 @@ import kotlin.Unit;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.math.BigDecimal;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.mockito.Matchers.any;
@@ -30,10 +31,7 @@ public class NewTransferHandlerTest {
     private BtcWithdrawalConfig btcWithdrawalConfig;
     private NewTransferHandler handler;
     private static final String BTC_SERVICE_ACCOUNT = "btcService@btc";
-    private static final Commands.TransferAsset feeCommand = Commands.TransferAsset.newBuilder()
-            .setDestAccountId(BTC_SERVICE_ACCOUNT)
-            .setAmount("0.1")
-            .build();
+    private static final BigDecimal feeValue = new BigDecimal("0.1");
 
     @Before
     public void setUp() {
@@ -66,7 +64,7 @@ public class NewTransferHandlerTest {
                 .setDestAccountId(BTC_SERVICE_ACCOUNT)
                 .setAmount("1")
                 .build();
-        handler.handleTransferCommand(transferAsset, feeCommand, System.currentTimeMillis());
+        handler.handleTransferCommand(transferAsset, feeValue, System.currentTimeMillis());
         verify(handler, never()).checkAndStartConsensus(any());
         verify(btcRollbackService, never()).rollback(any(WithdrawalDetails.class), anyString());
     }
@@ -88,7 +86,7 @@ public class NewTransferHandlerTest {
                 .setDestAccountId(BTC_SERVICE_ACCOUNT)
                 .setAmount("1")
                 .build();
-        handler.handleTransferCommand(transferAsset, feeCommand, System.currentTimeMillis());
+        handler.handleTransferCommand(transferAsset, feeValue, System.currentTimeMillis());
         verify(handler).checkAndStartConsensus(any());
         verify(btcRollbackService, never()).rollback(any(WithdrawalDetails.class), anyString());
     }
@@ -215,7 +213,7 @@ public class NewTransferHandlerTest {
                 .setDescription(VALID_BTC_ADDRESS)
                 .setSrcAccountId("source account id")
                 .setDestAccountId(BTC_SERVICE_ACCOUNT).build();
-        handler.handleTransferCommand(transferAssetCommand, feeCommand, System.currentTimeMillis());
+        handler.handleTransferCommand(transferAssetCommand, feeValue, System.currentTimeMillis());
         verify(btcRollbackService).rollback(any(WithdrawalDetails.class), anyString());
         verify(handler, never()).checkAndStartConsensus(any());
     }
@@ -239,7 +237,7 @@ public class NewTransferHandlerTest {
                 .setDescription(VALID_BTC_ADDRESS)
                 .setSrcAccountId("source account id")
                 .setDestAccountId("another@account").build();
-        handler.handleTransferCommand(transferAssetCommand, feeCommand, System.currentTimeMillis());
+        handler.handleTransferCommand(transferAssetCommand, feeValue, System.currentTimeMillis());
         verify(handler, never()).checkAndStartConsensus(any());
         verify(btcRollbackService, never()).rollback(any(WithdrawalDetails.class), anyString());
     }

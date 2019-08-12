@@ -7,7 +7,6 @@ package com.d3.btc.provider
 
 import com.d3.btc.model.AddressInfo
 import com.d3.btc.model.BtcAddress
-import com.d3.btc.monitoring.Monitoring
 import com.d3.btc.provider.account.BTC_CURRENCY_NAME_KEY
 import com.d3.commons.sidechain.iroha.util.IrohaQueryHelper
 import com.github.kittinunf.result.Result
@@ -18,9 +17,7 @@ open class BtcRegisteredAddressesProvider(
     private val queryHelper: IrohaQueryHelper,
     private val registrationAccount: String,
     private val notaryAccount: String
-) : Monitoring() {
-    override fun monitor() = getRegisteredAddresses()
-
+) {
     /**
      * Checks if given account may be registered in Bitcoin
      * @param accountId - id of account to check

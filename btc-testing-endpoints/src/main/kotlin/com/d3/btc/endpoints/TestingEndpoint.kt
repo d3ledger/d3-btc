@@ -6,7 +6,7 @@
 package com.d3.btc.endpoints
 
 import com.d3.btc.config.BTC_ASSET
-import com.d3.btc.helper.format.GsonInstance
+import com.d3.commons.util.GsonInstance
 import com.d3.commons.notary.endpoint.ServerInitializationBundle
 import com.github.jleskovar.btcrpc.BitcoinRpcClient
 import com.github.kittinunf.result.Result

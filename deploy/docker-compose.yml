@@ -2,7 +2,7 @@ version: '3.5'
 
 services:
   d3-iroha:
-    image: hyperledger/iroha:1.0.0
+    image: hyperledger/iroha:1.1.0
     container_name: d3-iroha
     depends_on:
       - d3-iroha-postgres
@@ -94,7 +94,7 @@ services:
       BILLING_URL: http://data-collector:8080/cache/get/billing
       BILLING_ASSET_PRECISION_URL: http://data-collector:8080/iroha/asset/precision/
     volumes:
-      - ../configs/brvs/keys:/opt/brvs/config/keys/
+      - ../configs/brvs/keys:/config/keys
     networks:
       - d3-network
     restart: always
