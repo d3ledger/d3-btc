@@ -61,7 +61,11 @@ class TestingEndpoint(
     init {
         logger.info { "Start ${serverBundle.ethRefund} test endpoints on port ${serverBundle.port}" }
 
-        val server = embeddedServer(Netty, port = serverBundle.port) {
+        val server = embeddedServer(Netty, port = serverBundle.port, configure = {
+            connectionGroupSize = 2048
+            workerGroupSize = 2048
+            callGroupSize = 4096
+        }) {
             install(CORS)
             {
                 anyHost()
