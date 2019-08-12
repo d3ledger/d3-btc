@@ -20,12 +20,10 @@ import kotlinx.coroutines.launch
 import mu.KLogging
 import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import org.springframework.context.annotation.ComponentScan
-import org.springframework.context.annotation.EnableMBeanExport
 import kotlin.system.exitProcess
 
 const val BTC_DW_BRIDGE_SERVICE_NAME = "btc-dw-bridge"
 
-@EnableMBeanExport
 @ComponentScan(
     basePackages = [
         "com.d3.btc.wallet",

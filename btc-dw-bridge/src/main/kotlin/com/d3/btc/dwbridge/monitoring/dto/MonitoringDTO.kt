@@ -5,7 +5,7 @@ import java.math.BigDecimal
 /**
  * Class that represents available BTC sum
  */
-data class AvailableSumBtc(val sumBtc: BigDecimal)
+data class AvailableSumBtc(val sumBtc: String)
 
 /**
  * Class that represents available UTXO set
@@ -17,7 +17,7 @@ data class UTXOSetBtc(val utxoList: List<UTXOBtc>)
  */
 data class UTXOBtc(
     val confirmations: Int,
-    val btcAmount: BigDecimal,
+    val btcAmount: String,
     val txHash: String,
     val outputIndex: Int,
     val receiverAddress: String
