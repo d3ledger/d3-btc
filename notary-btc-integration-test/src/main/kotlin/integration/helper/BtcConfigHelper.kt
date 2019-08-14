@@ -130,6 +130,7 @@ class BtcConfigHelper(
         notaryIrohaCredential: IrohaCredential = accountHelper.notaryAccount
     ): BtcDepositConfig {
         return object : BtcDepositConfig {
+            override val irohaBlockQueue = testName + "_" + String.getRandomString(5)
             override val mstRegistrationAccount = accountHelper.mstRegistrationAccount.accountId
             override val changeAddressesStorageAccount =
                 accountHelper.changeAddressesStorageAccount.accountId

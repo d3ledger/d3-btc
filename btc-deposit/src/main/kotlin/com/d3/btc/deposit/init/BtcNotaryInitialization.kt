@@ -19,6 +19,7 @@ import com.d3.btc.peer.SharedPeerGroup
 import com.d3.btc.provider.BtcRegisteredAddressesProvider
 import com.d3.btc.provider.network.BtcNetworkConfigProvider
 import com.d3.btc.wallet.checkWalletNetwork
+import com.d3.chainadapter.client.ReliableIrohaChainListener
 import com.d3.commons.notary.NotaryImpl
 import com.d3.commons.sidechain.SideChainEvent
 import com.d3.commons.sidechain.iroha.IrohaChainListener
@@ -48,14 +49,14 @@ class BtcNotaryInitialization(
     private val notary: NotaryImpl,
     private val btcRegisteredAddressesProvider: BtcRegisteredAddressesProvider,
     private val btcEventsSource: PublishSubject<SideChainEvent.PrimaryBlockChainEvent>,
-    @Qualifier("depositIrohaChainListener")
-    private val irohaChainListener: IrohaChainListener,
     private val newBtcClientRegistrationListener: NewBtcClientRegistrationListener,
     private val btcWalletListenerRestartService: BtcWalletListenerRestartService,
     @Qualifier("confidenceListenerExecutorService")
     private val confidenceListenerExecutorService: ExecutorService,
     private val btcNetworkConfigProvider: BtcNetworkConfigProvider,
-    private val depositServiceExpansion: DepositServiceExpansion
+    private val depositServiceExpansion: DepositServiceExpansion,
+    @Qualifier("depositReliableIrohaChainListener")
+    private val irohaChainListener: ReliableIrohaChainListener
 ) : HealthyService(), Closeable {
 
     // Executor that will be used to execute Bitcoin deposit listener logic
@@ -70,9 +71,8 @@ class BtcNotaryInitialization(
 
     /**
      * Init notary
-     * @param onIrohaFailure - function that will be called on Iroha failure
      */
-    fun init(onIrohaFailure: () -> Unit): Result<Unit, Exception> {
+    fun init(): Result<Unit, Exception> {
         logger.info { "Btc notary initialization" }
         //Enables short log format for Bitcoin events
         BriefLogFormatter.init()
@@ -86,18 +86,14 @@ class BtcNotaryInitialization(
         }.flatMap {
             irohaChainListener.getBlockObservable()
         }.map { irohaObservable ->
-            irohaObservable.subscribe { block ->
+            irohaObservable.subscribe { (block, _) ->
                 // Expand the deposit service if there is a need to do so
                 depositServiceExpansion.expand(block)
             }
-            newBtcClientRegistrationListener.listenToRegisteredClients(
-                transferWallet, irohaObservable
-            ) {
-                // Kill deposit service if Iroha chain listener is not functioning
-                close()
-                onIrohaFailure()
-            }
+            newBtcClientRegistrationListener.listenToRegisteredClients(irohaChainListener)
             logger.info { "Registration service listener was successfully initialized" }
+        }.map {
+            irohaChainListener.listen()
         }.map {
             initBtcEvents(peerGroup, bitcoinConfig.confidenceLevel)
         }.map {

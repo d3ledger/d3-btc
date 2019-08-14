@@ -10,7 +10,7 @@ import com.d3.btc.helper.currency.satToBtc
 import com.d3.btc.withdrawal.transaction.WithdrawalDetails
 import com.d3.commons.service.RollbackService
 import com.d3.commons.service.WithdrawalFinalizationDetails
-import com.d3.commons.sidechain.iroha.consumer.MultiSigIrohaConsumer
+import com.d3.reverse.client.ReliableIrohaConsumerImpl
 import mu.KLogging
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
@@ -20,8 +20,8 @@ import org.springframework.stereotype.Component
  */
 @Component
 class BtcRollbackService(
-    @Qualifier("withdrawalConsumerMultiSig")
-    private val withdrawalConsumer: MultiSigIrohaConsumer
+    @Qualifier("reliableWithdrawalConsumer")
+    private val withdrawalConsumer: ReliableIrohaConsumerImpl
 ) {
 
     private val rollbackService = RollbackService(withdrawalConsumer)

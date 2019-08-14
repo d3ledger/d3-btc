@@ -11,6 +11,7 @@ import com.d3.btc.deposit.config.BtcDepositConfig
 import com.d3.btc.deposit.expansion.DepositServiceExpansion
 import com.d3.btc.deposit.init.BtcNotaryInitialization
 import com.d3.btc.deposit.service.BtcWalletListenerRestartService
+import com.d3.btc.dwbridge.config.depositConfig
 import com.d3.btc.handler.NewBtcClientRegistrationHandler
 import com.d3.btc.listener.NewBtcClientRegistrationListener
 import com.d3.btc.peer.SharedPeerGroup
@@ -19,11 +20,13 @@ import com.d3.btc.provider.BtcRegisteredAddressesProvider
 import com.d3.btc.provider.network.BtcRegTestConfigProvider
 import com.d3.btc.wallet.WalletInitializer
 import com.d3.btc.wallet.loadAutoSaveWallet
+import com.d3.chainadapter.client.RMQConfig
+import com.d3.chainadapter.client.ReliableIrohaChainListener
+import com.d3.commons.config.loadRawLocalConfigs
 import com.d3.commons.expansion.ServiceExpansion
 import com.d3.commons.model.IrohaCredential
 import com.d3.commons.notary.NotaryImpl
 import com.d3.commons.sidechain.SideChainEvent
-import com.d3.commons.sidechain.iroha.IrohaChainListener
 import com.d3.commons.sidechain.iroha.consumer.MultiSigIrohaConsumer
 import com.d3.commons.sidechain.iroha.util.impl.IrohaQueryHelperImpl
 import com.d3.commons.util.createPrettySingleThreadPool
@@ -72,17 +75,23 @@ class BtcNotaryTestEnvironment(
 
     private val btcNetworkConfigProvider = BtcRegTestConfigProvider()
 
-    val irohaChainListener = IrohaChainListener(
-        notaryConfig.iroha.hostname,
-        notaryConfig.iroha.port,
-        notaryCredential
-    )
     private val transferWallet by lazy { loadAutoSaveWallet(notaryConfig.btcTransferWalletPath) }
+
+    private val rmqConfig =
+        loadRawLocalConfigs("rmq", RMQConfig::class.java, "rmq.properties")
+
+    private val depositReliableIrohaChainListener = ReliableIrohaChainListener(
+        rmqConfig, depositConfig.irohaBlockQueue,
+        consumerExecutorService = createPrettySingleThreadPool(
+            BTC_DEPOSIT_SERVICE_NAME,
+            "rmq-consumer"
+        ),
+        autoAck = true
+    )
 
     private val newBtcClientRegistrationListener by lazy {
         NewBtcClientRegistrationListener(
-            NewBtcClientRegistrationHandler(btcNetworkConfigProvider, transferWallet),
-            createPrettySingleThreadPool(BTC_DEPOSIT_SERVICE_NAME, "reg-clients-listener")
+            NewBtcClientRegistrationHandler(btcNetworkConfigProvider, transferWallet)
         )
     }
 
@@ -143,7 +152,6 @@ class BtcNotaryTestEnvironment(
             notary,
             btcRegisteredAddressesProvider,
             btcEventsSource,
-            irohaChainListener,
             newBtcClientRegistrationListener,
             btcWalletListenerRestartService,
             confidenceExecutorService,
@@ -155,7 +163,8 @@ class BtcNotaryTestEnvironment(
                     ChangelogInterface.superuserAccountId,
                     irohaAPI
                 ), notaryCredential
-            )
+            ),
+            depositReliableIrohaChainListener
         )
     }
 
@@ -163,7 +172,7 @@ class BtcNotaryTestEnvironment(
         integrationHelper.close()
         irohaAPI.close()
         confidenceExecutorService.shutdownNow()
-        irohaChainListener.close()
+        depositReliableIrohaChainListener.close()
         //Clear bitcoin blockchain folder
         File(bitcoinConfig.blockStoragePath).deleteRecursively()
         btcNotaryInitialization.close()

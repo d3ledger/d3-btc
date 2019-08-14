@@ -126,6 +126,7 @@ class BtcWithdrawalFailResistanceIntegrationTest {
 
         // Start withdrawal service after transfer
         environment.btcWithdrawalInitialization.init().failure { ex -> throw ex }
+        environment.reverseChainAdapter.init().failure { ex -> throw ex }
 
         Thread.sleep(WITHDRAWAL_WAIT_MILLIS)
         assertEquals(initTxCount + 1, environment.createdTransactions.size)

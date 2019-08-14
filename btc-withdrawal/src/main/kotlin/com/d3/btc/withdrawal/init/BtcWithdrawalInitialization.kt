@@ -55,17 +55,9 @@ class BtcWithdrawalInitialization(
     @Qualifier("withdrawalHandlers")
     private val accountDetailHandlers: List<SetAccountDetailHandler>,
     private val withdrawalServiceExpansion: WithdrawalServiceExpansion,
-    rmqConfig: RMQConfig
+    @Qualifier("withdrawalReliableIrohaChainListener")
+    private val irohaChainListener: ReliableIrohaChainListener
 ) : HealthyService(), Closeable {
-
-    private val irohaChainListener = ReliableIrohaChainListener(
-        rmqConfig, btcWithdrawalConfig.irohaBlockQueue,
-        consumerExecutorService = createPrettySingleThreadPool(
-            BTC_WITHDRAWAL_SERVICE_NAME,
-            "rmq-consumer"
-        ),
-        autoAck = false
-    )
 
     fun init(): Result<Unit, Exception> {
         //TODO create a fee rate updating mechanism
@@ -199,7 +191,6 @@ class BtcWithdrawalInitialization(
 
     override fun close() {
         logger.info { "Closing Bitcoin withdrawal service" }
-        irohaChainListener.close()
         peerGroup.stop()
     }
 

@@ -26,4 +26,6 @@ interface BtcDepositConfig {
     val mstRegistrationAccount: String
 
     val changeAddressesStorageAccount: String
+
+    val irohaBlockQueue: String
 }
