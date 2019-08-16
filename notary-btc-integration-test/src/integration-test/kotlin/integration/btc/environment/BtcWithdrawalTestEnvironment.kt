@@ -30,6 +30,7 @@ import com.d3.btc.withdrawal.service.WithdrawalTransferService
 import com.d3.btc.withdrawal.statistics.WithdrawalStatistics
 import com.d3.btc.withdrawal.transaction.*
 import com.d3.chainadapter.client.RMQConfig
+import com.d3.chainadapter.client.ReliableIrohaChainListener
 import com.d3.commons.config.loadRawLocalConfigs
 import com.d3.commons.expansion.ServiceExpansion
 import com.d3.commons.model.IrohaCredential
@@ -38,6 +39,10 @@ import com.d3.commons.service.WithdrawalFinalizer
 import com.d3.commons.sidechain.iroha.consumer.IrohaConsumerImpl
 import com.d3.commons.sidechain.iroha.consumer.MultiSigIrohaConsumer
 import com.d3.commons.util.createPrettySingleThreadPool
+import com.d3.reverse.adapter.ReverseChainAdapter
+import com.d3.reverse.client.ReliableIrohaConsumerImpl
+import com.d3.reverse.client.ReverseChainAdapterClientConfig
+import com.d3.reverse.config.ReverseChainAdapterConfig
 import com.rabbitmq.client.ConnectionFactory
 import integration.btc.FAILED_WITHDRAW_AMOUNT
 import integration.helper.BtcIntegrationHelperUtil
@@ -80,6 +85,19 @@ class BtcWithdrawalTestEnvironment(
      */
     private val executor =
         createPrettySingleThreadPool(BTC_WITHDRAWAL_SERVICE_NAME, "iroha-chain-listener")
+
+    private val reverseAdapterConfig =
+        loadRawLocalConfigs(
+            "reverse-chain-adapter",
+            ReverseChainAdapterConfig::class.java,
+            "reverse-chain-adapter.properties"
+        )
+
+    private val reverseChainAdapterClientConfig = object : ReverseChainAdapterClientConfig {
+        override val rmqHost = reverseAdapterConfig.rmqHost
+        override val rmqPort = reverseAdapterConfig.rmqPort
+        override val transactionQueueName = reverseAdapterConfig.transactionQueueName
+    }
 
     val rmqConfig =
         loadRawLocalConfigs("rmq", RMQConfig::class.java, "rmq.properties")
@@ -175,6 +193,10 @@ class BtcWithdrawalTestEnvironment(
 
     private val btcConsensusIrohaConsumer = IrohaConsumerImpl(btcConsensusCredential, irohaApi)
 
+    private val reverseChainAdapterDelegate = lazy { ReverseChainAdapter(reverseAdapterConfig, irohaApi) }
+
+    val reverseChainAdapter by reverseChainAdapterDelegate
+
     val btcRegisteredAddressesProvider = BtcRegisteredAddressesProvider(
         integrationHelper.queryHelper,
         btcWithdrawalConfig.registrationCredential.accountId,
@@ -244,8 +266,12 @@ class BtcWithdrawalTestEnvironment(
         btcWithdrawalConfig.notaryListStorageAccount,
         btcWithdrawalConfig.notaryListSetterAccount
     )
+
+    private val reliableWithdrawalConsumer =
+        ReliableIrohaConsumerImpl(reverseChainAdapterClientConfig, withdrawalCredential, irohaApi, fireAndForget = true)
+
     private val btcRollbackService =
-        BtcRollbackService(withdrawalIrohaConsumerMultiSig)
+        BtcRollbackService(reliableWithdrawalConsumer)
     private val withdrawalConsensusProvider = WithdrawalConsensusProvider(
         withdrawalCredential,
         btcConsensusIrohaConsumer,
@@ -311,6 +337,15 @@ class BtcWithdrawalTestEnvironment(
             broadcastsProvider
         )
 
+    private val withdrawalReliableIrohaChainListener = ReliableIrohaChainListener(
+        rmqConfig, btcWithdrawalConfig.irohaBlockQueue,
+        consumerExecutorService = createPrettySingleThreadPool(
+            BTC_WITHDRAWAL_SERVICE_NAME,
+            "rmq-consumer"
+        ),
+        autoAck = false
+    )
+
     val btcWithdrawalInitialization by lazy {
         BtcWithdrawalInitialization(
             btcWithdrawalConfig,
@@ -336,7 +371,7 @@ class BtcWithdrawalTestEnvironment(
                 ),
                 withdrawalCredential
             ),
-            rmqConfig
+            withdrawalReliableIrohaChainListener
         )
     }
 
@@ -391,5 +426,9 @@ class BtcWithdrawalTestEnvironment(
         executor.shutdownNow()
         File(bitcoinConfig.blockStoragePath).deleteRecursively()
         btcWithdrawalInitialization.close()
+        if (reverseChainAdapterDelegate.isInitialized()) {
+            reverseChainAdapter.close()
+        }
+        withdrawalReliableIrohaChainListener.close()
     }
 }

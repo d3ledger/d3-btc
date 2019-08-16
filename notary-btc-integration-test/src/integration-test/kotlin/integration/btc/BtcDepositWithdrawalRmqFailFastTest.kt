@@ -47,6 +47,11 @@ class BtcDepositWithdrawalRmqFailFastTest {
             "RMQ_PORT",
             containerHelper.rmqContainer.getMappedPort(DEFAULT_RMQ_PORT).toString()
         )
+        depositWithdrawalContainer.addEnv("REVERSE-CHAIN-ADAPTER_RMQHOST", containerHelper.rmqContainer.containerIpAddress)
+        depositWithdrawalContainer.addEnv(
+            "REVERSE-CHAIN-ADAPTER_RMQPORT",
+            containerHelper.rmqContainer.getMappedPort(DEFAULT_RMQ_PORT).toString()
+        )
 
         // Start service
         depositWithdrawalContainer.start()

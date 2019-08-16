@@ -81,6 +81,7 @@ class BtcWithdrawalIntegrationTest {
             }
         }
         environment.btcWithdrawalInitialization.init().failure { ex -> throw ex }
+        environment.reverseChainAdapter.init().failure { ex -> throw ex }
         environment.utxoProvider.addToBlackList(changeAddress.toBase58())
     }
 

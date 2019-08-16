@@ -16,10 +16,12 @@ import com.d3.btc.provider.network.BtcNetworkConfigProvider
 import com.d3.btc.wallet.WalletInitializer
 import com.d3.btc.wallet.createWalletIfAbsent
 import com.d3.btc.wallet.loadAutoSaveWallet
+import com.d3.btc.withdrawal.config.BTC_WITHDRAWAL_SERVICE_NAME
 import com.d3.btc.withdrawal.config.BtcWithdrawalConfig
 import com.d3.btc.withdrawal.handler.*
 import com.d3.btc.withdrawal.statistics.WithdrawalStatistics
 import com.d3.chainadapter.client.RMQConfig
+import com.d3.chainadapter.client.ReliableIrohaChainListener
 import com.d3.commons.config.loadLocalConfigs
 import com.d3.commons.config.loadRawLocalConfigs
 import com.d3.commons.expansion.ServiceExpansion
@@ -28,11 +30,14 @@ import com.d3.commons.notary.NotaryImpl
 import com.d3.commons.provider.NotaryPeerListProviderImpl
 import com.d3.commons.service.WithdrawalFinalizer
 import com.d3.commons.sidechain.SideChainEvent
-import com.d3.commons.sidechain.iroha.IrohaChainListener
 import com.d3.commons.sidechain.iroha.consumer.IrohaConsumerImpl
 import com.d3.commons.sidechain.iroha.consumer.MultiSigIrohaConsumer
 import com.d3.commons.sidechain.iroha.util.impl.IrohaQueryHelperImpl
 import com.d3.commons.util.createPrettySingleThreadPool
+import com.d3.reverse.adapter.ReverseChainAdapter
+import com.d3.reverse.client.ReliableIrohaConsumerImpl
+import com.d3.reverse.client.ReverseChainAdapterClientConfig
+import com.d3.reverse.config.ReverseChainAdapterConfig
 import io.grpc.ManagedChannelBuilder
 import io.reactivex.Observable
 import io.reactivex.subjects.PublishSubject
@@ -48,6 +53,7 @@ val withdrawalConfig =
         BtcWithdrawalConfig::class.java,
         "withdrawal.properties"
     ).get()
+
 val depositConfig =
     loadLocalConfigs("btc-deposit", BtcDepositConfig::class.java, "deposit.properties").get()
 val dwBridgeConfig =
@@ -55,6 +61,19 @@ val dwBridgeConfig =
 
 @Configuration
 class BtcDWBridgeAppConfiguration {
+
+    private val reverseAdapterConfig =
+        loadRawLocalConfigs(
+            "reverse-chain-adapter",
+            ReverseChainAdapterConfig::class.java,
+            "reverse-chain-adapter.properties"
+        )
+
+    private val reverseChainAdapterClientConfig = object : ReverseChainAdapterClientConfig {
+        override val rmqHost = reverseAdapterConfig.rmqHost
+        override val rmqPort = reverseAdapterConfig.rmqPort
+        override val transactionQueueName = reverseAdapterConfig.transactionQueueName
+    }
 
     private val rmqConfig =
         loadRawLocalConfigs("rmq", RMQConfig::class.java, "rmq.properties")
@@ -157,10 +176,6 @@ class BtcDWBridgeAppConfiguration {
     }
 
     @Bean
-    fun registeredClientsListenerExecutor() =
-        createPrettySingleThreadPool(BTC_DW_BRIDGE_SERVICE_NAME, "reg-clients-listener")
-
-    @Bean
     fun btcRegisteredAddressesProvider(): BtcRegisteredAddressesProvider {
         return BtcRegisteredAddressesProvider(
             IrohaQueryHelperImpl(
@@ -201,17 +216,19 @@ class BtcDWBridgeAppConfiguration {
     fun withdrawalConsumer() = IrohaConsumerImpl(withdrawalCredential(), irohaAPI())
 
     @Bean
+    fun reliableWithdrawalConsumer() =
+        ReliableIrohaConsumerImpl(
+            reverseChainAdapterClientConfig,
+            withdrawalCredential(),
+            irohaAPI(),
+            fireAndForget = true
+        )
+
+    @Bean
     fun withdrawalConsumerMultiSig() = MultiSigIrohaConsumer(withdrawalCredential(), irohaAPI())
 
     @Bean
     fun withdrawalConfig() = withdrawalConfig
-
-    @Bean
-    fun depositIrohaChainListener() = IrohaChainListener(
-        dwBridgeConfig.iroha.hostname,
-        dwBridgeConfig.iroha.port,
-        notaryCredential
-    )
 
     @Bean
     fun broadcastsIrohaConsumer() = IrohaConsumerImpl(broadcastCredential, irohaAPI())
@@ -296,4 +313,28 @@ class BtcDWBridgeAppConfiguration {
     @Bean
     fun withdrawalFinalizer() =
         WithdrawalFinalizer(withdrawalConsumerMultiSig(), withdrawalConfig.withdrawalBillingAccount)
+
+    @Bean
+    fun reverseChainAdapter() = ReverseChainAdapter(reverseAdapterConfig, irohaAPI())
+
+    @Bean
+    fun depositReliableIrohaChainListener() = ReliableIrohaChainListener(
+        rmqConfig, depositConfig.irohaBlockQueue,
+        consumerExecutorService = createPrettySingleThreadPool(
+            BTC_DEPOSIT_SERVICE_NAME,
+            "rmq-consumer"
+        ),
+        autoAck = true
+    )
+
+    @Bean
+    fun withdrawalReliableIrohaChainListener() = ReliableIrohaChainListener(
+        rmqConfig, withdrawalConfig.irohaBlockQueue,
+        consumerExecutorService = createPrettySingleThreadPool(
+            BTC_WITHDRAWAL_SERVICE_NAME,
+            "rmq-consumer"
+        ),
+        autoAck = false
+    )
+
 }

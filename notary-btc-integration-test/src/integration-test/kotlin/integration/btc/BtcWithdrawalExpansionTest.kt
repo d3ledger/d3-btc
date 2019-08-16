@@ -47,6 +47,7 @@ class BtcWithdrawalExpansionTest {
         integrationHelper.genChangeBtcAddress(environment.btcWithdrawalConfig.btcKeysWalletPath)
             .failure { ex -> throw ex }
         environment.btcWithdrawalInitialization.init().failure { ex -> throw ex }
+        environment.reverseChainAdapter.init().failure { ex -> throw ex }
     }
 
     /**

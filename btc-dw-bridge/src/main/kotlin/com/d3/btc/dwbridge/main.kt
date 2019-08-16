@@ -12,6 +12,7 @@ import com.d3.btc.dwbridge.config.dwBridgeConfig
 import com.d3.btc.withdrawal.init.BtcWithdrawalInitialization
 import com.d3.commons.config.getProfile
 import com.d3.commons.util.createFolderIfDoesntExist
+import com.d3.reverse.adapter.ReverseChainAdapter
 import com.github.kittinunf.result.Result
 import com.github.kittinunf.result.failure
 import com.github.kittinunf.result.map
@@ -73,13 +74,19 @@ fun main() {
 
         // Run deposit service
         GlobalScope.launch {
-            context.getBean(BtcNotaryInitialization::class.java).init {
-                logger.error("Iroha failure. Exit.")
-                exitProcess(1)
-            }.failure { ex ->
+            context.getBean(BtcNotaryInitialization::class.java).init().failure { ex ->
                 logger.error("Error in deposit service", ex)
                 exitProcess(1)
             }
+        }
+
+        // Run reverse chain adapter
+        GlobalScope.launch {
+            context.getBean(ReverseChainAdapter::class.java).init()
+                .failure { ex ->
+                    logger.error("Error in reverse chain adapter service", ex)
+                    exitProcess(1)
+                }
         }
     }.failure { ex ->
         logger.error("Cannot run btc deposit/withdrawal bridge", ex)

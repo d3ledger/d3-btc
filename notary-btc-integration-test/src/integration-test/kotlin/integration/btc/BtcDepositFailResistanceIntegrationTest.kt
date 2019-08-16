@@ -76,7 +76,7 @@ class BtcDepositFailResistanceIntegrationTest {
         //Simulate failure
         simulateFailRightAfterGettingDeposit(walletFile, btcAddress, btcAmount)
         //Start deposit service
-        environment.btcNotaryInitialization.init {}
+        environment.btcNotaryInitialization.init()
             .failure { ex -> fail("Cannot run BTC notary", ex) }
         //Wait a little to initiate service properly
         Thread.sleep(DEPOSIT_WAIT_MILLIS)

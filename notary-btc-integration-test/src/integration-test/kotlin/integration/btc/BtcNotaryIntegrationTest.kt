@@ -44,7 +44,7 @@ class BtcNotaryIntegrationTest {
         blockStorageFolder.mkdirs()
         integrationHelper.generateBtcInitialBlocks()
         integrationHelper.addBtcNotary("test_notary", "test_notary_address")
-        environment.btcNotaryInitialization.init {}
+        environment.btcNotaryInitialization.init()
             .failure { ex -> fail("Cannot run BTC notary", ex) }
     }
 

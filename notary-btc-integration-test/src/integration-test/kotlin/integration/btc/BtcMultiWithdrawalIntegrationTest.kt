@@ -108,6 +108,7 @@ class BtcMultiWithdrawalIntegrationTest {
                 environment.btcWithdrawalInitialization.init().failure { ex -> throw ex }
             }
         }
+        withdrawalEnvironments.first().reverseChainAdapter.init().failure { ex -> throw ex }
     }
 
     /**
