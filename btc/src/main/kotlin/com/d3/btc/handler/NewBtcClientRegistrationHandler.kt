@@ -5,7 +5,9 @@
 
 package com.d3.btc.handler
 
+import com.d3.btc.provider.account.BTC_CURRENCY_NAME_KEY
 import com.d3.btc.provider.network.BtcNetworkConfigProvider
+import com.d3.btc.storage.BtcAddressStorage
 import com.d3.commons.sidechain.iroha.CLIENT_DOMAIN
 import iroha.protocol.Commands
 import mu.KLogging
@@ -21,7 +23,8 @@ import org.springframework.stereotype.Component
 class NewBtcClientRegistrationHandler(
     private val btcNetworkConfigProvider: BtcNetworkConfigProvider,
     @Qualifier("transferWallet")
-    private val wallet: Wallet
+    private val wallet: Wallet,
+    private val btcAddressStorage: BtcAddressStorage
 ) : SetAccountDetailHandler() {
 
     /**
@@ -38,6 +41,7 @@ class NewBtcClientRegistrationHandler(
         } else {
             logger.error { "Address $address was not added to wallet" }
         }
+        btcAddressStorage.addClientAddress(address = address.toBase58(), accountId = command.accountId)
     }
 
     /**
@@ -45,7 +49,7 @@ class NewBtcClientRegistrationHandler(
      */
     override fun filter(command: Commands.SetAccountDetail): Boolean {
         return command.accountId.endsWith("@$CLIENT_DOMAIN")
-                && command.key == "bitcoin"
+                && command.key == BTC_CURRENCY_NAME_KEY
     }
 
     /**

@@ -5,9 +5,9 @@
 
 package com.d3.btc.deposit.handler
 
+import com.d3.btc.storage.BtcAddressStorage
 import com.d3.btc.helper.address.outPutToBase58Address
 import com.d3.btc.helper.currency.satToBtc
-import com.d3.btc.model.BtcAddress
 import com.d3.commons.sidechain.SideChainEvent
 import io.reactivex.subjects.PublishSubject
 import mu.KLogging
@@ -21,12 +21,12 @@ private const val TWO_HOURS_MILLIS = 2 * 60 * 60 * 1000L
 
 /**
  * Handler of Bitcoin deposit transactions
- * @param registeredAddresses - registered addresses. Used to get Bitcoin address data
+ * @param btcAddressStorage - in-memory storage of Bitcoin addresses
  * @param btcEventsSource - source of Bitcoin deposit events
  * @param onTxSave - function that is called to save transaction in wallet
  */
 class BtcDepositTxHandler(
-    private val registeredAddresses: List<BtcAddress>,
+    private val btcAddressStorage: BtcAddressStorage,
     private val btcEventsSource: PublishSubject<SideChainEvent.PrimaryBlockChainEvent>,
     private val onTxSave: () -> Unit
 ) {
@@ -40,9 +40,9 @@ class BtcDepositTxHandler(
         tx.outputs.forEach { output ->
             val txBtcAddress = outPutToBase58Address(output)
             logger.info { "Tx ${tx.hashAsString} has output address $txBtcAddress" }
-            val btcAddress =
-                registeredAddresses.firstOrNull { btcAddress -> btcAddress.address == txBtcAddress }
-            if (btcAddress != null) {
+            if (btcAddressStorage.isOurClient(txBtcAddress)) {
+                val clientAccountId = btcAddressStorage.getClientAccountId(txBtcAddress)!!
+                logger.info("Handle our client address $txBtcAddress")
                 val btcValue = satToBtc(output.value.value)
                 val event = SideChainEvent.PrimaryBlockChainEvent.ChainAnchoredOnPrimaryChainDeposit(
                     hash = tx.hashAsString,
@@ -53,17 +53,20 @@ class BtcDepositTxHandler(
                     Subtracting 2 hours is just a simple workaround of this problem.
                     */
                     time = BigInteger.valueOf(blockTime.time - TWO_HOURS_MILLIS),
-                    user = btcAddress.info.irohaClient!!,
+                    user = clientAccountId,
                     asset = "$BTC_ASSET_NAME#$BTC_ASSET_DOMAIN",
                     amount = btcValue.toPlainString(),
                     from = tx.hashAsString
                 )
                 logger.info {
                     "BTC deposit event(tx ${tx.hashAsString}, amount ${btcValue.toPlainString()}) was created. " +
-                            "Related client is ${btcAddress.info.irohaClient}. "
+                            "Related client is $clientAccountId. "
                 }
                 btcEventsSource.onNext(event)
                 //TODO better call this function after event consumption.
+                onTxSave()
+            } else if (btcAddressStorage.isChangeAddress(txBtcAddress)) {
+                logger.info("Handle change address $txBtcAddress")
                 onTxSave()
             }
         }

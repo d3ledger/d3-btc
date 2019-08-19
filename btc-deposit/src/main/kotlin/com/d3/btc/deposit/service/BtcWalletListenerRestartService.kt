@@ -8,12 +8,10 @@ package com.d3.btc.deposit.service
 import com.d3.btc.config.BitcoinConfig
 import com.d3.btc.deposit.handler.BtcDepositTxHandler
 import com.d3.btc.deposit.listener.BtcConfirmedTxListener
-import com.d3.btc.model.BtcAddress
 import com.d3.btc.peer.SharedPeerGroup
-import com.d3.btc.provider.BtcRegisteredAddressesProvider
+import com.d3.btc.storage.BtcAddressStorage
 import com.d3.commons.sidechain.SideChainEvent
 import com.github.kittinunf.result.Result
-import com.github.kittinunf.result.map
 import io.reactivex.subjects.PublishSubject
 import mu.KLogging
 import org.bitcoinj.core.StoredBlock
@@ -27,11 +25,11 @@ import java.util.concurrent.ExecutorService
  */
 @Component
 class BtcWalletListenerRestartService(
+    private val btcAddressStorage: BtcAddressStorage,
     private val bitcoinConfig: BitcoinConfig,
     private val confidenceListenerExecutorService: ExecutorService,
     private val peerGroup: SharedPeerGroup,
-    private val btcEventsSource: PublishSubject<SideChainEvent.PrimaryBlockChainEvent>,
-    private val btcRegisteredAddressesProvider: BtcRegisteredAddressesProvider
+    private val btcEventsSource: PublishSubject<SideChainEvent.PrimaryBlockChainEvent>
 ) {
 
     /**
@@ -43,7 +41,7 @@ class BtcWalletListenerRestartService(
         transferWallet: Wallet,
         onTxSave: () -> Unit
     ): Result<Unit, Exception> {
-        return btcRegisteredAddressesProvider.getRegisteredAddresses().map { registeredAddresses ->
+        return Result.of {
             transferWallet.walletTransactions
                 .filter { walletTransaction ->
                     val txDepth = walletTransaction.transaction.confidence.depthInBlocks
@@ -54,7 +52,7 @@ class BtcWalletListenerRestartService(
                 }
                 .forEach { unconfirmedTx ->
                     logger.info { "Got unconfirmed transaction ${unconfirmedTx.hashAsString}. Try to restart listener." }
-                    restartUnconfirmedTxListener(unconfirmedTx, registeredAddresses, onTxSave)
+                    restartUnconfirmedTxListener(unconfirmedTx, btcAddressStorage, onTxSave)
                 }
         }
     }
@@ -62,12 +60,12 @@ class BtcWalletListenerRestartService(
     /**
      * Restarts unconfirmed transaction confidence listener
      * @param unconfirmedTx - transaction that needs confidence listener restart
-     * @param registeredAddresses - registered addresses
+     * @param btcAddressStorage - in-memory storage of Bitcoin addresses
      * @param onTxSave - function that is called to save transaction in wallet
      */
     private fun restartUnconfirmedTxListener(
         unconfirmedTx: Transaction,
-        registeredAddresses: List<BtcAddress>,
+        btcAddressStorage: BtcAddressStorage,
         onTxSave: () -> Unit
     ) {
         // Get tx block hash
@@ -78,7 +76,7 @@ class BtcWalletListenerRestartService(
                     // Create listener
                     unconfirmedTx.confidence.addEventListener(
                         confidenceListenerExecutorService,
-                        createListener(unconfirmedTx, block, registeredAddresses, onTxSave)
+                        createListener(unconfirmedTx, block, btcAddressStorage, onTxSave)
                     )
                     logger.info("Listener for ${unconfirmedTx.hashAsString} has been restarted")
                 }
@@ -90,14 +88,14 @@ class BtcWalletListenerRestartService(
      * Creates unconfirmed transaction listener
      * @param unconfirmedTx - unconfirmed transaction which confidence will be listenable
      * @param block - block of transaction
-     * @param registeredAddresses - registered addresses
+     * @param btcAddressStorage - in-memory storage of Bitcoin addresses
      * @param onTxSave - function that is called to save transaction in wallet
      * @return restarted listener
      */
     private fun createListener(
         unconfirmedTx: Transaction,
         block: StoredBlock,
-        registeredAddresses: List<BtcAddress>,
+        btcAddressStorage: BtcAddressStorage,
         onTxSave: () -> Unit
     )
             : BtcConfirmedTxListener {
@@ -106,7 +104,7 @@ class BtcWalletListenerRestartService(
             unconfirmedTx,
             block.header.time,
             BtcDepositTxHandler(
-                registeredAddresses,
+                btcAddressStorage,
                 btcEventsSource,
                 onTxSave
             )::handleTx

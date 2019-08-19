@@ -13,6 +13,7 @@ import com.d3.btc.provider.BtcChangeAddressProvider
 import com.d3.btc.provider.BtcRegisteredAddressesProvider
 import com.d3.btc.provider.network.BtcNetworkConfigProvider
 import com.d3.btc.provider.network.BtcRegTestConfigProvider
+import com.d3.btc.storage.BtcAddressStorage
 import com.d3.btc.wallet.WalletInitializer
 import com.d3.btc.wallet.loadAutoSaveWallet
 import com.d3.btc.withdrawal.config.BTC_WITHDRAWAL_SERVICE_NAME
@@ -225,6 +226,8 @@ class BtcWithdrawalTestEnvironment(
         )
     }
 
+    private val btcAddressStorage = BtcAddressStorage(btcRegisteredAddressesProvider, btcChangeAddressProvider)
+
     val usedUTXOProvider =
         UsedUTXOProvider(integrationHelper.queryHelper, withdrawalIrohaConsumer, btcWithdrawalConfig.utxoStorageAccount)
 
@@ -281,7 +284,13 @@ class BtcWithdrawalTestEnvironment(
         bitcoinConfig
     )
     private val newChangeAddressHandler
-            by lazy { NewChangeAddressHandler(transferWallet, btcNetworkConfigProvider, btcWithdrawalConfig) }
+            by lazy {
+                NewBtcChangeAddressWithdrawalHandler(
+                    transferWallet,
+                    btcNetworkConfigProvider,
+                    btcWithdrawalConfig
+                )
+            }
     private val newTransferHandler =
         NewTransferHandler(
             withdrawalStatistics,
@@ -356,7 +365,7 @@ class BtcWithdrawalTestEnvironment(
             newTransferHandler,
             listOf(
                 newSignatureEventHandler,
-                NewBtcClientRegistrationHandler(btcNetworkConfigProvider, transferWallet),
+                NewBtcClientRegistrationHandler(btcNetworkConfigProvider, transferWallet, btcAddressStorage),
                 newChangeAddressHandler,
                 newConsensusDataHandler,
                 newTransactionCreatedHandler,

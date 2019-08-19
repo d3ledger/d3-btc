@@ -8,11 +8,13 @@ package com.d3.btc.dwbridge.config
 import com.d3.btc.config.BitcoinConfig.Companion.extractHosts
 import com.d3.btc.deposit.config.BTC_DEPOSIT_SERVICE_NAME
 import com.d3.btc.deposit.config.BtcDepositConfig
+import com.d3.btc.deposit.handler.NewBtcChangeAddressDepositHandler
 import com.d3.btc.dwbridge.BTC_DW_BRIDGE_SERVICE_NAME
 import com.d3.btc.handler.NewBtcClientRegistrationHandler
 import com.d3.btc.provider.BtcChangeAddressProvider
 import com.d3.btc.provider.BtcRegisteredAddressesProvider
 import com.d3.btc.provider.network.BtcNetworkConfigProvider
+import com.d3.btc.storage.BtcAddressStorage
 import com.d3.btc.wallet.WalletInitializer
 import com.d3.btc.wallet.createWalletIfAbsent
 import com.d3.btc.wallet.loadAutoSaveWallet
@@ -268,6 +270,9 @@ class BtcDWBridgeAppConfiguration {
         )
 
     @Bean
+    fun btcAddressStorage() = BtcAddressStorage(btcRegisteredAddressesProvider(), btcChangeAddressProvider())
+
+    @Bean
     fun walletInitializer() =
         WalletInitializer(btcRegisteredAddressesProvider(), btcChangeAddressProvider())
 
@@ -300,7 +305,7 @@ class BtcDWBridgeAppConfiguration {
         newSignatureEventHandler: NewSignatureEventHandler,
         newConsensusDataHandler: NewConsensusDataHandler,
         newBtcClientRegistrationHandler: NewBtcClientRegistrationHandler,
-        newChangeAddressHandler: NewChangeAddressHandler
+        newChangeAddressHandler: NewBtcChangeAddressWithdrawalHandler
     ) = listOf(
         broadcastTransactionHandler,
         newTransactionCreatedHandler,
@@ -309,6 +314,12 @@ class BtcDWBridgeAppConfiguration {
         newBtcClientRegistrationHandler,
         newChangeAddressHandler
     )
+
+    @Bean
+    fun depositHandlers(
+        newBtcClientRegistrationHandler: NewBtcClientRegistrationHandler,
+        newBtcChangeAddressHandler: NewBtcChangeAddressDepositHandler
+    ) = listOf(newBtcClientRegistrationHandler, newBtcChangeAddressHandler)
 
     @Bean
     fun withdrawalFinalizer() =
@@ -336,5 +347,4 @@ class BtcDWBridgeAppConfiguration {
         ),
         autoAck = false
     )
-
 }

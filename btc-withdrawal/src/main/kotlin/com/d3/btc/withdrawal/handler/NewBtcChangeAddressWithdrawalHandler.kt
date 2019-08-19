@@ -18,7 +18,7 @@ import org.springframework.stereotype.Component
  * Handles new change addresses
  */
 @Component
-class NewChangeAddressHandler(
+class NewBtcChangeAddressWithdrawalHandler(
     @Qualifier("transferWallet")
     private val transfersWallet: Wallet,
     private val btcNetworkConfigProvider: BtcNetworkConfigProvider,
