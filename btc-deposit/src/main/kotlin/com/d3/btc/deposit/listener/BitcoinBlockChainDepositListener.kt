@@ -67,7 +67,6 @@ class BitcoinBlockChainDepositListener(
                 block.time
             )
         }
-
     }
 
     /**

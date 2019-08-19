@@ -98,7 +98,6 @@ class BtcNotaryInitialization(
                             handler.handleFiltered(setAccountDetailCommand)
                         }
                     }
-
             }
             logger.info { "Registration service listener was successfully initialized" }
         }.map {

@@ -21,6 +21,10 @@ class BtcAddressStorage(
     btcChangeAddressProvider: BtcChangeAddressProvider
 ) {
 
+    private val clientAddressesStorage = HashMap<String, String>()
+
+    private val changeAddressesStorage = HashSet<String>()
+
     /*
       It's crucial to init this storage on start
      */
@@ -37,10 +41,6 @@ class BtcAddressStorage(
         }, { ex -> throw ex })
     }
 
-    private val clientAddressesStorage = HashMap<String, String>()
-
-    private val changeAddressesStorage = HashSet<String>()
-
     /**
      * Adds client address
      * @param address - BTC address of a client
@@ -48,8 +48,8 @@ class BtcAddressStorage(
      */
     @Synchronized
     fun addClientAddress(address: String, accountId: String) {
-        logger.info("Address $address has been added to the client address storage")
         clientAddressesStorage[address] = accountId
+        logger.info("Address $address has been added to the client address storage")
     }
 
     /**
@@ -57,7 +57,9 @@ class BtcAddressStorage(
      * @param address - BtcAddress object with all information about an address(address itself, account id, etc)
      */
     @Synchronized
-    fun addClientAddress(address: BtcAddress) = addClientAddress(address.address, address.info.irohaClient!!)
+    fun addClientAddress(address: BtcAddress) {
+        addClientAddress(address.address, address.info.irohaClient!!)
+    }
 
     /**
      * Adds multiple client addresses in storage
@@ -76,8 +78,8 @@ class BtcAddressStorage(
      */
     @Synchronized
     fun addChangeAddress(address: String) {
-        logger.info("Address $address has been added to the change address storage")
         changeAddressesStorage.add(address)
+        logger.info("Address $address has been added to the change address storage")
     }
 
     /**
