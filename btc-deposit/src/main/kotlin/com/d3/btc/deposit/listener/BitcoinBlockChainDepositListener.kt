@@ -6,7 +6,7 @@
 package com.d3.btc.deposit.listener
 
 import com.d3.btc.deposit.handler.BtcDepositTxHandler
-import com.d3.btc.provider.BtcRegisteredAddressesProvider
+import com.d3.btc.storage.BtcAddressStorage
 import com.d3.commons.sidechain.SideChainEvent
 import io.reactivex.subjects.PublishSubject
 import mu.KLogging
@@ -20,16 +20,16 @@ private const val DAY_MILLIS = 24 * 60 * 60 * 1000L
 
 /**
  * Listener of Bitcoin blockchain events.
- * @param btcRegisteredAddressesProvider - Bitcoin registered addresses provider
  * @param btcEventsSource - observable that is used to publish Bitcoin deposit events
  * @param confidenceListenerExecutorService - executor service that is used to execute 'confidence change' events
+ * @param btcAddressStorage - in-memory storage of Bitcoin addresses
  * @param onTxSave - function that is called to save transaction
  */
 class BitcoinBlockChainDepositListener(
-    private val btcRegisteredAddressesProvider: BtcRegisteredAddressesProvider,
     private val btcEventsSource: PublishSubject<SideChainEvent.PrimaryBlockChainEvent>,
     private val confidenceListenerExecutorService: ExecutorService,
     private val confidenceLevel: Int,
+    private val btcAddressStorage: BtcAddressStorage,
     private val onTxSave: () -> Unit
 ) : BlocksDownloadedEventListener {
 
@@ -53,24 +53,20 @@ class BitcoinBlockChainDepositListener(
             logger.warn { "Block ${block.hashAsString} has been already processed" }
             return
         }
-        btcRegisteredAddressesProvider.getRegisteredAddresses().fold(
-            { registeredAddresses ->
-                processedBlocks.add(block.hashAsString)
-                val receivedCoinsListener =
-                    BitcoinTransactionListener(
-                        registeredAddresses,
-                        confidenceLevel,
-                        confidenceListenerExecutorService,
-                        BtcDepositTxHandler(registeredAddresses, btcEventsSource, onTxSave)
-                    )
-                block.transactions?.forEach { tx ->
-                    receivedCoinsListener.onTransaction(
-                        tx,
-                        block.time
-                    )
-                }
-            },
-            { ex -> logger.error("Cannot get registered BTC addresses", ex) })
+        processedBlocks.add(block.hashAsString)
+        val receivedCoinsListener =
+            BitcoinTransactionListener(
+                btcAddressStorage,
+                confidenceLevel,
+                confidenceListenerExecutorService,
+                BtcDepositTxHandler(btcAddressStorage, btcEventsSource, onTxSave)
+            )
+        block.transactions?.forEach { tx ->
+            receivedCoinsListener.onTransaction(
+                tx,
+                block.time
+            )
+        }
     }
 
     /**

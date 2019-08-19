@@ -9,15 +9,16 @@ import com.d3.btc.config.BitcoinConfig
 import com.d3.btc.deposit.config.BTC_DEPOSIT_SERVICE_NAME
 import com.d3.btc.deposit.config.BtcDepositConfig
 import com.d3.btc.deposit.expansion.DepositServiceExpansion
+import com.d3.btc.deposit.handler.NewBtcChangeAddressDepositHandler
 import com.d3.btc.deposit.init.BtcNotaryInitialization
 import com.d3.btc.deposit.service.BtcWalletListenerRestartService
 import com.d3.btc.dwbridge.config.depositConfig
 import com.d3.btc.handler.NewBtcClientRegistrationHandler
-import com.d3.btc.listener.NewBtcClientRegistrationListener
 import com.d3.btc.peer.SharedPeerGroup
 import com.d3.btc.provider.BtcChangeAddressProvider
 import com.d3.btc.provider.BtcRegisteredAddressesProvider
 import com.d3.btc.provider.network.BtcRegTestConfigProvider
+import com.d3.btc.storage.BtcAddressStorage
 import com.d3.btc.wallet.WalletInitializer
 import com.d3.btc.wallet.loadAutoSaveWallet
 import com.d3.chainadapter.client.RMQConfig
@@ -89,9 +90,14 @@ class BtcNotaryTestEnvironment(
         autoAck = true
     )
 
-    private val newBtcClientRegistrationListener by lazy {
-        NewBtcClientRegistrationListener(
-            NewBtcClientRegistrationHandler(btcNetworkConfigProvider, transferWallet)
+    val btcAddressStorage by lazy {
+        BtcAddressStorage(btcRegisteredAddressesProvider, btcChangeAddressProvider)
+    }
+
+    private val depositHandlers by lazy {
+        listOf(
+            NewBtcClientRegistrationHandler(btcNetworkConfigProvider, transferWallet, btcAddressStorage),
+            NewBtcChangeAddressDepositHandler(btcAddressStorage, depositConfig)
         )
     }
 
@@ -135,11 +141,11 @@ class BtcNotaryTestEnvironment(
 
     private val btcWalletListenerRestartService by lazy {
         BtcWalletListenerRestartService(
+            btcAddressStorage,
             bitcoinConfig,
             confidenceExecutorService,
             peerGroup,
-            btcEventsSource,
-            btcRegisteredAddressesProvider
+            btcEventsSource
         )
     }
 
@@ -150,9 +156,7 @@ class BtcNotaryTestEnvironment(
             notaryConfig,
             bitcoinConfig,
             notary,
-            btcRegisteredAddressesProvider,
             btcEventsSource,
-            newBtcClientRegistrationListener,
             btcWalletListenerRestartService,
             confidenceExecutorService,
             btcNetworkConfigProvider,
@@ -164,7 +168,8 @@ class BtcNotaryTestEnvironment(
                     irohaAPI
                 ), notaryCredential
             ),
-            depositReliableIrohaChainListener
+            depositReliableIrohaChainListener,
+            btcAddressStorage, depositHandlers
         )
     }
 

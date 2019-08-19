@@ -85,6 +85,7 @@ class BtcNotaryIntegrationTest {
             initUTXOCount + 1,
             Wallet.loadFromFile(File(environment.notaryConfig.btcTransferWalletPath)).unspents.size
         )
+        assertTrue(environment.btcAddressStorage.isOurClient(btcAddress))
     }
 
     /**
@@ -127,6 +128,7 @@ class BtcNotaryIntegrationTest {
             initUTXOCount + totalDeposits,
             Wallet.loadFromFile(File(environment.notaryConfig.btcTransferWalletPath)).unspents.size
         )
+        assertTrue(environment.btcAddressStorage.isOurClient(btcAddress))
     }
 
     /**
@@ -220,6 +222,7 @@ class BtcNotaryIntegrationTest {
             initUTXOCount + 1,
             Wallet.loadFromFile(File(environment.notaryConfig.btcTransferWalletPath)).unspents.size
         )
+        assertTrue(environment.btcAddressStorage.isOurClient(btcAddress))
     }
 
     /**
@@ -265,5 +268,6 @@ class BtcNotaryIntegrationTest {
             initUTXOCount + 1,
             Wallet.loadFromFile(File(environment.notaryConfig.btcTransferWalletPath)).unspents.size
         )
+        assertTrue(environment.btcAddressStorage.isOurClient(btcAddress))
     }
 }

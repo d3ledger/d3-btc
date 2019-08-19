@@ -7,6 +7,7 @@ package com.d3.btc.wallet
 
 import com.d3.btc.provider.BtcChangeAddressProvider
 import com.d3.btc.provider.BtcRegisteredAddressesProvider
+import com.d3.btc.storage.BtcAddressStorage
 import com.github.kittinunf.result.failure
 import com.github.kittinunf.result.fanout
 import com.github.kittinunf.result.map
@@ -30,7 +31,7 @@ class WalletInitializer(
             // Get registered addresses
             btcRegisteredAddressesProvider.getRegisteredAddresses()
         }.map { (changeAddresses, registeredAddresses) ->
-            // Add addressses to wallet
+            // Add addresses to wallet
             wallet.addWatchedAddresses(changeAddresses)
             wallet.addWatchedAddresses(registeredAddresses)
         }.failure { ex -> throw ex }

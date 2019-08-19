@@ -38,7 +38,7 @@ class BtcAddressRegisteredHandler(
      * @param command - command to check
      * @return true if BTC address was registered in a given [command]
      */
-    override fun filter(command: Commands.SetAccountDetail) = command.accountId.endsWith(CLIENT_DOMAIN)
+    override fun filter(command: Commands.SetAccountDetail) = command.accountId.endsWith("@$CLIENT_DOMAIN")
             && command.key == BTC_CURRENCY_NAME_KEY
 
     companion object : KLogging()

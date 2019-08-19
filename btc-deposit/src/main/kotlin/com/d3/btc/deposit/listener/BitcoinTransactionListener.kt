@@ -6,8 +6,8 @@
 package com.d3.btc.deposit.listener
 
 import com.d3.btc.deposit.handler.BtcDepositTxHandler
+import com.d3.btc.storage.BtcAddressStorage
 import com.d3.btc.helper.address.outPutToBase58Address
-import com.d3.btc.model.BtcAddress
 import mu.KLogging
 import org.bitcoinj.core.Transaction
 import java.util.*
@@ -15,19 +15,19 @@ import java.util.concurrent.ExecutorService
 
 /**
  * Listener that listens to interested Bitcoin transactions
- * @param registeredAddresses - list of registered BTC addresses
+ * @param btcAddressStorage - in-memory storage of Bitcoin addresses
  * @param confidenceLevel - level of confidence aka depth of transaction. Recommend value is 6
  * @param confidenceListenerExecutor - executor that will be used to execute confidence listener logic
  * @param btcDepositTxHandler - handles btc deposit transactions deposit('unspent' occurrence)
  */
 class BitcoinTransactionListener(
-    private val registeredAddresses: List<BtcAddress>,
+    private val btcAddressStorage: BtcAddressStorage,
     private val confidenceLevel: Int,
     private val confidenceListenerExecutor: ExecutorService,
     private val btcDepositTxHandler: BtcDepositTxHandler
 ) {
     fun onTransaction(tx: Transaction, blockTime: Date) {
-        if (!hasRegisteredAddresses(tx)) {
+        if (!hasOurAddresses(tx)) {
             return
         }
         if (tx.confidence.depthInBlocks >= confidenceLevel) {
@@ -52,14 +52,9 @@ class BitcoinTransactionListener(
         }
     }
 
-    //Checks if tx contains registered addresses in its outputs
-    private fun hasRegisteredAddresses(tx: Transaction): Boolean {
-        return registeredAddresses.any { registeredBtcAddress ->
-            tx.outputs.map { out ->
-                outPutToBase58Address(out)
-            }.contains(registeredBtcAddress.address)
-        }
-    }
+    //Checks if tx contains our addresses in its outputs
+    private fun hasOurAddresses(tx: Transaction) = tx.outputs.map { out -> outPutToBase58Address(out) }
+        .any { address -> btcAddressStorage.isChangeAddress(address) || btcAddressStorage.isOurClient(address) }
 
     /**
      * Logger
