@@ -6,7 +6,7 @@
 package com.d3.btc.provider.account
 
 import com.d3.btc.model.AddressInfo
-import com.d3.commons.registration.IrohaAccountRegistrator
+import com.d3.commons.registration.SideChainRegistrator
 import com.d3.commons.sidechain.iroha.consumer.IrohaConsumer
 import com.github.kittinunf.result.Result
 
@@ -20,7 +20,7 @@ class IrohaBtcAccountRegistrator(
     notaryIrohaAccount: String
 ) {
     private val irohaAccountRegistrator =
-        IrohaAccountRegistrator(irohaConsumer, notaryIrohaAccount, BTC_CURRENCY_NAME_KEY)
+        SideChainRegistrator(irohaConsumer, notaryIrohaAccount, BTC_CURRENCY_NAME_KEY)
 
     /**
      * Creates new Bitcoin account to Iroha with given address
@@ -42,9 +42,7 @@ class IrohaBtcAccountRegistrator(
     ): Result<String, Exception> {
         return irohaAccountRegistrator.register(
             btcAddress,
-            userName,
-            domain,
-            pubkey
+            "$userName@$domain"
         ) {
             AddressInfo(
                 "$userName@$domain",
