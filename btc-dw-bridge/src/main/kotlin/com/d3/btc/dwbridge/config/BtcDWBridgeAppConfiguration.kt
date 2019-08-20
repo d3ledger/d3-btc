@@ -289,7 +289,7 @@ class BtcDWBridgeAppConfiguration {
         )
 
     @Bean
-    fun dnsSeed() = dwBridgeConfig.dnsSeedAddress
+    fun dnsSeeds() = BtcDWBridgeConfig.extractSeeds(dwBridgeConfig)
 
     @Bean
     fun txStorageAccount() = withdrawalConfig.txStorageAccount
