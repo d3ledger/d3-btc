@@ -6,6 +6,7 @@
 package com.d3.btc.generation.handler
 
 import com.d3.btc.generation.config.BtcAddressGenerationConfig
+import com.d3.btc.handler.SetAccountDetailEvent
 import com.d3.btc.handler.SetAccountDetailHandler
 import com.d3.btc.model.BtcAddressType
 import com.d3.btc.model.getAddressTypeByAccountId
@@ -37,8 +38,8 @@ class NewKeyHandler(
     private val btcPublicKeyProvider: BtcPublicKeyProvider
 ) : SetAccountDetailHandler() {
 
-    override fun handle(command: Commands.SetAccountDetail) {
-        val accountId = command.accountId
+    override fun handle(setAccountDetailEvent: SetAccountDetailEvent) {
+        val accountId = setAccountDetailEvent.command.accountId
         //create multisignature address, if we have enough keys in session account
         onGenerateMultiSigAddress(
             accountId,
@@ -85,12 +86,14 @@ class NewKeyHandler(
 
     /**
      * Checks if new key was added
-     * @param command - command to check
-     * @return true if given [command] is a 'new key' event command
+     * @param setAccountDetailEvent - event to check
+     * @return true if given event is a 'new key' event
      */
-    override fun filter(command: Commands.SetAccountDetail) = command.accountId.endsWith("btcSession")
-            && command.key != ADDRESS_GENERATION_TIME_KEY
-            && command.key != ADDRESS_GENERATION_NODE_ID_KEY
+    override fun filter(setAccountDetailEvent: SetAccountDetailEvent) =
+        setAccountDetailEvent.command.accountId.endsWith("btcSession")
+                && setAccountDetailEvent.command.key != ADDRESS_GENERATION_TIME_KEY
+                && setAccountDetailEvent.command.key != ADDRESS_GENERATION_NODE_ID_KEY
+                && setAccountDetailEvent.creator == btcAddressGenerationConfig.registrationAccount.accountId
 
 
     companion object : KLogging()

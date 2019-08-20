@@ -6,6 +6,7 @@
 package com.d3.btc.generation.handler
 
 import com.d3.btc.generation.config.BtcAddressGenerationConfig
+import com.d3.btc.handler.SetAccountDetailEvent
 import com.d3.btc.handler.SetAccountDetailHandler
 import com.d3.btc.provider.generation.BtcPublicKeyProvider
 import com.d3.btc.wallet.safeSave
@@ -27,9 +28,9 @@ class BtcAddressGenerationTriggerHandler(
     private val btcPublicKeyProvider: BtcPublicKeyProvider
 ) : SetAccountDetailHandler() {
 
-    override fun handle(command: Commands.SetAccountDetail) {
+    override fun handle(setAccountDetailEvent: SetAccountDetailEvent) {
         //add new public key to session account, if trigger account was changed
-        val sessionAccountName = command.key
+        val sessionAccountName = setAccountDetailEvent.command.key
         onGenerateKey(sessionAccountName).fold(
             { pubKey -> logger.info { "New public key $pubKey for BTC multisignature address was created" } },
             { ex ->
@@ -45,8 +46,9 @@ class BtcAddressGenerationTriggerHandler(
         return btcPublicKeyProvider.createKey(sessionAccountName) { keysWallet.safeSave(btcAddressGenerationConfig.btcKeysWalletPath) }
     }
 
-    override fun filter(command: Commands.SetAccountDetail) =
-        command.accountId == btcAddressGenerationConfig.pubKeyTriggerAccount
+    override fun filter(setAccountDetailEvent: SetAccountDetailEvent) =
+        setAccountDetailEvent.command.accountId == btcAddressGenerationConfig.pubKeyTriggerAccount
+                && setAccountDetailEvent.creator == btcAddressGenerationConfig.registrationAccount.accountId
 
     companion object : KLogging()
 }

@@ -8,9 +8,12 @@ buildscript {
 apply plugin: "kotlin-spring" // See https://kotlinlang.org/docs/reference/compiler-plugins.html#kotlin-spring-compiler-plugin
 
 dependencies {
-    compile "com.github.d3ledger:reverse-chain-adapter:$reverse_chain_adapter_version"
     //TODO change version after D3 release
     compile "com.github.d3ledger.notary:notary-commons:$notary_version"
+
+    compile ("com.github.d3ledger:reverse-chain-adapter:$reverse_chain_adapter_version"){
+        exclude group: 'com.github.d3ledger.notary', module: 'notary-commons'
+    }
     // Chain adapter
     compile "com.github.soramitsu.chain-adapter:chain-adapter-client:$chain_adapter_client_version"
     //bitcoin

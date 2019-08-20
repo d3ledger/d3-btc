@@ -12,25 +12,30 @@ import iroha.protocol.Commands
 abstract class SetAccountDetailHandler {
 
     /**
-     * Handles commands if it is a command of our interest
-     * @param command - command to handle
+     * Handles events if it is a command of our interest
+     * @param setAccountDetailEvent - event to handle
      */
-    fun handleFiltered(command: Commands.SetAccountDetail) {
-        if (filter(command)) {
-            handle(command)
+    fun handleFiltered(setAccountDetailEvent: SetAccountDetailEvent) {
+        if (filter(setAccountDetailEvent)) {
+            handle(setAccountDetailEvent)
         }
     }
 
     /**
      * Handling logic
-     * @param command - command to handle
+     * @param setAccountDetailEvent - event to handle
      */
-    protected abstract fun handle(command: Commands.SetAccountDetail)
+    protected abstract fun handle(setAccountDetailEvent: SetAccountDetailEvent)
 
     /**
      * Filter of commands. Only filtered commands will be handled
-     * @param command - command to filter
+     * @param setAccountDetailEvent - event to filter
      * @return true if command if suitable for handling
      */
-    protected abstract fun filter(command: Commands.SetAccountDetail): Boolean
+    protected abstract fun filter(setAccountDetailEvent: SetAccountDetailEvent): Boolean
 }
+
+/**
+ * Data class that represents 'SetAccountDetail' command alongside with its creator
+ */
+data class SetAccountDetailEvent(val command: Commands.SetAccountDetail, val creator: String)

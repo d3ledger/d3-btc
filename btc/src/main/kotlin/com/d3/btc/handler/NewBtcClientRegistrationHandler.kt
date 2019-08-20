@@ -9,7 +9,6 @@ import com.d3.btc.provider.account.BTC_CURRENCY_NAME_KEY
 import com.d3.btc.provider.network.BtcNetworkConfigProvider
 import com.d3.btc.storage.BtcAddressStorage
 import com.d3.commons.sidechain.iroha.CLIENT_DOMAIN
-import iroha.protocol.Commands
 import mu.KLogging
 import org.bitcoinj.core.Address
 import org.bitcoinj.wallet.Wallet
@@ -30,26 +29,26 @@ class NewBtcClientRegistrationHandler(
     /**
      * Handles newly registered Bitcoin addresses and adds addresses to current wallet object
      */
-    override fun handle(command: Commands.SetAccountDetail) {
+    override fun handle(setAccountDetailEvent: SetAccountDetailEvent) {
         val address = Address.fromBase58(
             btcNetworkConfigProvider.getConfig(),
-            command.value
+            setAccountDetailEvent.command.value
         )
         //Add new registered address to wallet
         if (wallet.addWatchedAddress(address)) {
-            logger.info { "New BTC address ${command.value} was added to wallet" }
+            logger.info { "New BTC address ${setAccountDetailEvent.command.value} was added to wallet" }
         } else {
             logger.error { "Address $address was not added to wallet" }
         }
-        btcAddressStorage.addClientAddress(address = address.toBase58(), accountId = command.accountId)
+        btcAddressStorage.addClientAddress(address = address.toBase58(), accountId = setAccountDetailEvent.command.accountId)
     }
 
     /**
      * Checks if new btc client was registered
      */
-    override fun filter(command: Commands.SetAccountDetail): Boolean {
-        return command.accountId.endsWith("@$CLIENT_DOMAIN")
-                && command.key == BTC_CURRENCY_NAME_KEY
+    override fun filter(setAccountDetailEvent: SetAccountDetailEvent): Boolean {
+        return setAccountDetailEvent.command.accountId.endsWith("@$CLIENT_DOMAIN")
+                && setAccountDetailEvent.command.key == BTC_CURRENCY_NAME_KEY
     }
 
     /**

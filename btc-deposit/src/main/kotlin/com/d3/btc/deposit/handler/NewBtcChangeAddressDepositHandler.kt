@@ -1,9 +1,9 @@
 package com.d3.btc.deposit.handler
 
 import com.d3.btc.deposit.config.BtcDepositConfig
+import com.d3.btc.handler.SetAccountDetailEvent
 import com.d3.btc.handler.SetAccountDetailHandler
 import com.d3.btc.storage.BtcAddressStorage
-import iroha.protocol.Commands
 import org.springframework.stereotype.Component
 
 /**
@@ -15,15 +15,15 @@ class NewBtcChangeAddressDepositHandler(
     private val btcDepositConfig: BtcDepositConfig
 ) : SetAccountDetailHandler() {
 
-    override fun handle(command: Commands.SetAccountDetail) {
-        val address = command.key
+    override fun handle(setAccountDetailEvent: SetAccountDetailEvent) {
+        val address = setAccountDetailEvent.command.key
         btcAddressStorage.addChangeAddress(address)
     }
 
     /**
-     * Checks if command is a 'new change address' event
+     * Checks if event is a 'new change address' event
      */
-    override fun filter(command: Commands.SetAccountDetail) =
-        command.accountId == btcDepositConfig.changeAddressesStorageAccount
-
+    override fun filter(setAccountDetailEvent: SetAccountDetailEvent) =
+        setAccountDetailEvent.command.accountId == btcDepositConfig.changeAddressesStorageAccount
+                && setAccountDetailEvent.creator == btcDepositConfig.mstRegistrationAccount
 }

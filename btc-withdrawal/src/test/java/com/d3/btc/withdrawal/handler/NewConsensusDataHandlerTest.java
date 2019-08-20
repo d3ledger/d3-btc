@@ -1,10 +1,13 @@
 package com.d3.btc.withdrawal.handler;
 
+import com.d3.btc.handler.SetAccountDetailEvent;
+import com.d3.btc.withdrawal.config.BtcWithdrawalConfig;
 import com.d3.btc.withdrawal.provider.WithdrawalConsensusProvider;
 import com.d3.btc.withdrawal.service.BtcRollbackService;
 import com.d3.btc.withdrawal.service.WithdrawalTransferService;
 import com.d3.btc.withdrawal.transaction.WithdrawalConsensus;
 import com.d3.btc.withdrawal.transaction.WithdrawalDetails;
+import com.d3.commons.config.IrohaCredentialRawConfig;
 import com.github.kittinunf.result.Result;
 import iroha.protocol.Commands;
 import kotlin.Pair;
@@ -25,9 +28,16 @@ public class NewConsensusDataHandlerTest {
     private WithdrawalTransferService withdrawalTransferService;
     private BtcRollbackService btcRollbackService;
     private WithdrawalConsensusProvider withdrawalConsensusProvider;
+    private String consensusCredentialAccountId = "consensus@btc";
+    private BtcWithdrawalConfig btcWithdrawalConfig;
 
     @Before
     public void setUp() {
+        IrohaCredentialRawConfig irohaCredential = mock(IrohaCredentialRawConfig.class);
+        doReturn(consensusCredentialAccountId).when(irohaCredential).getAccountId();
+        btcWithdrawalConfig = mock(BtcWithdrawalConfig.class);
+        when(btcWithdrawalConfig.getWithdrawalCredential()).thenReturn(irohaCredential);
+        doReturn(irohaCredential).when(btcWithdrawalConfig).getWithdrawalCredential();
         withdrawalConsensusProvider = mock(WithdrawalConsensusProvider.class);
         btcRollbackService = mock(BtcRollbackService.class);
         withdrawalTransferService = mock(WithdrawalTransferService.class);
@@ -40,7 +50,8 @@ public class NewConsensusDataHandlerTest {
         newConsensusDataHandler = new NewConsensusDataHandler(
                 withdrawalTransferService,
                 withdrawalConsensusProvider,
-                btcRollbackService);
+                btcRollbackService,
+                btcWithdrawalConfig);
 
     }
 
@@ -60,7 +71,8 @@ public class NewConsensusDataHandlerTest {
                 .setAccountId("test@" + BTC_CONSENSUS_DOMAIN)
                 .setValue(withdrawalConsensus.toJson())
                 .build();
-        newConsensusDataHandler.handle(newConsensusCommand);
+        SetAccountDetailEvent event = new SetAccountDetailEvent(newConsensusCommand, consensusCredentialAccountId);
+        newConsensusDataHandler.handle(event);
         verify(withdrawalTransferService, never()).withdraw(any(), any());
     }
 
@@ -80,7 +92,8 @@ public class NewConsensusDataHandlerTest {
                 .setAccountId("test@" + BTC_CONSENSUS_DOMAIN)
                 .setValue(withdrawalConsensus.toJson())
                 .build();
-        newConsensusDataHandler.handle(newConsensusCommand);
+        SetAccountDetailEvent event = new SetAccountDetailEvent(newConsensusCommand, consensusCredentialAccountId);
+        newConsensusDataHandler.handle(event);
         verify(withdrawalTransferService).withdraw(any(), any());
     }
 }
