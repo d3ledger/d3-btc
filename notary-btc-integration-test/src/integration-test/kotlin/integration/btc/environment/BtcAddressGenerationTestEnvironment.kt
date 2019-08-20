@@ -91,7 +91,7 @@ class BtcAddressGenerationTestEnvironment(
     }
 
     val triggerProvider = TriggerProvider(
-        integrationHelper.testCredential,
+        integrationHelper.accountHelper.registrationAccount,
         irohaApi,
         btcGenerationConfig.pubKeyTriggerAccount
     )

@@ -334,7 +334,12 @@ class BtcWithdrawalTestEnvironment(
     private val broadcastTransactionHandler = BroadcastTransactionHandler(btcWithdrawalConfig, btcWithdrawalFinalizer)
 
     private val newConsensusDataHandler =
-        NewConsensusDataHandler(withdrawalTransferService, withdrawalConsensusProvider, btcRollbackService)
+        NewConsensusDataHandler(
+            withdrawalTransferService,
+            withdrawalConsensusProvider,
+            btcRollbackService,
+            btcWithdrawalConfig
+        )
 
     private val newTransactionCreatedHandler =
         NewTransactionCreatedHandler(
