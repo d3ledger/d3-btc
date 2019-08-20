@@ -6,6 +6,7 @@
 package com.d3.btc.dwbridge.config
 
 import com.d3.btc.config.BitcoinConfig
+import com.d3.btc.config.extractCommaSeparatedList
 import com.d3.commons.config.IrohaConfig
 
 interface BtcDWBridgeConfig {
@@ -25,5 +26,11 @@ interface BtcDWBridgeConfig {
     // Port for web services
     val webPort: Int
 
-    val dnsSeedAddress: String?
+    // Bitcoin DNS seeds. Seeds are separated with comma (',') symbol
+    val dnsSeedAddresses: String?
+
+    companion object {
+        fun extractSeeds(btcDWBridgeConfig: BtcDWBridgeConfig): List<String> =
+            extractCommaSeparatedList(btcDWBridgeConfig.dnsSeedAddresses)
+    }
 }

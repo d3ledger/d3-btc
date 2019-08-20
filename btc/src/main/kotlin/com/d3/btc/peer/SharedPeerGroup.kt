@@ -18,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 import java.net.InetAddress
+import java.util.*
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -32,8 +33,8 @@ class SharedPeerGroup(
     blockStoragePath: String,
     @Qualifier("btcHosts")
     hosts: List<String>,
-    @Qualifier("dnsSeed")
-    private val dnsSeed: String?,
+    @Qualifier("dnsSeeds")
+    private val dnsSeeds: List<String>,
     private val walletInitializer: WalletInitializer
 ) :
     PeerGroup(
@@ -46,10 +47,10 @@ class SharedPeerGroup(
             this.addAddress(InetAddress.getByName(host))
             logger.info { "$host was added to peer group" }
         }
-        dnsSeed?.let {
-            logger.info("Peer discovery has been configured. DNS seed is $it")
+        if (dnsSeeds.isNotEmpty()) {
+            logger.info("Peer discovery has been configured. DNS seeds are $dnsSeeds.")
             this.addPeerDiscovery(
-                DnsDiscovery.DnsSeedDiscovery(btcNetworkConfigProvider.getConfig(), it)
+                DnsDiscovery(dnsSeeds.toTypedArray(), btcNetworkConfigProvider.getConfig())
             )
         }
     }
