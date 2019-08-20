@@ -28,9 +28,12 @@ import com.d3.commons.expansion.ServiceExpansion
 import com.d3.commons.model.IrohaCredential
 import com.d3.commons.notary.NotaryImpl
 import com.d3.commons.sidechain.SideChainEvent
-import com.d3.commons.sidechain.iroha.consumer.MultiSigIrohaConsumer
 import com.d3.commons.sidechain.iroha.util.impl.IrohaQueryHelperImpl
 import com.d3.commons.util.createPrettySingleThreadPool
+import com.d3.reverse.adapter.ReverseChainAdapter
+import com.d3.reverse.client.ReliableIrohaConsumerImpl
+import com.d3.reverse.client.ReverseChainAdapterClientConfig
+import com.d3.reverse.config.ReverseChainAdapterConfig
 import integration.helper.BtcIntegrationHelperUtil
 import io.reactivex.Observable
 import io.reactivex.subjects.PublishSubject
@@ -59,6 +62,19 @@ class BtcNotaryTestEnvironment(
         )
     )
 ) : Closeable {
+
+    private val reverseAdapterConfig =
+        loadRawLocalConfigs(
+            "reverse-chain-adapter",
+            ReverseChainAdapterConfig::class.java,
+            "reverse-chain-adapter.properties"
+        )
+
+    private val reverseChainAdapterClientConfig = object : ReverseChainAdapterClientConfig {
+        override val rmqHost = reverseAdapterConfig.rmqHost
+        override val rmqPort = reverseAdapterConfig.rmqPort
+        override val transactionQueueName = reverseAdapterConfig.transactionQueueName
+    }
 
     private val irohaAPI = IrohaAPI(notaryConfig.iroha.hostname, notaryConfig.iroha.port)
 
@@ -133,8 +149,15 @@ class BtcNotaryTestEnvironment(
     private val btcEventsObservable: Observable<SideChainEvent.PrimaryBlockChainEvent> =
         btcEventsSource
 
+    private val reverseChainAdapterDelegate = lazy { ReverseChainAdapter(reverseAdapterConfig, irohaAPI) }
+
+    val reverseChainAdapter by reverseChainAdapterDelegate
+
+    private val reliableIrohaNotaryConsumer =
+        ReliableIrohaConsumerImpl(reverseChainAdapterClientConfig, notaryCredential, irohaAPI, fireAndForget = true)
+
     private val notary = NotaryImpl(
-        MultiSigIrohaConsumer(notaryCredential, irohaAPI),
+        reliableIrohaNotaryConsumer,
         notaryCredential,
         btcEventsObservable
     )
@@ -174,6 +197,9 @@ class BtcNotaryTestEnvironment(
     }
 
     override fun close() {
+        if (reverseChainAdapterDelegate.isInitialized()) {
+            reverseChainAdapter.close()
+        }
         integrationHelper.close()
         irohaAPI.close()
         confidenceExecutorService.shutdownNow()

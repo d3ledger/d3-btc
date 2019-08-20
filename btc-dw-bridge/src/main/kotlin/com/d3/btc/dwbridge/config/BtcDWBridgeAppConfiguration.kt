@@ -137,9 +137,13 @@ class BtcDWBridgeAppConfiguration {
     }
 
     @Bean
+    fun reliableNotaryIrohaConsumer() =
+        ReliableIrohaConsumerImpl(reverseChainAdapterClientConfig, notaryCredential, irohaAPI(), fireAndForget = true)
+
+    @Bean
     fun notary() =
         NotaryImpl(
-            MultiSigIrohaConsumer(notaryCredential, irohaAPI()),
+            reliableNotaryIrohaConsumer(),
             notaryCredential,
             btcEventsObservable()
         )

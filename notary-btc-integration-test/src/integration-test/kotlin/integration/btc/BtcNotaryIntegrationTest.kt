@@ -46,6 +46,7 @@ class BtcNotaryIntegrationTest {
         integrationHelper.addBtcNotary("test_notary", "test_notary_address")
         environment.btcNotaryInitialization.init()
             .failure { ex -> fail("Cannot run BTC notary", ex) }
+        environment.reverseChainAdapter.init().failure { ex -> throw ex }
     }
 
     /**
