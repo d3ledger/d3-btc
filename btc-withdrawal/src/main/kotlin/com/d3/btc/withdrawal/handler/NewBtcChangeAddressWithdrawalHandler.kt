@@ -5,6 +5,7 @@
 
 package com.d3.btc.withdrawal.handler
 
+import com.d3.btc.handler.SetAccountDetailEvent
 import com.d3.btc.handler.SetAccountDetailHandler
 import com.d3.btc.provider.network.BtcNetworkConfigProvider
 import com.d3.btc.withdrawal.config.BtcWithdrawalConfig
@@ -27,19 +28,20 @@ class NewBtcChangeAddressWithdrawalHandler(
 
     /**
      * Handles change address creation event
-     * @param command - Iroha command with change address details
+     * @param setAccountDetailEvent - Iroha event with change address details
      */
-    override fun handle(command: Commands.SetAccountDetail) {
+    override fun handle(setAccountDetailEvent: SetAccountDetailEvent) {
         //Make new change address watched
         transfersWallet.addWatchedAddress(
             Address.fromBase58(
                 btcNetworkConfigProvider.getConfig(),
-                command.key
+                setAccountDetailEvent.command.key
             )
         )
     }
 
-    override fun filter(command: Commands.SetAccountDetail) =
-        command.accountId == btcWithdrawalConfig.changeAddressesStorageAccount
+    override fun filter(setAccountDetailEvent: SetAccountDetailEvent) =
+        setAccountDetailEvent.command.accountId == btcWithdrawalConfig.changeAddressesStorageAccount &&
+                setAccountDetailEvent.creator == btcWithdrawalConfig.mstRegistrationAccount
 
 }

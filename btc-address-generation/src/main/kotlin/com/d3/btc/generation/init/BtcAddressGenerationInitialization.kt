@@ -9,6 +9,7 @@ import com.d3.btc.generation.BTC_ADDRESS_GENERATION_SERVICE_NAME
 import com.d3.btc.generation.config.BtcAddressGenerationConfig
 import com.d3.btc.generation.expansion.AddressGenerationServiceExpansion
 import com.d3.btc.generation.trigger.AddressGenerationTrigger
+import com.d3.btc.handler.SetAccountDetailEvent
 import com.d3.btc.handler.SetAccountDetailHandler
 import com.d3.btc.healthcheck.HealthyService
 import com.d3.btc.provider.network.BtcNetworkConfigProvider
@@ -16,7 +17,7 @@ import com.d3.btc.wallet.checkWalletNetwork
 import com.d3.chainadapter.client.ReliableIrohaChainListener
 import com.d3.commons.sidechain.iroha.CLIENT_DOMAIN
 import com.d3.commons.sidechain.iroha.util.getCreateAccountCommands
-import com.d3.commons.sidechain.iroha.util.getSetDetailCommands
+import com.d3.commons.sidechain.iroha.util.getSetDetailCommandsWithCreator
 import com.d3.commons.util.createPrettySingleThreadPool
 import com.github.kittinunf.result.Result
 import com.github.kittinunf.result.flatMap
@@ -97,9 +98,14 @@ class BtcAddressGenerationInitialization(
                 }
             }
             // Handle other commands
-            getSetDetailCommands(block).map { command -> command.setAccountDetail }.forEach { setAccountDetailCommand ->
+            getSetDetailCommandsWithCreator(block).map {
+                SetAccountDetailEvent(
+                    it.command.setAccountDetail,
+                    it.creator
+                )
+            }.forEach { setAccountDetailEvent ->
                 handlers.forEach { handler ->
-                    handler.handleFiltered(setAccountDetailCommand)
+                    handler.handleFiltered(setAccountDetailEvent)
                 }
             }
         }, { ex ->
@@ -121,9 +127,8 @@ class BtcAddressGenerationInitialization(
     }
 
     // Checks if new client was registered
-    private fun isNewClientRegistered(createAccountCommand: Commands.CreateAccount): Boolean {
-        return createAccountCommand.domainId == CLIENT_DOMAIN
-    }
+    private fun isNewClientRegistered(createAccountCommand: Commands.CreateAccount) =
+        createAccountCommand.domainId == CLIENT_DOMAIN
 
     /**
      * Logger

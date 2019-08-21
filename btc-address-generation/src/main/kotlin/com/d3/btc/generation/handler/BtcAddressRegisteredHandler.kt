@@ -7,10 +7,10 @@ package com.d3.btc.generation.handler
 
 import com.d3.btc.generation.config.BtcAddressGenerationConfig
 import com.d3.btc.generation.trigger.AddressGenerationTrigger
+import com.d3.btc.handler.SetAccountDetailEvent
 import com.d3.btc.handler.SetAccountDetailHandler
 import com.d3.btc.provider.account.BTC_CURRENCY_NAME_KEY
 import com.d3.commons.sidechain.iroha.CLIENT_DOMAIN
-import iroha.protocol.Commands
 import mu.KLogging
 import org.springframework.stereotype.Component
 
@@ -23,7 +23,7 @@ class BtcAddressRegisteredHandler(
     private val btcAddressGenerationConfig: BtcAddressGenerationConfig
 ) : SetAccountDetailHandler() {
 
-    override fun handle(command: Commands.SetAccountDetail) {
+    override fun handle(setAccountDetailEvent: SetAccountDetailEvent) {
         logger.info("BTC address has been registered. Try to generate more addresses.")
         addressGenerationTrigger.startFreeAddressGenerationIfNeeded(
             btcAddressGenerationConfig.threshold,
@@ -35,11 +35,13 @@ class BtcAddressRegisteredHandler(
 
     /**
      * Checks if BTC address was registered
-     * @param command - command to check
-     * @return true if BTC address was registered in a given [command]
+     * @param setAccountDetailEvent - event to check
+     * @return true if BTC address was registered in a given event
      */
-    override fun filter(command: Commands.SetAccountDetail) = command.accountId.endsWith("@$CLIENT_DOMAIN")
-            && command.key == BTC_CURRENCY_NAME_KEY
+    override fun filter(setAccountDetailEvent: SetAccountDetailEvent) =
+        setAccountDetailEvent.command.accountId.endsWith("@$CLIENT_DOMAIN")
+                && setAccountDetailEvent.command.key == BTC_CURRENCY_NAME_KEY
+                && setAccountDetailEvent.creator == btcAddressGenerationConfig.registrationAccount.accountId
 
     companion object : KLogging()
 }

@@ -1,5 +1,6 @@
 package com.d3.btc.withdrawal.handler;
 
+import com.d3.btc.handler.SetAccountDetailEvent;
 import com.d3.btc.withdrawal.config.BtcWithdrawalConfig;
 import com.d3.btc.withdrawal.provider.BroadcastsProvider;
 import com.d3.btc.withdrawal.provider.UTXOProvider;
@@ -7,6 +8,7 @@ import com.d3.btc.withdrawal.service.BtcRollbackService;
 import com.d3.btc.withdrawal.transaction.SignCollector;
 import com.d3.btc.withdrawal.transaction.TransactionsStorage;
 import com.d3.btc.withdrawal.transaction.WithdrawalDetails;
+import com.d3.commons.config.IrohaCredentialRawConfig;
 import com.github.kittinunf.result.Result;
 import iroha.protocol.Commands;
 import kotlin.Pair;
@@ -28,11 +30,15 @@ public class NewTransactionCreatedHandlerTest {
     private BroadcastsProvider broadcastsProvider;
     private TransactionsStorage transactionsStorage;
     private NewTransactionCreatedHandler newTransactionCreatedHandler;
+    private String withdrawalAccountId = "withdrawal@bitcoin";
 
     @Before
     public void setUp() {
         signCollector = mock(SignCollector.class);
+        IrohaCredentialRawConfig irohaCredential = mock(IrohaCredentialRawConfig.class);
+        doReturn(withdrawalAccountId).when(irohaCredential).getAccountId();
         btcWithdrawalConfig = mock(BtcWithdrawalConfig.class);
+        doReturn(irohaCredential).when(btcWithdrawalConfig).getWithdrawalCredential();
         btcRollbackService = mock(BtcRollbackService.class);
         utxoProvider = mock(UTXOProvider.class);
         broadcastsProvider = mock(BroadcastsProvider.class);
@@ -65,7 +71,8 @@ public class NewTransactionCreatedHandlerTest {
         }));
         when(broadcastsProvider.hasBeenBroadcasted(any(WithdrawalDetails.class))).thenReturn(Result.Companion.of(() -> true));
         Commands.SetAccountDetail createdTxCommand = Commands.SetAccountDetail.newBuilder().setKey("abc").build();
-        newTransactionCreatedHandler.handle(createdTxCommand);
+        SetAccountDetailEvent event = new SetAccountDetailEvent(createdTxCommand, withdrawalAccountId);
+        newTransactionCreatedHandler.handle(event);
         verify(signCollector, never()).signAndSave(any(), any());
     }
 
@@ -88,7 +95,8 @@ public class NewTransactionCreatedHandlerTest {
         }));
         when(broadcastsProvider.hasBeenBroadcasted(any(WithdrawalDetails.class))).thenReturn(Result.Companion.of(() -> false));
         Commands.SetAccountDetail createdTxCommand = Commands.SetAccountDetail.newBuilder().setKey("abc").build();
-        newTransactionCreatedHandler.handle(createdTxCommand);
+        SetAccountDetailEvent event = new SetAccountDetailEvent(createdTxCommand, withdrawalAccountId);
+        newTransactionCreatedHandler.handle(event);
         verify(signCollector).signAndSave(any(), any());
     }
 
@@ -114,7 +122,8 @@ public class NewTransactionCreatedHandlerTest {
             throw new RuntimeException("Broadcast failure");
         }));
         Commands.SetAccountDetail createdTxCommand = Commands.SetAccountDetail.newBuilder().setKey("abc").build();
-        newTransactionCreatedHandler.handle(createdTxCommand);
+        SetAccountDetailEvent event = new SetAccountDetailEvent(createdTxCommand, withdrawalAccountId);
+        newTransactionCreatedHandler.handle(event);
         verify(signCollector, never()).signAndSave(any(), any());
         verify(btcRollbackService).rollback(any(WithdrawalDetails.class), any());
         verify(utxoProvider).unregisterUnspents(any(), any());

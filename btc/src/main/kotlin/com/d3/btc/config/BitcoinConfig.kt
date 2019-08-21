@@ -21,6 +21,20 @@ interface BitcoinConfig {
     val hosts: String
 
     companion object {
-        fun extractHosts(bitcoinConfig: BitcoinConfig) = bitcoinConfig.hosts.replace(" ", "").split(",")
+        fun extractHosts(bitcoinConfig: BitcoinConfig) = extractCommaSeparatedList(bitcoinConfig.hosts)
+    }
+}
+
+/**
+ * Turns comma separated text into list of items
+ * @param text - text to transform
+ * @return list of items
+ */
+fun extractCommaSeparatedList(text: String?): List<String> {
+    return if (text.isNullOrEmpty()) {
+        emptyList()
+    } else {
+        text.replace(" ", "").split(",")
+            .filter { it.isNotEmpty() }
     }
 }

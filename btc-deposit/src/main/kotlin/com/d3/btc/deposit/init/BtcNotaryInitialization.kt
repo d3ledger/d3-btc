@@ -11,6 +11,7 @@ import com.d3.btc.deposit.config.BtcDepositConfig
 import com.d3.btc.deposit.expansion.DepositServiceExpansion
 import com.d3.btc.deposit.listener.BitcoinBlockChainDepositListener
 import com.d3.btc.deposit.service.BtcWalletListenerRestartService
+import com.d3.btc.handler.SetAccountDetailEvent
 import com.d3.btc.handler.SetAccountDetailHandler
 import com.d3.btc.storage.BtcAddressStorage
 import com.d3.btc.healthcheck.HealthyService
@@ -23,6 +24,7 @@ import com.d3.chainadapter.client.ReliableIrohaChainListener
 import com.d3.commons.notary.NotaryImpl
 import com.d3.commons.sidechain.SideChainEvent
 import com.d3.commons.sidechain.iroha.util.getSetDetailCommands
+import com.d3.commons.sidechain.iroha.util.getSetDetailCommandsWithCreator
 import com.d3.commons.util.createPrettySingleThreadPool
 import com.github.kittinunf.result.Result
 import com.github.kittinunf.result.failure
@@ -92,10 +94,10 @@ class BtcNotaryInitialization(
                 depositServiceExpansion.expand(block)
             }
             irohaObservable.subscribe { (block, _) ->
-                getSetDetailCommands(block).map { it.setAccountDetail }
-                    .forEach { setAccountDetailCommand ->
+                getSetDetailCommandsWithCreator(block).map { SetAccountDetailEvent(it.command.setAccountDetail, it.creator) }
+                    .forEach { setAccountDetailEvent ->
                         accountDetailHandlers.forEach { handler ->
-                            handler.handleFiltered(setAccountDetailCommand)
+                            handler.handleFiltered(setAccountDetailEvent)
                         }
                     }
             }

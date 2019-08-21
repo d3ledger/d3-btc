@@ -1,5 +1,6 @@
 package com.d3.btc.withdrawal.handler;
 
+import com.d3.btc.handler.SetAccountDetailEvent;
 import com.d3.btc.withdrawal.config.BtcWithdrawalConfig;
 import com.d3.btc.withdrawal.provider.BroadcastsProvider;
 import com.d3.btc.withdrawal.provider.UTXOProvider;
@@ -8,6 +9,7 @@ import com.d3.btc.withdrawal.statistics.WithdrawalStatistics;
 import com.d3.btc.withdrawal.transaction.SignCollector;
 import com.d3.btc.withdrawal.transaction.TransactionsStorage;
 import com.d3.btc.withdrawal.transaction.WithdrawalDetails;
+import com.d3.commons.config.IrohaCredentialRawConfig;
 import com.github.kittinunf.result.Result;
 import iroha.protocol.Commands;
 import kotlin.Pair;
@@ -35,10 +37,14 @@ public class NewSignatureEventHandlerTest {
     private NewSignatureEventHandler newSignatureEventHandler;
     private Wallet transferWallet;
     private BtcWithdrawalConfig btcWithdrawalConfig;
+    private String signatureCollectorAccountId = "sig_collect@d3";
 
     @Before
     public void setUp() {
         btcWithdrawalConfig = mock(BtcWithdrawalConfig.class);
+        IrohaCredentialRawConfig irohaCredential = mock(IrohaCredentialRawConfig.class);
+        doReturn(signatureCollectorAccountId).when(irohaCredential).getAccountId();
+        doReturn(irohaCredential).when(btcWithdrawalConfig).getSignatureCollectorCredential();
         transferWallet = mock(Wallet.class);
         withdrawalStatistics = new WithdrawalStatistics(new AtomicInteger(), new AtomicInteger(), new AtomicInteger());
         signCollector = mock(SignCollector.class);
@@ -74,7 +80,8 @@ public class NewSignatureEventHandlerTest {
         when(broadcastsProvider.hasBeenBroadcasted(any(WithdrawalDetails.class))).thenReturn(Result.Companion.of(() -> true));
         doNothing().when(newSignatureEventHandler).broadcastIfEnoughSignatures(any(), any());
         Commands.SetAccountDetail newSignatureDetail = Commands.SetAccountDetail.newBuilder().setAccountId("test@" + BTC_SIGN_COLLECT_DOMAIN).build();
-        newSignatureEventHandler.handle(newSignatureDetail);
+        SetAccountDetailEvent event = new SetAccountDetailEvent(newSignatureDetail, signatureCollectorAccountId);
+        newSignatureEventHandler.handle(event);
         verify(newSignatureEventHandler, never()).broadcastIfEnoughSignatures(any(), any());
     }
 
@@ -92,7 +99,8 @@ public class NewSignatureEventHandlerTest {
         when(broadcastsProvider.hasBeenBroadcasted(any(WithdrawalDetails.class))).thenReturn(Result.Companion.of(() -> false));
         doNothing().when(newSignatureEventHandler).broadcastIfEnoughSignatures(any(), any());
         Commands.SetAccountDetail newSignatureDetail = Commands.SetAccountDetail.newBuilder().setAccountId("test@" + BTC_SIGN_COLLECT_DOMAIN).build();
-        newSignatureEventHandler.handle(newSignatureDetail);
+        SetAccountDetailEvent event = new SetAccountDetailEvent(newSignatureDetail, signatureCollectorAccountId);
+        newSignatureEventHandler.handle(event);
         verify(newSignatureEventHandler).broadcastIfEnoughSignatures(any(), any());
     }
 
@@ -113,7 +121,8 @@ public class NewSignatureEventHandlerTest {
         }));
         doNothing().when(newSignatureEventHandler).broadcastIfEnoughSignatures(any(), any());
         Commands.SetAccountDetail newSignatureDetail = Commands.SetAccountDetail.newBuilder().setAccountId("test@" + BTC_SIGN_COLLECT_DOMAIN).build();
-        newSignatureEventHandler.handle(newSignatureDetail);
+        SetAccountDetailEvent event = new SetAccountDetailEvent(newSignatureDetail, signatureCollectorAccountId);
+        newSignatureEventHandler.handle(event);
         verify(newSignatureEventHandler, never()).broadcastIfEnoughSignatures(any(), any());
         verify(btcRollbackService).rollback(any(), any());
         verify(utxoProvider).unregisterUnspents(any(), any());
@@ -137,7 +146,8 @@ public class NewSignatureEventHandlerTest {
             throw new RuntimeException("Cannot get signatures");
         }));
         Commands.SetAccountDetail newSignatureDetail = Commands.SetAccountDetail.newBuilder().setAccountId("test@" + BTC_SIGN_COLLECT_DOMAIN).build();
-        newSignatureEventHandler.handle(newSignatureDetail);
+        SetAccountDetailEvent event = new SetAccountDetailEvent(newSignatureDetail, signatureCollectorAccountId);
+        newSignatureEventHandler.handle(event);
         verify(newSignatureEventHandler).broadcastIfEnoughSignatures(any(), any());
         verify(btcRollbackService).rollback(any(), any());
         verify(utxoProvider).unregisterUnspents(any(), any());

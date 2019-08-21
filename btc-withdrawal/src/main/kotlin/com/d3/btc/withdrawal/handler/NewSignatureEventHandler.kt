@@ -6,6 +6,7 @@
 package com.d3.btc.withdrawal.handler
 
 import com.d3.btc.config.BTC_SIGN_COLLECT_DOMAIN
+import com.d3.btc.handler.SetAccountDetailEvent
 import com.d3.btc.handler.SetAccountDetailHandler
 import com.d3.btc.withdrawal.config.BtcWithdrawalConfig
 import com.d3.btc.withdrawal.provider.BroadcastsProvider
@@ -56,13 +57,11 @@ class NewSignatureEventHandler(
     }
 
     /**
-     * Handles "add new input signatures" commands
-     * @param command - command object full of signatures
+     * Handles "add new input signatures" events
+     * @param setAccountDetailEvent - event object full of signatures
      */
-    override fun handle(
-        command: Commands.SetAccountDetail
-    ) {
-        val shortTxHash = command.accountId.replace("@$BTC_SIGN_COLLECT_DOMAIN", "")
+    override fun handle(setAccountDetailEvent: SetAccountDetailEvent) {
+        val shortTxHash = setAccountDetailEvent.command.accountId.replace("@$BTC_SIGN_COLLECT_DOMAIN", "")
         var savedWithdrawal: WithdrawalDetails? = null
         var savedTx: Transaction? = null
         transactionsStorage.get(shortTxHash).map { withdrawal ->
@@ -154,7 +153,9 @@ class NewSignatureEventHandler(
         })
     }
 
-    override fun filter(command: Commands.SetAccountDetail) = command.accountId.endsWith("@$BTC_SIGN_COLLECT_DOMAIN")
+    override fun filter(setAccountDetailEvent: SetAccountDetailEvent) =
+        setAccountDetailEvent.command.accountId.endsWith("@$BTC_SIGN_COLLECT_DOMAIN") &&
+                setAccountDetailEvent.creator == btcWithdrawalConfig.signatureCollectorCredential.accountId
 
     /**
      * Logger

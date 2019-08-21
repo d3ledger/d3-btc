@@ -17,7 +17,6 @@ import com.github.kittinunf.result.Result
 import com.github.kittinunf.result.map
 import mu.KLogging
 import org.bitcoinj.wallet.Wallet
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 
@@ -34,17 +33,17 @@ import org.springframework.stereotype.Component
  */
 @Component
 class BtcPublicKeyProvider(
-    @Autowired private val keysWallet: Wallet,
-    @Autowired private val notaryPeerListProvider: NotaryPeerListProvider,
+    private val keysWallet: Wallet,
+    private val notaryPeerListProvider: NotaryPeerListProvider,
     @Qualifier("notaryAccount")
-    @Autowired private val notaryAccount: String,
+    private val notaryAccount: String,
     @Qualifier("changeAddressStorageAccount")
-    @Autowired private val changeAddressStorageAccount: String,
+    private val changeAddressStorageAccount: String,
     @Qualifier("multiSigConsumer")
-    @Autowired private val multiSigConsumer: IrohaConsumer,
+    private val multiSigConsumer: IrohaConsumer,
     @Qualifier("sessionConsumer")
-    @Autowired private val sessionConsumer: IrohaConsumer,
-    @Autowired private val btcNetworkConfigProvider: BtcNetworkConfigProvider
+    private val sessionConsumer: IrohaConsumer,
+    private val btcNetworkConfigProvider: BtcNetworkConfigProvider
 ) {
     init {
         logger.info { "BtcPublicKeyProvider was successfully initialized" }

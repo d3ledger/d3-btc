@@ -137,9 +137,13 @@ class BtcDWBridgeAppConfiguration {
     }
 
     @Bean
+    fun reliableNotaryIrohaConsumer() =
+        ReliableIrohaConsumerImpl(reverseChainAdapterClientConfig, notaryCredential, irohaAPI(), fireAndForget = true)
+
+    @Bean
     fun notary() =
         NotaryImpl(
-            MultiSigIrohaConsumer(notaryCredential, irohaAPI()),
+            reliableNotaryIrohaConsumer(),
             notaryCredential,
             btcEventsObservable()
         )
@@ -285,7 +289,7 @@ class BtcDWBridgeAppConfiguration {
         )
 
     @Bean
-    fun dnsSeed() = dwBridgeConfig.dnsSeedAddress
+    fun dnsSeeds() = BtcDWBridgeConfig.extractSeeds(dwBridgeConfig)
 
     @Bean
     fun txStorageAccount() = withdrawalConfig.txStorageAccount

@@ -1,8 +1,9 @@
-package com.d3.commons.config
+package com.d3.btc.config
 
-import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockito_kotlin.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class BitcoinConfigTest {
@@ -55,4 +56,40 @@ class BitcoinConfigTest {
         assertEquals("456", hosts[1])
     }
 
+    /**
+     * @given empty line
+     * @when extractCommaSeparatedList() is called against the line
+     * @then extractCommaSeparatedList() returns empty list
+     */
+    @Test
+    fun extractCommaSeparatedListEmpty() {
+        assertTrue(extractCommaSeparatedList("").isEmpty())
+    }
+
+    /**
+     * @given line with one element 'a'
+     * @when extractCommaSeparatedListOneElement() is called against the line
+     * @then extractCommaSeparatedListOneElement() returns one-element list with 'a' item
+     */
+    @Test
+    fun extractCommaSeparatedListOneElement() {
+        val list = extractCommaSeparatedList("a")
+        assertEquals(1, list.size)
+        assertEquals("a", list[0])
+    }
+
+    /**
+     * @given line with bad formatting
+     * @when extractCommaSeparatedList() is called against the line
+     * @then extractCommaSeparatedList() returns a list with all non-empty items from the line
+     */
+    @Test
+    fun extractCommaSeparatedListThreeElementBadFormat() {
+        val list = extractCommaSeparatedList("a,b  ,c,, d,")
+        assertEquals(4, list.size)
+        assertEquals("a", list[0])
+        assertEquals("b", list[1])
+        assertEquals("c", list[2])
+        assertEquals("d", list[3])
+    }
 }
