@@ -3,7 +3,7 @@
  *  SPDX-License-Identifier: Apache-2.0
  */
 
-package com.d3.btc.endpoints
+package com.d3.btc.endpoints.config
 
 import com.d3.commons.config.IrohaConfig
 
