@@ -61,5 +61,15 @@ services:
     networks:
       - d3-network
 
+  # bitcoin testing endpoint. don't use in production
+  d3-btc-testing:
+    image: nexus.iroha.tech:19002/d3-deploy/btc-testing-endpoints:develop
+    container_name: d3-btc-testing
+    restart: on-failure
+    ports:
+      - 18981:18981
+    networks:
+      - d3-network
+
 networks:
   d3-network:
