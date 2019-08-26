@@ -5,26 +5,24 @@
 
 package com.d3.btc.withdrawal.provider
 
+import com.d3.btc.config.BTC_CONSENSUS_DOMAIN
 import com.d3.btc.config.BitcoinConfig
-import com.d3.commons.util.GsonInstance
 import com.d3.btc.withdrawal.transaction.WithdrawalConsensus
 import com.d3.btc.withdrawal.transaction.WithdrawalDetails
 import com.d3.commons.model.IrohaCredential
 import com.d3.commons.notary.IrohaCommand
 import com.d3.commons.notary.IrohaTransaction
-import com.d3.commons.provider.NotaryPeerListProvider
-import com.d3.btc.config.BTC_CONSENSUS_DOMAIN
 import com.d3.commons.sidechain.iroha.consumer.IrohaConsumer
 import com.d3.commons.sidechain.iroha.consumer.IrohaConverter
 import com.d3.commons.sidechain.iroha.util.IrohaQueryHelper
 import com.d3.commons.sidechain.iroha.util.ModelUtil
+import com.d3.commons.util.GsonInstance
 import com.d3.commons.util.getRandomId
 import com.d3.commons.util.hex
 import com.d3.commons.util.irohaEscape
 import com.github.kittinunf.result.Result
 import com.github.kittinunf.result.fanout
 import com.github.kittinunf.result.map
-import com.google.gson.Gson
 import jp.co.soramitsu.crypto.ed25519.Ed25519Sha3
 import mu.KLogging
 import org.springframework.beans.factory.annotation.Qualifier
@@ -38,7 +36,6 @@ class WithdrawalConsensusProvider(
     private val consensusIrohaConsumer: IrohaConsumer,
     @Qualifier("withdrawalQueryHelper")
     private val withdrawalQueryHelper: IrohaQueryHelper,
-    private val peerListProvider: NotaryPeerListProvider,
     private val bitcoinUTXOProvider: UTXOProvider,
     private val bitcoinConfig: BitcoinConfig
 ) {
@@ -56,15 +53,17 @@ class WithdrawalConsensusProvider(
             withdrawalDetails,
             bitcoinConfig.confidenceLevel,
             withdrawalDetails.withdrawalTime
-        ).map { availableHeight ->
+        ).fanout {
+            withdrawalQueryHelper.getPeersCount()
+        }.map { (availableHeight, peers) ->
             val withdrawalConsensus =
                 WithdrawalConsensus(
                     availableHeight,
-                    peerListProvider.getPeerList().size
+                    peers
                 )
             /**
              * Another node may try to create the same account.
-             * So this transaction may fall legally.
+             * So this transaction may fail legally.
              */
             consensusIrohaConsumer.send(IrohaConverter.convert(createAccountTx(consensusAccountName)))
             withdrawalConsensus

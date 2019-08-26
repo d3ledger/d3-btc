@@ -42,7 +42,6 @@ class BtcWithdrawalExpansionTest {
         blockStorageFolder.deleteRecursively()
         //Recreate folder
         blockStorageFolder.mkdirs()
-        integrationHelper.addBtcNotary("test", "test")
         integrationHelper.generateBtcInitialBlocks()
         integrationHelper.genChangeBtcAddress(environment.btcWithdrawalConfig.btcKeysWalletPath)
             .failure { ex -> throw ex }

@@ -39,7 +39,6 @@ class BtcAddressGenerationExpansionTest {
     }
 
     init {
-        integrationHelper.addBtcNotary("test_notary", "test_notary_address")
         GlobalScope.launch {
             environment.btcAddressGenerationInitialization.init().failure { ex -> throw ex }
         }

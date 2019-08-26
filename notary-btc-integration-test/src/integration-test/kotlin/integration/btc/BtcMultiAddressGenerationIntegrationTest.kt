@@ -45,19 +45,20 @@ class BtcMultiAddressGenerationIntegrationTest {
         var peerCount = 0
         integrationHelper.accountHelper.mstRegistrationAccounts.forEach { mstRegistrationAccount ->
             val walletPostfix = "test-multisig-generation-$peerCount"
-            integrationHelper.addBtcNotary("test_notary_${peerCount++}", "test_notary_address")
             val environment = BtcAddressGenerationTestEnvironment(
                 integrationHelper,
                 btcGenerationConfig = integrationHelper.configHelper.createBtcAddressGenerationConfig(
                     0,
                     walletPostfix
                 ),
-                mstRegistrationCredential = mstRegistrationAccount
+                mstRegistrationCredential = mstRegistrationAccount,
+                peers = peers
             )
             environments.add(environment)
             GlobalScope.launch {
                 environment.btcAddressGenerationInitialization.init().failure { ex -> throw ex }
             }
+            peerCount++
         }
         //Wait services to init
         Thread.sleep(WAIT_PREGEN_PROCESS_MILLIS)
