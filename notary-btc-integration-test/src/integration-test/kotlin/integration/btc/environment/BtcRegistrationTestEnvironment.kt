@@ -17,6 +17,7 @@ import com.d3.commons.sidechain.iroha.consumer.IrohaConsumerImpl
 import com.d3.commons.sidechain.iroha.util.ModelUtil
 import com.d3.commons.util.toHexString
 import integration.helper.BtcIntegrationHelperUtil
+import integration.helper.D3_DOMAIN
 import jp.co.soramitsu.iroha.java.Utils
 import khttp.post
 import khttp.responses.Response
@@ -96,7 +97,7 @@ class BtcRegistrationTestEnvironment(
     ): Response {
         return post(
             "http://127.0.0.1:${btcRegistrationConfig.port}/users",
-            data = mapOf("name" to name, "pubkey" to pubkey)
+            data = mapOf("name" to name, "pubkey" to pubkey, "domain" to D3_DOMAIN)
         )
     }
 
