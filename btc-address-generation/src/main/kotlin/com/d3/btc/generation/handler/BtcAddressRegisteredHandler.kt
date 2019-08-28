@@ -10,7 +10,6 @@ import com.d3.btc.generation.trigger.AddressGenerationTrigger
 import com.d3.btc.handler.SetAccountDetailEvent
 import com.d3.btc.handler.SetAccountDetailHandler
 import com.d3.btc.provider.account.BTC_CURRENCY_NAME_KEY
-import com.d3.commons.sidechain.iroha.CLIENT_DOMAIN
 import mu.KLogging
 import org.springframework.stereotype.Component
 
@@ -39,8 +38,7 @@ class BtcAddressRegisteredHandler(
      * @return true if BTC address was registered in a given event
      */
     override fun filter(setAccountDetailEvent: SetAccountDetailEvent) =
-        setAccountDetailEvent.command.accountId.endsWith("@$CLIENT_DOMAIN")
-                && setAccountDetailEvent.command.key == BTC_CURRENCY_NAME_KEY
+        setAccountDetailEvent.command.key == BTC_CURRENCY_NAME_KEY
                 && setAccountDetailEvent.creator == btcAddressGenerationConfig.registrationAccount.accountId
 
     companion object : KLogging()

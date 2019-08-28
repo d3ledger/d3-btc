@@ -8,7 +8,6 @@ package integration.btc
 import com.d3.btc.config.BTC_ASSET
 import com.d3.btc.helper.address.outPutToBase58Address
 import com.d3.btc.helper.currency.satToBtc
-import com.d3.commons.sidechain.iroha.CLIENT_DOMAIN
 import com.d3.commons.sidechain.iroha.FEE_DESCRIPTION
 import com.d3.commons.sidechain.iroha.util.ModelUtil
 import com.d3.commons.util.getRandomString
@@ -17,6 +16,7 @@ import com.github.kittinunf.result.failure
 import integration.btc.environment.BtcWithdrawalTestEnvironment
 import integration.helper.BTC_PRECISION
 import integration.helper.BtcIntegrationHelperUtil
+import integration.helper.D3_DOMAIN
 import integration.registration.RegistrationServiceTestEnvironment
 import mu.KLogging
 import org.bitcoinj.core.Address
@@ -87,7 +87,7 @@ class BtcWithdrawalFailResistanceIntegrationTest {
         val amount = satToBtc(10000L)
         val randomNameSrc = String.getRandomString(9)
         val testClientSrcKeypair = ModelUtil.generateKeypair()
-        val testClientSrc = "$randomNameSrc@$CLIENT_DOMAIN"
+        val testClientSrc = "$randomNameSrc@$D3_DOMAIN"
         var res = registrationServiceEnvironment.register(
             randomNameSrc,
             testClientSrcKeypair.public.toHexString()
@@ -96,7 +96,7 @@ class BtcWithdrawalFailResistanceIntegrationTest {
         val btcAddressSrc =
             integrationHelper.registerBtcAddressNoPreGen(
                 randomNameSrc,
-                CLIENT_DOMAIN,
+                D3_DOMAIN,
                 testClientSrcKeypair
             )
         integrationHelper.sendBtc(
@@ -108,7 +108,7 @@ class BtcWithdrawalFailResistanceIntegrationTest {
         res = registrationServiceEnvironment.register(randomNameDest)
         assertEquals(200, res.statusCode)
         val btcAddressDest =
-            integrationHelper.registerBtcAddressNoPreGen(randomNameDest, CLIENT_DOMAIN)
+            integrationHelper.registerBtcAddressNoPreGen(randomNameDest, D3_DOMAIN)
         integrationHelper.addIrohaAssetTo(testClientSrc, BTC_ASSET, getAmountWithFee(amount))
         integrationHelper.transferAssetIrohaFromClientWithFee(
             testClientSrc,

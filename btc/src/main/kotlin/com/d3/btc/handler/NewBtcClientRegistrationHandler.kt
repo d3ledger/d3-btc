@@ -8,7 +8,6 @@ package com.d3.btc.handler
 import com.d3.btc.provider.account.BTC_CURRENCY_NAME_KEY
 import com.d3.btc.provider.network.BtcNetworkConfigProvider
 import com.d3.btc.storage.BtcAddressStorage
-import com.d3.commons.sidechain.iroha.CLIENT_DOMAIN
 import mu.KLogging
 import org.bitcoinj.core.Address
 import org.bitcoinj.wallet.Wallet
@@ -18,12 +17,11 @@ import org.springframework.stereotype.Component
 /**
  * Class that is used to handle client registration commands
  */
-@Component
 class NewBtcClientRegistrationHandler(
     private val btcNetworkConfigProvider: BtcNetworkConfigProvider,
-    @Qualifier("transferWallet")
     private val wallet: Wallet,
-    private val btcAddressStorage: BtcAddressStorage
+    private val btcAddressStorage: BtcAddressStorage,
+    private val btcRegistrationServiceAccount: String
 ) : SetAccountDetailHandler() {
 
     /**
@@ -40,15 +38,18 @@ class NewBtcClientRegistrationHandler(
         } else {
             logger.error { "Address $address was not added to wallet" }
         }
-        btcAddressStorage.addClientAddress(address = address.toBase58(), accountId = setAccountDetailEvent.command.accountId)
+        btcAddressStorage.addClientAddress(
+            address = address.toBase58(),
+            accountId = setAccountDetailEvent.command.accountId
+        )
     }
 
     /**
      * Checks if new btc client was registered
      */
     override fun filter(setAccountDetailEvent: SetAccountDetailEvent): Boolean {
-        return setAccountDetailEvent.command.accountId.endsWith("@$CLIENT_DOMAIN")
-                && setAccountDetailEvent.command.key == BTC_CURRENCY_NAME_KEY
+        return setAccountDetailEvent.command.key == BTC_CURRENCY_NAME_KEY
+                && setAccountDetailEvent.creator == btcRegistrationServiceAccount
     }
 
     /**

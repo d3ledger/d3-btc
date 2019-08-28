@@ -27,7 +27,6 @@ class IrohaBtcAccountRegistrator(
      * @param btcAddress - Bitcoin address
      * @param userName - client userName in Iroha
      * @param domain - client domain
-     * @param pubkey - client's public key
      * @param notaryKeys - keys that were used to create given address
      * @param nodeId - node id
      * @return address associated with userName
@@ -36,7 +35,6 @@ class IrohaBtcAccountRegistrator(
         btcAddress: String,
         userName: String,
         domain: String,
-        pubkey: String,
         notaryKeys: List<String>,
         nodeId: String
     ): Result<String, Exception> {

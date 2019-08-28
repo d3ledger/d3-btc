@@ -13,6 +13,7 @@ import com.d3.btc.registration.config.BtcRegistrationConfig
 import com.d3.btc.withdrawal.config.BtcWithdrawalConfig
 import com.d3.commons.config.loadLocalConfigs
 import com.d3.commons.model.IrohaCredential
+import com.d3.commons.registration.NotaryRegistrationConfig
 import com.d3.commons.util.getRandomString
 import org.bitcoinj.params.RegTestParams
 import org.bitcoinj.wallet.Wallet
@@ -29,7 +30,7 @@ class BtcConfigHelper(
 
     private val utxoStorageAccountCredential = accountHelper.createTesterAccount("utxo_storage")
     private val txStorageAccountCredential = accountHelper.createTesterAccount("tx_storage")
-    private val broadcastCredential = accountHelper.createTesterAccount("broadcast", "broadcast")
+    private val broadcastCredential = accountHelper.createTesterAccount("broadcast", listOf("broadcast"))
 
     /** Creates config for BTC multisig addresses generation
      * @param initAddresses - number of addresses that will be generated at initial phase
@@ -37,6 +38,7 @@ class BtcConfigHelper(
      * @return config
      * */
     fun createBtcAddressGenerationConfig(
+        registrationConfig: NotaryRegistrationConfig,
         initAddresses: Int,
         testName: String = "test"
     ): BtcAddressGenerationConfig {
@@ -48,6 +50,9 @@ class BtcConfigHelper(
             ).get()
 
         return object : BtcAddressGenerationConfig {
+            override val clientStorageAccount = registrationConfig.clientStorageAccount
+            override val registrationServiceAccountName =
+                registrationConfig.registrationCredential.accountId.substringBefore("@")
             override val irohaBlockQueue = testName + "_" + String.getRandomString(5)
             override val expansionTriggerAccount = accountHelper.expansionTriggerAccount.accountId
             override val threshold = initAddresses

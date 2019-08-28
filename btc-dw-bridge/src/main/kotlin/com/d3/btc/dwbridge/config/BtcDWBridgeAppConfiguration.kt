@@ -45,6 +45,7 @@ import io.reactivex.subjects.PublishSubject
 import jp.co.soramitsu.iroha.java.IrohaAPI
 import jp.co.soramitsu.iroha.java.Utils
 import org.bitcoinj.wallet.Wallet
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
@@ -342,4 +343,18 @@ class BtcDWBridgeAppConfiguration {
         ),
         autoAck = false
     )
+
+    @Bean
+    fun newBtcClientRegistrationHandler(
+        btcNetworkConfigProvider: BtcNetworkConfigProvider,
+        @Qualifier("transferWallet")
+        transferWallet: Wallet,
+        btcAddressStorage: BtcAddressStorage
+    ) =
+        NewBtcClientRegistrationHandler(
+            btcNetworkConfigProvider,
+            transferWallet,
+            btcAddressStorage,
+            withdrawalConfig.registrationCredential.accountId
+        )
 }

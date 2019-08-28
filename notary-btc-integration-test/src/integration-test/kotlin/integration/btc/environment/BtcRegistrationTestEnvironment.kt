@@ -12,6 +12,7 @@ import com.d3.btc.provider.address.BtcAddressesProvider
 import com.d3.btc.registration.init.BtcRegistrationServiceInitialization
 import com.d3.btc.registration.strategy.BtcRegistrationStrategyImpl
 import com.d3.commons.model.IrohaCredential
+import com.d3.commons.registration.NotaryRegistrationConfig
 import com.d3.commons.sidechain.iroha.consumer.IrohaConsumerImpl
 import com.d3.commons.sidechain.iroha.util.ModelUtil
 import com.d3.commons.util.toHexString
@@ -24,13 +25,16 @@ import java.io.Closeable
 /**
  * Bitcoin client registration service testing environment
  */
-class BtcRegistrationTestEnvironment(private val integrationHelper: BtcIntegrationHelperUtil) :
+class BtcRegistrationTestEnvironment(
+    private val integrationHelper: BtcIntegrationHelperUtil,
+    private val registrationConfig: NotaryRegistrationConfig
+) :
     Closeable {
 
     val btcRegistrationConfig = integrationHelper.configHelper.createBtcRegistrationConfig()
 
     val btcAddressGenerationConfig =
-        integrationHelper.configHelper.createBtcAddressGenerationConfig(0)
+        integrationHelper.configHelper.createBtcAddressGenerationConfig(registrationConfig, 0)
 
     private val btcRegistrationCredential =
         IrohaCredential(

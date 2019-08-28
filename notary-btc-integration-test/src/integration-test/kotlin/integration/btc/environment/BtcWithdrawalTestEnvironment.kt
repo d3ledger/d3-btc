@@ -375,7 +375,12 @@ class BtcWithdrawalTestEnvironment(
             newTransferHandler,
             listOf(
                 newSignatureEventHandler,
-                NewBtcClientRegistrationHandler(btcNetworkConfigProvider, transferWallet, btcAddressStorage),
+                NewBtcClientRegistrationHandler(
+                    btcNetworkConfigProvider,
+                    transferWallet,
+                    btcAddressStorage,
+                    btcWithdrawalConfig.registrationCredential.accountId
+                ),
                 newChangeAddressHandler,
                 newConsensusDataHandler,
                 newTransactionCreatedHandler,

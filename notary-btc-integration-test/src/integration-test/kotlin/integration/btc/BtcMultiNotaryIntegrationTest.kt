@@ -6,11 +6,11 @@
 package integration.btc
 
 import com.d3.btc.config.BTC_ASSET
-import com.d3.commons.sidechain.iroha.CLIENT_DOMAIN
 import com.d3.commons.util.getRandomString
 import com.github.kittinunf.result.failure
 import integration.btc.environment.BtcNotaryTestEnvironment
 import integration.helper.BtcIntegrationHelperUtil
+import integration.helper.D3_DOMAIN
 import integration.registration.RegistrationServiceTestEnvironment
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -43,7 +43,8 @@ class BtcMultiNotaryIntegrationTest {
                         integrationHelper = integrationHelper,
                         notaryConfig = notaryConfig,
                         notaryCredential = notaryAccount,
-                        testName = testName
+                        testName = testName,
+                        registrationConfig = registrationServiceEnvironment.registrationConfig
                     )
                 environments.add(notaryEnvironment)
                 val blockStorageFolder = File(notaryEnvironment.bitcoinConfig.blockStoragePath)
@@ -79,14 +80,13 @@ class BtcMultiNotaryIntegrationTest {
     @Test
     fun testDeposit() {
         val randomName = String.getRandomString(9)
-        val testClient = "$randomName@$CLIENT_DOMAIN"
+        val testClient = "$randomName@$D3_DOMAIN"
         val res = registrationServiceEnvironment.register(randomName)
         assertEquals(200, res.statusCode)
         val btcAddress =
             integrationHelper.registerBtcAddress(
                 environments.first().notaryConfig.btcTransferWalletPath,
-                randomName,
-                CLIENT_DOMAIN
+                randomName, D3_DOMAIN
             )
         val initialBalance = integrationHelper.getIrohaAccountBalance(
             testClient,

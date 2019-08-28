@@ -23,13 +23,18 @@ open class BtcRegisteredAddressesProvider(
      * @param accountId - id of account to check
      * @return true if able to register
      */
-    fun ableToRegister(accountId: String): Result<Boolean, Exception> {
-        return queryHelper.getAccountDetails(accountId, registrationAccount)
-            .map { details ->
-                // Account hasn't been registered in Bitcoin yet
-                !details.containsKey(BTC_CURRENCY_NAME_KEY)
+    fun ableToRegister(accountId: String) = isClient(accountId).map { !it }
+
+    /**
+     * Checks if given account is our client
+     * @param accountId - id of account to check
+     * @return true if our client
+     */
+    fun isClient(accountId: String) =
+        queryHelper.getAccountDetails(accountId, registrationAccount, BTC_CURRENCY_NAME_KEY)
+            .map { value ->
+                value.isPresent
             }
-    }
 
     /**
      * Get all registered btc addresses

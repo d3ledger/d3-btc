@@ -61,7 +61,7 @@ class BtcIntegrationHelperUtil(peers: Int = 1) : IrohaIntegrationHelperUtil(peer
      * Returns withdrawal fees
      */
     fun getWithdrawalFees() =
-        BigDecimal(getIrohaAccountBalance("withdrawal_billing@d3", BTC_ASSET)).setScale(BTC_PRECISION)
+        BigDecimal(getIrohaAccountBalance("withdrawal_billing@$D3_DOMAIN", BTC_ASSET)).setScale(BTC_PRECISION)
 
     /**
      * Returns withdrawal account balance

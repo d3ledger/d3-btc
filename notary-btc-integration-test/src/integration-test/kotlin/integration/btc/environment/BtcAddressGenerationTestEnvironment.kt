@@ -28,7 +28,9 @@ import com.d3.chainadapter.client.ReliableIrohaChainListener
 import com.d3.commons.config.loadRawLocalConfigs
 import com.d3.commons.expansion.ServiceExpansion
 import com.d3.commons.model.IrohaCredential
+import com.d3.commons.provider.NotaryClientsProvider
 import com.d3.commons.provider.TriggerProvider
+import com.d3.commons.registration.NotaryRegistrationConfig
 import com.d3.commons.sidechain.iroha.consumer.IrohaConsumerImpl
 import com.d3.commons.sidechain.iroha.consumer.MultiSigIrohaConsumer
 import com.d3.commons.sidechain.iroha.util.impl.IrohaQueryHelperImpl
@@ -59,8 +61,9 @@ private const val INIT_ADDRESSES = 3
 class BtcAddressGenerationTestEnvironment(
     private val integrationHelper: BtcIntegrationHelperUtil,
     val testName: String = "test",
+    val registrationConfig: NotaryRegistrationConfig,
     val btcGenerationConfig: BtcAddressGenerationConfig =
-        integrationHelper.configHelper.createBtcAddressGenerationConfig(INIT_ADDRESSES, testName),
+        integrationHelper.configHelper.createBtcAddressGenerationConfig(registrationConfig, INIT_ADDRESSES, testName),
     mstRegistrationCredential: IrohaCredential = IrohaCredential(
         btcGenerationConfig.mstRegistrationAccount.accountId,
         Utils.parseHexKeypair(
@@ -194,9 +197,16 @@ class BtcAddressGenerationTestEnvironment(
 
     private val newKeyHandler =
         NewKeyHandler(btcGenerationConfig, keysWallet, registrationQueryHelper, btcPublicKeyProvider())
-    private val btcAddressRegisteredHandler = BtcAddressRegisteredHandler(addressGenerationTrigger, btcGenerationConfig)
+    private val btcAddressRegisteredHandler =
+        BtcAddressRegisteredHandler(addressGenerationTrigger, btcGenerationConfig)
     private val btcAddressGenerationTriggerHandler =
         BtcAddressGenerationTriggerHandler(btcGenerationConfig, keysWallet, btcPublicKeyProvider())
+
+    private val notaryClientsProvider = NotaryClientsProvider(
+        registrationQueryHelper,
+        registrationConfig.clientStorageAccount,
+        registrationConfig.registrationCredential.accountId.substringBefore("@")
+    )
 
     val btcAddressGenerationInitialization = BtcAddressGenerationInitialization(
         keysWallet,
@@ -212,7 +222,8 @@ class BtcAddressGenerationTestEnvironment(
                 irohaApi
             ), mstRegistrationCredential
         ),
-        listOf(newKeyHandler, btcAddressGenerationTriggerHandler, btcAddressRegisteredHandler)
+        listOf(newKeyHandler, btcAddressGenerationTriggerHandler, btcAddressRegisteredHandler),
+        notaryClientsProvider
     )
 
     /**
