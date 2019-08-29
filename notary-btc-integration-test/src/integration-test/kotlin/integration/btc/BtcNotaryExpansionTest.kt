@@ -19,9 +19,10 @@ import java.io.File
 class BtcNotaryExpansionTest {
 
     private val integrationHelper = BtcIntegrationHelperUtil()
-    private val environment = BtcNotaryTestEnvironment(integrationHelper)
     private val registrationServiceEnvironment =
         RegistrationServiceTestEnvironment(integrationHelper)
+    private val environment =
+        BtcNotaryTestEnvironment(integrationHelper, registrationServiceEnvironment.registrationConfig)
     private val irohaQueryHelper = IrohaQueryHelperImpl(
         integrationHelper.irohaAPI,
         integrationHelper.accountHelper.notaryAccount.accountId,

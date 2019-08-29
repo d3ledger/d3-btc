@@ -12,6 +12,7 @@ import com.d3.btc.provider.generation.ADDRESS_GENERATION_TIME_KEY
 import com.github.kittinunf.result.failure
 import integration.btc.environment.BtcAddressGenerationTestEnvironment
 import integration.helper.BtcIntegrationHelperUtil
+import integration.registration.RegistrationServiceTestEnvironment
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import mu.KLogging
@@ -33,6 +34,7 @@ class BtcMultiAddressGenerationIntegrationTest {
     private val peers = 3
     private val integrationHelper = BtcIntegrationHelperUtil(peers)
     private val environments = ArrayList<BtcAddressGenerationTestEnvironment>()
+    private val registrationEnvironment = RegistrationServiceTestEnvironment(integrationHelper)
 
     @AfterAll
     fun dropDown() {
@@ -48,11 +50,13 @@ class BtcMultiAddressGenerationIntegrationTest {
             val environment = BtcAddressGenerationTestEnvironment(
                 integrationHelper,
                 btcGenerationConfig = integrationHelper.configHelper.createBtcAddressGenerationConfig(
+                    registrationEnvironment.registrationConfig,
                     0,
                     walletPostfix
                 ),
                 mstRegistrationCredential = mstRegistrationAccount,
-                peers = peers
+                peers = peers,
+                registrationConfig = registrationEnvironment.registrationConfig
             )
             environments.add(environment)
             GlobalScope.launch {

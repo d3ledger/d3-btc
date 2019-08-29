@@ -18,9 +18,9 @@ import org.springframework.stereotype.Component
 //Strategy for registering BTC addresses
 @Component
 class BtcRegistrationStrategyImpl(
-    @Autowired private val btcRegisteredAddressesProvider: BtcRegisteredAddressesProvider,
-    @Autowired private val btcFreeAddressesProvider: BtcFreeAddressesProvider,
-    @Autowired private val irohaBtcAccountCreator: IrohaBtcAccountRegistrator
+    private val btcRegisteredAddressesProvider: BtcRegisteredAddressesProvider,
+    private val btcFreeAddressesProvider: BtcFreeAddressesProvider,
+    private val irohaBtcAccountCreator: IrohaBtcAccountRegistrator
 ) : RegistrationStrategy {
 
     /**
@@ -55,7 +55,6 @@ class BtcRegistrationStrategyImpl(
                     freeAddress!!.address,
                     accountName,
                     domainId,
-                    publicKey,
                     freeAddress.info.notaryKeys,
                     btcFreeAddressesProvider.nodeId
                 )

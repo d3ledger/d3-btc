@@ -18,6 +18,7 @@ import com.d3.commons.config.loadLocalConfigs
 import com.d3.commons.config.loadRawLocalConfigs
 import com.d3.commons.expansion.ServiceExpansion
 import com.d3.commons.model.IrohaCredential
+import com.d3.commons.provider.NotaryClientsProvider
 import com.d3.commons.sidechain.iroha.consumer.IrohaConsumerImpl
 import com.d3.commons.sidechain.iroha.consumer.MultiSigIrohaConsumer
 import com.d3.commons.sidechain.iroha.util.impl.IrohaQueryHelperImpl
@@ -163,4 +164,12 @@ class BtcAddressGenerationAppConfiguration {
         btcAddressRegisteredHandler: BtcAddressRegisteredHandler,
         btcAddressGenerationTriggerHandler: BtcAddressGenerationTriggerHandler
     ) = listOf(newKeyHandler, btcAddressRegisteredHandler, btcAddressGenerationTriggerHandler)
+
+    @Bean
+    fun notaryClientsProvider() =
+        NotaryClientsProvider(
+            registrationQueryHelper(),
+            btcAddressGenerationConfig.clientStorageAccount,
+            btcAddressGenerationConfig.registrationServiceAccountName
+        )
 }

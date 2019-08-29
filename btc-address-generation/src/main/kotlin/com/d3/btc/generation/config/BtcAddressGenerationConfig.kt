@@ -49,4 +49,10 @@ interface BtcAddressGenerationConfig {
 
     // Queue where chain-adapter saves Iroha blocks
     val irohaBlockQueue: String
+
+    // Name of registration service account (no domain)
+    val registrationServiceAccountName: String
+
+    // Name of registration service account (no domain)
+    val clientStorageAccount: String
 }

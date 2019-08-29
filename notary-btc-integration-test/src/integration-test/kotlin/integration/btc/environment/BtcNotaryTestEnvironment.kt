@@ -27,6 +27,7 @@ import com.d3.commons.config.loadRawLocalConfigs
 import com.d3.commons.expansion.ServiceExpansion
 import com.d3.commons.model.IrohaCredential
 import com.d3.commons.notary.NotaryImpl
+import com.d3.commons.registration.NotaryRegistrationConfig
 import com.d3.commons.sidechain.SideChainEvent
 import com.d3.commons.sidechain.iroha.util.impl.IrohaQueryHelperImpl
 import com.d3.commons.util.createPrettySingleThreadPool
@@ -49,6 +50,7 @@ import java.io.File
  */
 class BtcNotaryTestEnvironment(
     private val integrationHelper: BtcIntegrationHelperUtil,
+    private val registrationConfig: NotaryRegistrationConfig,
     testName: String = "",
     val notaryConfig: BtcDepositConfig = integrationHelper.configHelper.createBtcDepositConfig(
         testName
@@ -88,7 +90,7 @@ class BtcNotaryTestEnvironment(
     )
 
     val btcAddressGenerationConfig =
-        integrationHelper.configHelper.createBtcAddressGenerationConfig(0)
+        integrationHelper.configHelper.createBtcAddressGenerationConfig(registrationConfig, 0)
 
     private val btcNetworkConfigProvider = BtcRegTestConfigProvider()
 
@@ -112,7 +114,12 @@ class BtcNotaryTestEnvironment(
 
     private val depositHandlers by lazy {
         listOf(
-            NewBtcClientRegistrationHandler(btcNetworkConfigProvider, transferWallet, btcAddressStorage),
+            NewBtcClientRegistrationHandler(
+                btcNetworkConfigProvider,
+                transferWallet,
+                btcAddressStorage,
+                notaryConfig.registrationAccount
+            ),
             NewBtcChangeAddressDepositHandler(btcAddressStorage, depositConfig)
         )
     }

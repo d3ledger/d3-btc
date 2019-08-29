@@ -6,7 +6,6 @@
 package com.d3.btc.registration.config
 
 import com.d3.commons.config.IrohaConfig
-import com.d3.commons.config.IrohaCredentialConfig
 import com.d3.commons.config.IrohaCredentialRawConfig
 
 /**

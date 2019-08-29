@@ -11,7 +11,6 @@ import com.d3.btc.helper.currency.satToBtc
 import com.d3.btc.model.BtcAddressType
 import com.d3.chainadapter.client.RMQConfig
 import com.d3.commons.model.IrohaCredential
-import com.d3.commons.sidechain.iroha.CLIENT_DOMAIN
 import com.d3.commons.sidechain.iroha.FEE_DESCRIPTION
 import com.d3.commons.sidechain.iroha.util.ModelUtil
 import com.d3.commons.util.getRandomString
@@ -22,6 +21,7 @@ import integration.btc.environment.BtcAddressGenerationTestEnvironment
 import integration.btc.environment.BtcWithdrawalTestEnvironment
 import integration.helper.BTC_PRECISION
 import integration.helper.BtcIntegrationHelperUtil
+import integration.helper.D3_DOMAIN
 import integration.registration.RegistrationServiceTestEnvironment
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -79,11 +79,13 @@ class BtcMultiWithdrawalFailToleranceIntegrationTest {
             val environment = BtcAddressGenerationTestEnvironment(
                 integrationHelper,
                 btcGenerationConfig = integrationHelper.configHelper.createBtcAddressGenerationConfig(
+                    registrationServiceEnvironment.registrationConfig,
                     0,
                     testName
                 ),
                 mstRegistrationCredential = mstRegistrationAccount,
-                peers = peers
+                peers = peers,
+                registrationConfig = registrationServiceEnvironment.registrationConfig
             )
             addressGenerationEnvironments.add(environment)
             GlobalScope.launch {
@@ -118,7 +120,7 @@ class BtcMultiWithdrawalFailToleranceIntegrationTest {
         val amount = satToBtc(10000L)
         val randomNameSrc = String.getRandomString(9)
         val testClientSrcKeypair = ModelUtil.generateKeypair()
-        val testClientSrc = "$randomNameSrc@$CLIENT_DOMAIN"
+        val testClientSrc = "$randomNameSrc@$D3_DOMAIN"
         val res = registrationServiceEnvironment.register(
             randomNameSrc,
             testClientSrcKeypair.public.toHexString()
@@ -128,7 +130,7 @@ class BtcMultiWithdrawalFailToleranceIntegrationTest {
         val btcAddressSrc =
             integrationHelper.registerBtcAddressNoPreGen(
                 randomNameSrc,
-                CLIENT_DOMAIN,
+                D3_DOMAIN,
                 testClientSrcKeypair
             )
         integrationHelper.sendBtc(

@@ -9,7 +9,6 @@ import com.d3.btc.config.BTC_ASSET
 import com.d3.btc.fee.CurrentFeeRate
 import com.d3.btc.helper.address.outPutToBase58Address
 import com.d3.btc.helper.currency.satToBtc
-import com.d3.commons.sidechain.iroha.CLIENT_DOMAIN
 import com.d3.commons.sidechain.iroha.FEE_DESCRIPTION
 import com.d3.commons.sidechain.iroha.util.ModelUtil
 import com.d3.commons.util.getRandomString
@@ -18,6 +17,7 @@ import com.github.kittinunf.result.failure
 import integration.btc.environment.BtcWithdrawalTestEnvironment
 import integration.helper.BTC_PRECISION
 import integration.helper.BtcIntegrationHelperUtil
+import integration.helper.D3_DOMAIN
 import integration.registration.RegistrationServiceTestEnvironment
 import mu.KLogging
 import org.bitcoinj.core.Address
@@ -107,7 +107,7 @@ class BtcWithdrawalIntegrationTest {
         val amount = satToBtc(10000L)
         val randomNameSrc = String.getRandomString(9)
         val testClientSrcKeypair = ModelUtil.generateKeypair()
-        val testClientSrc = "$randomNameSrc@$CLIENT_DOMAIN"
+        val testClientSrc = "$randomNameSrc@$D3_DOMAIN"
         val res = registrationServiceEnvironment.register(
             randomNameSrc,
             testClientSrcKeypair.public.toHexString()
@@ -116,7 +116,7 @@ class BtcWithdrawalIntegrationTest {
         val btcAddressSrc =
             integrationHelper.registerBtcAddressNoPreGen(
                 randomNameSrc,
-                CLIENT_DOMAIN,
+                D3_DOMAIN,
                 testClientSrcKeypair
             )
         integrationHelper.sendBtc(
@@ -210,7 +210,7 @@ class BtcWithdrawalIntegrationTest {
         val amount = satToBtc(10000L)
         val randomNameSrc = String.getRandomString(9)
         val testClientSrcKeypair = ModelUtil.generateKeypair()
-        val testClientSrc = "$randomNameSrc@$CLIENT_DOMAIN"
+        val testClientSrc = "$randomNameSrc@$D3_DOMAIN"
         val res = registrationServiceEnvironment.register(
             randomNameSrc,
             testClientSrcKeypair.public.toHexString()
@@ -219,7 +219,7 @@ class BtcWithdrawalIntegrationTest {
         val btcAddressSrc =
             integrationHelper.registerBtcAddressNoPreGen(
                 randomNameSrc,
-                CLIENT_DOMAIN,
+                D3_DOMAIN,
                 testClientSrcKeypair
             )
         integrationHelper.sendBtc(
@@ -287,7 +287,7 @@ class BtcWithdrawalIntegrationTest {
         val amount = satToBtc(10000L)
         val randomNameSrc = String.getRandomString(9)
         val testClientSrcKeypair = ModelUtil.generateKeypair()
-        val testClientSrc = "$randomNameSrc@$CLIENT_DOMAIN"
+        val testClientSrc = "$randomNameSrc@$D3_DOMAIN"
         val res = registrationServiceEnvironment.register(
             randomNameSrc,
             testClientSrcKeypair.public.toHexString()
@@ -296,7 +296,7 @@ class BtcWithdrawalIntegrationTest {
         val btcAddressSrc =
             integrationHelper.registerBtcAddressNoPreGen(
                 randomNameSrc,
-                CLIENT_DOMAIN,
+                D3_DOMAIN,
                 testClientSrcKeypair
             )
         integrationHelper.sendBtc(
@@ -379,7 +379,7 @@ class BtcWithdrawalIntegrationTest {
         val initTxCount = environment.createdTransactions.size
         val randomNameSrc = String.getRandomString(9)
         val testClientSrcKeypair = ModelUtil.generateKeypair()
-        val testClientSrc = "$randomNameSrc@$CLIENT_DOMAIN"
+        val testClientSrc = "$randomNameSrc@$D3_DOMAIN"
         val res = registrationServiceEnvironment.register(
             randomNameSrc,
             testClientSrcKeypair.public.toHexString()
@@ -388,7 +388,7 @@ class BtcWithdrawalIntegrationTest {
         val btcAddressSrc =
             integrationHelper.registerBtcAddressNoPreGen(
                 randomNameSrc,
-                CLIENT_DOMAIN,
+                D3_DOMAIN,
                 testClientSrcKeypair
             )
         integrationHelper.sendBtc(
@@ -459,7 +459,7 @@ class BtcWithdrawalIntegrationTest {
         var amount = satToBtc(FAILED_BROADCAST_AMOUNT)
         val randomNameSrc = String.getRandomString(9)
         val testClientSrcKeypair = ModelUtil.generateKeypair()
-        val testClientSrc = "$randomNameSrc@$CLIENT_DOMAIN"
+        val testClientSrc = "$randomNameSrc@$D3_DOMAIN"
         val res = registrationServiceEnvironment.register(
             randomNameSrc,
             testClientSrcKeypair.public.toHexString()
@@ -468,7 +468,7 @@ class BtcWithdrawalIntegrationTest {
         val btcAddressSrc =
             integrationHelper.registerBtcAddressNoPreGen(
                 randomNameSrc,
-                CLIENT_DOMAIN,
+                D3_DOMAIN,
                 testClientSrcKeypair
             )
         integrationHelper.sendBtc(
@@ -537,7 +537,7 @@ class BtcWithdrawalIntegrationTest {
         val amount = satToBtc(10000L)
         val randomNameSrc = String.getRandomString(9)
         val testClientSrcKeypair = ModelUtil.generateKeypair()
-        val testClientSrc = "$randomNameSrc@$CLIENT_DOMAIN"
+        val testClientSrc = "$randomNameSrc@$D3_DOMAIN"
         val res = registrationServiceEnvironment.register(
             randomNameSrc,
             testClientSrcKeypair.public.toHexString()
@@ -546,7 +546,7 @@ class BtcWithdrawalIntegrationTest {
         val btcAddressSrc = integrationHelper.registerBtcAddress(
             environment.btcWithdrawalConfig.btcKeysWalletPath,
             randomNameSrc,
-            CLIENT_DOMAIN,
+            D3_DOMAIN,
             testClientSrcKeypair
         )
         integrationHelper.sendBtc(
@@ -614,7 +614,7 @@ class BtcWithdrawalIntegrationTest {
         val amount = BigDecimal(2)
         val randomNameSrc = String.getRandomString(9)
         val testClientSrcKeypair = ModelUtil.generateKeypair()
-        val testClientSrc = "$randomNameSrc@$CLIENT_DOMAIN"
+        val testClientSrc = "$randomNameSrc@$D3_DOMAIN"
         val res = registrationServiceEnvironment.register(
             randomNameSrc,
             testClientSrcKeypair.public.toHexString()
@@ -623,7 +623,7 @@ class BtcWithdrawalIntegrationTest {
         val btcAddressSrc =
             integrationHelper.registerBtcAddressNoPreGen(
                 randomNameSrc,
-                CLIENT_DOMAIN,
+                D3_DOMAIN,
                 testClientSrcKeypair
             )
 
@@ -681,7 +681,7 @@ class BtcWithdrawalIntegrationTest {
         val amount = BigDecimal(2)
         val randomNameSrc = String.getRandomString(9)
         val testClientSrcKeypair = ModelUtil.generateKeypair()
-        val testClientSrc = "$randomNameSrc@$CLIENT_DOMAIN"
+        val testClientSrc = "$randomNameSrc@$D3_DOMAIN"
         val res = registrationServiceEnvironment.register(
             randomNameSrc,
             testClientSrcKeypair.public.toHexString()
@@ -690,7 +690,7 @@ class BtcWithdrawalIntegrationTest {
         val btcAddressSrc =
             integrationHelper.registerBtcAddressNoPreGen(
                 randomNameSrc,
-                CLIENT_DOMAIN,
+                D3_DOMAIN,
                 testClientSrcKeypair
             )
 
@@ -743,7 +743,7 @@ class BtcWithdrawalIntegrationTest {
         val amount = BigDecimal(6)
         val randomNameSrc = String.getRandomString(9)
         val testClientSrcKeypair = ModelUtil.generateKeypair()
-        val testClientSrc = "$randomNameSrc@$CLIENT_DOMAIN"
+        val testClientSrc = "$randomNameSrc@$D3_DOMAIN"
         val res = registrationServiceEnvironment.register(
             randomNameSrc,
             testClientSrcKeypair.public.toHexString()
@@ -752,7 +752,7 @@ class BtcWithdrawalIntegrationTest {
         val btcAddressSrc =
             integrationHelper.registerBtcAddressNoPreGen(
                 randomNameSrc,
-                CLIENT_DOMAIN,
+                D3_DOMAIN,
                 testClientSrcKeypair
             )
         integrationHelper.sendBtc(
@@ -829,10 +829,10 @@ class BtcWithdrawalIntegrationTest {
         assertEquals(200, res.statusCode)
         val btcAddressSrc = integrationHelper.registerBtcAddressNoPreGen(
             randomNameSrc,
-            CLIENT_DOMAIN,
+            D3_DOMAIN,
             testClientSrcKeypair
         )
-        val testClientSrc = "$randomNameSrc@$CLIENT_DOMAIN"
+        val testClientSrc = "$randomNameSrc@$D3_DOMAIN"
         val amountInWalletBtc = BigDecimal(1)
         integrationHelper.sendBtc(btcAddressSrc, amountInWalletBtc)
         integrationHelper.addIrohaAssetTo(testClientSrc, BTC_ASSET, getAmountWithFee(amount))
@@ -890,7 +890,7 @@ class BtcWithdrawalIntegrationTest {
         val amount = satToBtc(10000L)
         val randomNameSrc = String.getRandomString(9)
         val testClientSrcKeypair = ModelUtil.generateKeypair()
-        val testClientSrc = "$randomNameSrc@$CLIENT_DOMAIN"
+        val testClientSrc = "$randomNameSrc@$D3_DOMAIN"
         val res = registrationServiceEnvironment.register(
             randomNameSrc,
             testClientSrcKeypair.public.toHexString()
@@ -899,7 +899,7 @@ class BtcWithdrawalIntegrationTest {
         val btcAddressSrc =
             integrationHelper.registerBtcAddressNoPreGen(
                 randomNameSrc,
-                CLIENT_DOMAIN,
+                D3_DOMAIN,
                 testClientSrcKeypair
             )
         integrationHelper.sendBtc(
@@ -983,7 +983,7 @@ class BtcWithdrawalIntegrationTest {
         val amount = satToBtc(10000L)
         val randomNameSrc = String.getRandomString(9)
         val testClientSrcKeypair = ModelUtil.generateKeypair()
-        val testClientSrc = "$randomNameSrc@$CLIENT_DOMAIN"
+        val testClientSrc = "$randomNameSrc@$D3_DOMAIN"
         val res = registrationServiceEnvironment.register(
             randomNameSrc,
             testClientSrcKeypair.public.toHexString()
@@ -991,7 +991,7 @@ class BtcWithdrawalIntegrationTest {
         assertEquals(200, res.statusCode)
         integrationHelper.registerBtcAddressNoPreGen(
             randomNameSrc,
-            CLIENT_DOMAIN,
+            D3_DOMAIN,
             testClientSrcKeypair
         )
         val btcAddressDest = integrationHelper.createBtcAddress()
@@ -1036,7 +1036,7 @@ class BtcWithdrawalIntegrationTest {
         val amount = BigDecimal(100)
         val randomNameSrc = String.getRandomString(9)
         val testClientSrcKeypair = ModelUtil.generateKeypair()
-        val testClientSrc = "$randomNameSrc@$CLIENT_DOMAIN"
+        val testClientSrc = "$randomNameSrc@$D3_DOMAIN"
         val res = registrationServiceEnvironment.register(
             randomNameSrc,
             testClientSrcKeypair.public.toHexString()
@@ -1045,7 +1045,7 @@ class BtcWithdrawalIntegrationTest {
         val btcAddressSrc =
             integrationHelper.registerBtcAddressNoPreGen(
                 randomNameSrc,
-                CLIENT_DOMAIN,
+                D3_DOMAIN,
                 testClientSrcKeypair
             )
         integrationHelper.sendBtc(
@@ -1096,7 +1096,7 @@ class BtcWithdrawalIntegrationTest {
         val amount = satToBtc(10000)
         val randomNameSrc = String.getRandomString(9)
         val testClientSrcKeypair = ModelUtil.generateKeypair()
-        val testClientSrc = "$randomNameSrc@$CLIENT_DOMAIN"
+        val testClientSrc = "$randomNameSrc@$D3_DOMAIN"
         val res = registrationServiceEnvironment.register(
             randomNameSrc,
             testClientSrcKeypair.public.toHexString()
@@ -1105,7 +1105,7 @@ class BtcWithdrawalIntegrationTest {
         val btcAddressSrc =
             integrationHelper.registerBtcAddressNoPreGen(
                 randomNameSrc,
-                CLIENT_DOMAIN,
+                D3_DOMAIN,
                 testClientSrcKeypair
             )
         repeat(100) {
@@ -1155,7 +1155,7 @@ class BtcWithdrawalIntegrationTest {
         val amount = satToBtc(1)
         val randomNameSrc = String.getRandomString(9)
         val testClientSrcKeypair = ModelUtil.generateKeypair()
-        val testClientSrc = "$randomNameSrc@$CLIENT_DOMAIN"
+        val testClientSrc = "$randomNameSrc@$D3_DOMAIN"
         val res = registrationServiceEnvironment.register(
             randomNameSrc,
             testClientSrcKeypair.public.toHexString()
@@ -1164,7 +1164,7 @@ class BtcWithdrawalIntegrationTest {
         val btcAddressSrc =
             integrationHelper.registerBtcAddressNoPreGen(
                 randomNameSrc,
-                CLIENT_DOMAIN,
+                D3_DOMAIN,
                 testClientSrcKeypair
             )
         val amountInWalletBtc = getAmountWithFee(BigDecimal(1))
@@ -1213,7 +1213,7 @@ class BtcWithdrawalIntegrationTest {
         val amount = satToBtc(10000)
         val randomNameSrc = String.getRandomString(9)
         val testClientSrcKeypair = ModelUtil.generateKeypair()
-        val testClientSrc = "$randomNameSrc@$CLIENT_DOMAIN"
+        val testClientSrc = "$randomNameSrc@$D3_DOMAIN"
         val res = registrationServiceEnvironment.register(
             randomNameSrc,
             testClientSrcKeypair.public.toHexString()
@@ -1222,7 +1222,7 @@ class BtcWithdrawalIntegrationTest {
         val btcAddressSrc =
             integrationHelper.registerBtcAddressNoPreGen(
                 randomNameSrc,
-                CLIENT_DOMAIN,
+                D3_DOMAIN,
                 testClientSrcKeypair
             )
         integrationHelper.sendBtc(btcAddressSrc, BigDecimal(1))

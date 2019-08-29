@@ -6,11 +6,11 @@
 package integration.btc
 
 import com.d3.btc.config.BTC_ASSET
-import com.d3.commons.sidechain.iroha.CLIENT_DOMAIN
 import com.d3.commons.util.getRandomString
 import com.github.kittinunf.result.failure
 import integration.btc.environment.BtcNotaryTestEnvironment
 import integration.helper.BtcIntegrationHelperUtil
+import integration.helper.D3_DOMAIN
 import integration.registration.RegistrationServiceTestEnvironment
 import org.bitcoinj.wallet.Wallet
 import org.junit.jupiter.api.*
@@ -25,9 +25,10 @@ const val DEPOSIT_WAIT_MILLIS = 10_000L
 class BtcNotaryIntegrationTest {
 
     private val integrationHelper = BtcIntegrationHelperUtil()
-    private val environment = BtcNotaryTestEnvironment(integrationHelper)
     private val registrationServiceEnvironment =
         RegistrationServiceTestEnvironment(integrationHelper)
+    private val environment =
+        BtcNotaryTestEnvironment(integrationHelper, registrationServiceEnvironment.registrationConfig)
 
     @AfterAll
     fun dropDown() {
@@ -59,14 +60,14 @@ class BtcNotaryIntegrationTest {
         val initUTXOCount =
             Wallet.loadFromFile(File(environment.notaryConfig.btcTransferWalletPath)).unspents.size
         val randomName = String.getRandomString(9)
-        val testClient = "$randomName@$CLIENT_DOMAIN"
+        val testClient = "$randomName@$D3_DOMAIN"
         val res = registrationServiceEnvironment.register(randomName)
         assertEquals(200, res.statusCode)
         val btcAddress =
             integrationHelper.registerBtcAddress(
                 environment.btcAddressGenerationConfig.btcKeysWalletPath,
                 randomName,
-                CLIENT_DOMAIN
+                D3_DOMAIN
             )
         val initialBalance = integrationHelper.getIrohaAccountBalance(
             testClient,
@@ -100,14 +101,14 @@ class BtcNotaryIntegrationTest {
             Wallet.loadFromFile(File(environment.notaryConfig.btcTransferWalletPath)).unspents.size
         val totalDeposits = 3
         val randomName = String.getRandomString(9)
-        val testClient = "$randomName@$CLIENT_DOMAIN"
+        val testClient = "$randomName@$D3_DOMAIN"
         val res = registrationServiceEnvironment.register(randomName)
         assertEquals(200, res.statusCode)
         val btcAddress =
             integrationHelper.registerBtcAddress(
                 environment.btcAddressGenerationConfig.btcKeysWalletPath,
                 randomName,
-                CLIENT_DOMAIN
+                D3_DOMAIN
             )
         val initialBalance = integrationHelper.getIrohaAccountBalance(
             testClient,
@@ -145,14 +146,14 @@ class BtcNotaryIntegrationTest {
             Wallet.loadFromFile(File(environment.notaryConfig.btcTransferWalletPath)).unspents.size
         val totalDeposits = 5
         val randomName = String.getRandomString(9)
-        val testClient = "$randomName@$CLIENT_DOMAIN"
+        val testClient = "$randomName@$D3_DOMAIN"
         val res = registrationServiceEnvironment.register(randomName)
         assertEquals(200, res.statusCode)
         val btcAddress =
             integrationHelper.registerBtcAddress(
                 environment.btcAddressGenerationConfig.btcKeysWalletPath,
                 randomName,
-                CLIENT_DOMAIN
+                D3_DOMAIN
             )
         val initialBalance = integrationHelper.getIrohaAccountBalance(
             testClient,
@@ -195,14 +196,14 @@ class BtcNotaryIntegrationTest {
         val initUTXOCount =
             Wallet.loadFromFile(File(environment.notaryConfig.btcTransferWalletPath)).unspents.size
         val randomName = String.getRandomString(9)
-        val testClient = "$randomName@$CLIENT_DOMAIN"
+        val testClient = "$randomName@$D3_DOMAIN"
         val res = registrationServiceEnvironment.register(randomName)
         assertEquals(200, res.statusCode)
         val btcAddress =
             integrationHelper.registerBtcAddress(
                 environment.btcAddressGenerationConfig.btcKeysWalletPath,
                 randomName,
-                CLIENT_DOMAIN
+                D3_DOMAIN
             )
         val initialBalance = integrationHelper.getIrohaAccountBalance(
             testClient,
@@ -237,14 +238,14 @@ class BtcNotaryIntegrationTest {
         val initUTXOCount =
             Wallet.loadFromFile(File(environment.notaryConfig.btcTransferWalletPath)).unspents.size
         val randomName = String.getRandomString(9)
-        val testClient = "$randomName@$CLIENT_DOMAIN"
+        val testClient = "$randomName@$D3_DOMAIN"
         val res = registrationServiceEnvironment.register(randomName)
         assertEquals(200, res.statusCode)
         val btcAddress =
             integrationHelper.registerBtcAddress(
                 environment.btcAddressGenerationConfig.btcKeysWalletPath,
                 randomName,
-                CLIENT_DOMAIN
+                D3_DOMAIN
             )
         val initialBalance = integrationHelper.getIrohaAccountBalance(
             testClient,

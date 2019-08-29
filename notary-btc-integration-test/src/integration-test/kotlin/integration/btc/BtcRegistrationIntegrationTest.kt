@@ -6,12 +6,12 @@
 package integration.btc
 
 import com.d3.btc.config.BTC_ASSET
-import com.d3.commons.sidechain.iroha.CLIENT_DOMAIN
 import com.d3.commons.util.getRandomString
 import com.d3.commons.util.toHexString
 import com.squareup.moshi.Moshi
 import integration.btc.environment.BtcRegistrationTestEnvironment
 import integration.helper.BtcIntegrationHelperUtil
+import integration.helper.D3_DOMAIN
 import integration.registration.RegistrationServiceTestEnvironment
 import jp.co.soramitsu.crypto.ed25519.Ed25519Sha3
 import kotlinx.coroutines.delay
@@ -29,9 +29,10 @@ class BtcRegistrationIntegrationTest {
 
     private val integrationHelper = BtcIntegrationHelperUtil()
 
-    private val btcRegistrationEnvironment = BtcRegistrationTestEnvironment(integrationHelper)
     private val registrationServiceEnvironment =
         RegistrationServiceTestEnvironment(integrationHelper)
+    private val btcRegistrationEnvironment =
+        BtcRegistrationTestEnvironment(integrationHelper, registrationServiceEnvironment.registrationConfig)
 
     // Moshi adapter for response JSON deserialization
     private val moshiAdapter = Moshi
@@ -72,13 +73,13 @@ class BtcRegistrationIntegrationTest {
         btcRegistrationEnvironment.btcRegisteredAddressesProvider.getRegisteredAddresses()
             .fold({ addresses ->
                 assertEquals(
-                    "$userName@$CLIENT_DOMAIN",
+                    "$userName@$D3_DOMAIN",
                     addresses.first { btcAddress -> btcAddress.address == registeredBtcAddress }.info.irohaClient
                 )
             }, { ex -> fail("cannot get addresses", ex) })
         assertEquals(
             BigInteger.ZERO.toString(),
-            integrationHelper.getIrohaAccountBalance("$userName@$CLIENT_DOMAIN", BTC_ASSET)
+            integrationHelper.getIrohaAccountBalance("$userName@$D3_DOMAIN", BTC_ASSET)
         )
     }
 
@@ -109,13 +110,13 @@ class BtcRegistrationIntegrationTest {
         btcRegistrationEnvironment.btcRegisteredAddressesProvider.getRegisteredAddresses()
             .fold({ addresses ->
                 assertEquals(
-                    "$userName@$CLIENT_DOMAIN",
+                    "$userName@$D3_DOMAIN",
                     addresses.first { btcAddress -> btcAddress.address == registeredBtcAddress }.info.irohaClient
                 )
             }, { ex -> fail("cannot get addresses", ex) })
         assertEquals(
             BigInteger.ZERO.toString(),
-            integrationHelper.getIrohaAccountBalance("$userName@$CLIENT_DOMAIN", BTC_ASSET)
+            integrationHelper.getIrohaAccountBalance("$userName@$D3_DOMAIN", BTC_ASSET)
         )
     }
 
@@ -184,13 +185,13 @@ class BtcRegistrationIntegrationTest {
             btcRegistrationEnvironment.btcRegisteredAddressesProvider.getRegisteredAddresses()
                 .fold({ addresses ->
                     assertEquals(
-                        "$userName@$CLIENT_DOMAIN",
+                        "$userName@$D3_DOMAIN",
                         addresses.first { btcAddress -> btcAddress.address == registeredBtcAddress }.info.irohaClient
                     )
                 }, { ex -> fail("cannot get addresses", ex) })
             assertEquals(
                 BigInteger.ZERO.toString(),
-                integrationHelper.getIrohaAccountBalance("$userName@$CLIENT_DOMAIN", BTC_ASSET)
+                integrationHelper.getIrohaAccountBalance("$userName@$D3_DOMAIN", BTC_ASSET)
             )
         }
 
