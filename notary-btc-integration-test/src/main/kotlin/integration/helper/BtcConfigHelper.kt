@@ -186,6 +186,7 @@ class BtcConfigHelper(
 
     fun createBtcRegistrationConfig(): BtcRegistrationConfig {
         return object : BtcRegistrationConfig {
+            override val irohaQueryTimeoutMls = 25_000
             override val nodeId = NODE_ID
             override val notaryAccount = accountHelper.notaryAccount.accountId
             override val mstRegistrationAccount = accountHelper.mstRegistrationAccount.accountId

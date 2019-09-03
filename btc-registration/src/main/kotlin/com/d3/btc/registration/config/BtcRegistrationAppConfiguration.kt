@@ -9,21 +9,21 @@ import com.d3.btc.provider.BtcFreeAddressesProvider
 import com.d3.btc.provider.BtcRegisteredAddressesProvider
 import com.d3.btc.provider.account.IrohaBtcAccountRegistrator
 import com.d3.btc.provider.address.BtcAddressesProvider
-import com.d3.commons.config.loadLocalConfigs
+import com.d3.commons.config.loadRawLocalConfigs
 import com.d3.commons.model.IrohaCredential
 import com.d3.commons.sidechain.iroha.consumer.IrohaConsumerImpl
-import com.d3.commons.sidechain.iroha.util.ModelUtil
 import com.d3.commons.sidechain.iroha.util.impl.IrohaQueryHelperImpl
+import com.d3.commons.sidechain.iroha.util.impl.RobustIrohaQueryHelperImpl
 import jp.co.soramitsu.iroha.java.IrohaAPI
 import jp.co.soramitsu.iroha.java.Utils
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
-val btcRegistrationConfig = loadLocalConfigs(
+val btcRegistrationConfig = loadRawLocalConfigs(
     "btc-registration",
     BtcRegistrationConfig::class.java,
     "registration.properties"
-).get()
+)
 
 @Configuration
 class BtcRegistrationAppConfiguration {
@@ -41,10 +41,13 @@ class BtcRegistrationAppConfiguration {
         IrohaAPI(btcRegistrationConfig.iroha.hostname, btcRegistrationConfig.iroha.port)
 
     @Bean
-    fun queryHelper() = IrohaQueryHelperImpl(
-        irohaAPI(),
-        btcRegistrationCredential.accountId,
-        btcRegistrationCredential.keyPair
+    fun queryHelper() = RobustIrohaQueryHelperImpl(
+        IrohaQueryHelperImpl(
+            irohaAPI(),
+            btcRegistrationCredential.accountId,
+            btcRegistrationCredential.keyPair
+        ),
+        btcRegistrationConfig.irohaQueryTimeoutMls
     )
 
     @Bean
