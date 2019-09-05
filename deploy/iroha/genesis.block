@@ -39,6 +39,14 @@
               },
               {
                 "createRole": {
+                  "roleName": "data_collector",
+                  "permissions": [
+                    "can_get_blocks"
+                  ]
+                }
+              },
+              {
+                "createRole": {
                   "roleName": "registration_service",
                   "permissions": [
                     "can_append_role",
@@ -313,6 +321,19 @@
                   "assetName": "btc",
                   "domainId": "bitcoin",
                   "precision": 8
+                }
+              },
+              {
+                "createAccount": {
+                  "accountName": "data_collector",
+                  "domainId": "notary",
+                  "publicKey": "97B888554684FB30F29FAB92991AB7ECEFFFE433AB3AF501E5DEAEE69392518C"
+                }
+              },
+              {
+                "appendRole": {
+                  "accountId": "data_collector@notary",
+                  "roleName": "data_collector"
                 }
               },
               {
