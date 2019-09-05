@@ -6,12 +6,13 @@
 package com.d3.btc.generation.handler
 
 import com.d3.btc.generation.config.BtcAddressGenerationConfig
+import com.d3.btc.generation.provider.ADDRESS_GENERATION_TIME_KEY
+import com.d3.btc.generation.provider.BTC_SESSION_DOMAIN
+import com.d3.btc.generation.provider.BtcPublicKeyProvider
 import com.d3.btc.handler.SetAccountDetailEvent
 import com.d3.btc.handler.SetAccountDetailHandler
-import com.d3.btc.provider.generation.BtcPublicKeyProvider
 import com.d3.btc.wallet.safeSave
 import com.github.kittinunf.result.Result
-import iroha.protocol.Commands
 import mu.KLogging
 import org.bitcoinj.wallet.Wallet
 import org.springframework.beans.factory.annotation.Qualifier
@@ -29,9 +30,8 @@ class BtcAddressGenerationTriggerHandler(
 ) : SetAccountDetailHandler() {
 
     override fun handle(setAccountDetailEvent: SetAccountDetailEvent) {
-        //add new public key to session account, if trigger account was changed
-        val sessionAccountName = setAccountDetailEvent.command.key
-        onGenerateKey(sessionAccountName).fold(
+        val sessionAccountId = setAccountDetailEvent.command.accountId
+        onGenerateKey(sessionAccountId).fold(
             { pubKey -> logger.info { "New public key $pubKey for BTC multisignature address was created" } },
             { ex ->
                 logger.error(
@@ -42,12 +42,13 @@ class BtcAddressGenerationTriggerHandler(
     }
 
     // Generates new key
-    private fun onGenerateKey(sessionAccountName: String): Result<String, Exception> {
-        return btcPublicKeyProvider.createKey(sessionAccountName) { keysWallet.safeSave(btcAddressGenerationConfig.btcKeysWalletPath) }
+    private fun onGenerateKey(sessionAccountId: String): Result<String, Exception> {
+        return btcPublicKeyProvider.createKey(sessionAccountId) { keysWallet.safeSave(btcAddressGenerationConfig.btcKeysWalletPath) }
     }
 
     override fun filter(setAccountDetailEvent: SetAccountDetailEvent) =
-        setAccountDetailEvent.command.accountId == btcAddressGenerationConfig.pubKeyTriggerAccount
+        setAccountDetailEvent.command.accountId.endsWith("@$BTC_SESSION_DOMAIN")
+                && setAccountDetailEvent.command.key == ADDRESS_GENERATION_TIME_KEY
                 && setAccountDetailEvent.creator == btcAddressGenerationConfig.registrationAccount.accountId
 
     companion object : KLogging()

@@ -9,7 +9,11 @@ import com.d3.btc.generation.BTC_ADDRESS_GENERATION_SERVICE_NAME
 import com.d3.btc.generation.handler.BtcAddressGenerationTriggerHandler
 import com.d3.btc.generation.handler.BtcAddressRegisteredHandler
 import com.d3.btc.generation.handler.NewKeyHandler
+import com.d3.btc.generation.provider.BtcSessionProvider
 import com.d3.btc.provider.BtcChangeAddressProvider
+import com.d3.btc.provider.BtcFreeAddressesProvider
+import com.d3.btc.provider.BtcRegisteredAddressesProvider
+import com.d3.btc.provider.address.BtcAddressesProvider
 import com.d3.btc.provider.network.BtcNetworkConfigProvider
 import com.d3.btc.wallet.createWalletIfAbsent
 import com.d3.chainadapter.client.RMQConfig
@@ -21,7 +25,9 @@ import com.d3.commons.model.IrohaCredential
 import com.d3.commons.provider.NotaryClientsProvider
 import com.d3.commons.sidechain.iroha.consumer.IrohaConsumerImpl
 import com.d3.commons.sidechain.iroha.consumer.MultiSigIrohaConsumer
+import com.d3.commons.sidechain.iroha.util.IrohaQueryHelper
 import com.d3.commons.sidechain.iroha.util.impl.IrohaQueryHelperImpl
+import com.d3.commons.sidechain.iroha.util.impl.RobustIrohaQueryHelperImpl
 import com.d3.commons.util.createPrettySingleThreadPool
 import io.grpc.ManagedChannelBuilder
 import jp.co.soramitsu.iroha.java.IrohaAPI
@@ -99,10 +105,12 @@ class BtcAddressGenerationAppConfiguration {
     fun healthCheckPort() = btcAddressGenerationConfig.healthCheckPort
 
     @Bean
-    fun registrationQueryHelper() = IrohaQueryHelperImpl(
-        generationIrohaAPI(),
-        registrationCredential.accountId,
-        registrationCredential.keyPair
+    fun registrationQueryHelper() = RobustIrohaQueryHelperImpl(
+        IrohaQueryHelperImpl(
+            generationIrohaAPI(),
+            registrationCredential.accountId,
+            registrationCredential.keyPair
+        ), btcAddressGenerationConfig().irohaQueryTimeoutMls
     )
 
     @Bean
@@ -115,9 +123,8 @@ class BtcAddressGenerationAppConfiguration {
         return Wallet.loadFromFile(File(walletPath))!!
     }
 
-
     @Bean
-    fun sessionConsumer() = IrohaConsumerImpl(registrationCredential, generationIrohaAPI())
+    fun addressGenerationConsumer() = IrohaConsumerImpl(registrationCredential, generationIrohaAPI())
 
     @Bean
     fun multiSigConsumer() = MultiSigIrohaConsumer(mstRegistrationCredential, generationIrohaAPI())
@@ -172,4 +179,33 @@ class BtcAddressGenerationAppConfiguration {
             btcAddressGenerationConfig.clientStorageAccount,
             btcAddressGenerationConfig.registrationServiceAccountName
         )
+
+    @Bean
+    fun btcSessionProvider() = BtcSessionProvider(addressGenerationConsumer())
+
+    @Bean
+    fun btcAddressesProvider(registrationQueryHelper: IrohaQueryHelper) =
+        BtcAddressesProvider(
+            registrationQueryHelper,
+            btcAddressGenerationConfig.mstRegistrationAccount.accountId,
+            btcAddressGenerationConfig.notaryAccount
+        )
+
+    @Bean
+    fun btcRegisteredAddressesProvider(registrationQueryHelper: IrohaQueryHelper) =
+        BtcRegisteredAddressesProvider(
+            registrationQueryHelper,
+            registrationCredential.accountId,
+            btcAddressGenerationConfig.notaryAccount
+        )
+
+    @Bean
+    fun btcFreeAddressesProvider(
+        btcAddressesProvider: BtcAddressesProvider,
+        btcRegisteredAddressesProvider: BtcRegisteredAddressesProvider
+    ) = BtcFreeAddressesProvider(
+        btcAddressGenerationConfig.nodeId,
+        btcAddressesProvider,
+        btcRegisteredAddressesProvider
+    )
 }

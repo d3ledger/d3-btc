@@ -50,6 +50,7 @@ class BtcConfigHelper(
             ).get()
 
         return object : BtcAddressGenerationConfig {
+            override val irohaQueryTimeoutMls = 180_000
             override val clientStorageAccount = registrationConfig.clientStorageAccount
             override val registrationServiceAccountName =
                 registrationConfig.registrationCredential.accountId.substringBefore("@")
@@ -62,7 +63,6 @@ class BtcConfigHelper(
             override val healthCheckPort = btcAddressGenConfig.healthCheckPort
             override val mstRegistrationAccount =
                 accountHelper.createCredentialRawConfig(accountHelper.mstRegistrationAccount)
-            override val pubKeyTriggerAccount = btcAddressGenConfig.pubKeyTriggerAccount
             override val expansionTriggerCreatorAccountId = accountHelper.superuserAccount.accountId
             override val notaryAccount = accountHelper.notaryAccount.accountId
             override val iroha = createIrohaConfig()
