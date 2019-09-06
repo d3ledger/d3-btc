@@ -29,4 +29,7 @@ interface BtcRegistrationConfig {
 
     /** Node id */
     val nodeId: String
+
+    /** Timeout for Iroha queries */
+    val irohaQueryTimeoutMls: Int
 }
