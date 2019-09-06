@@ -23,9 +23,7 @@ const val BTC_ADDRESS_GENERATION_SERVICE_NAME = "btc-add-gen"
     basePackages = [
         "com.d3.btc.generation",
         "com.d3.btc.healthcheck",
-        "com.d3.btc.provider.generation",
-        "com.d3.btc.provider.network",
-        "com.d3.btc.generation.trigger"]
+        "com.d3.btc.provider.network"]
 )
 class BtcAddressGenerationApplication
 

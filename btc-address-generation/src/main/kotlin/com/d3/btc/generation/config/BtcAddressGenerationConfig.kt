@@ -9,11 +9,6 @@ import com.d3.commons.config.IrohaConfig
 import com.d3.commons.config.IrohaCredentialRawConfig
 
 interface BtcAddressGenerationConfig {
-    /*
-    Account for triggering.
-    Triggering this account means starting BTC addresses generation
-    */
-    val pubKeyTriggerAccount: String
 
     val notaryAccount: String
 
@@ -55,4 +50,7 @@ interface BtcAddressGenerationConfig {
 
     // Name of registration service account (no domain)
     val clientStorageAccount: String
+
+    /** Timeout for Iroha queries */
+    val irohaQueryTimeoutMls: Int
 }

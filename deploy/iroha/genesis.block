@@ -575,13 +575,6 @@
                   "key": "some_notary",
                   "value": "http://localhost:20000"
                 }
-              },
-              {
-                "createAccount": {
-                  "accountName": "gen_btc_pk_trigger",
-                  "domainId": "notary",
-                  "publicKey": "0000000000000000000000000000000000000000000000000000000000000000"
-                }
               }
             ],
             "creatorAccountId": "notary@notary",
