@@ -5,10 +5,10 @@
 
 package integration.btc
 
+import com.d3.btc.generation.provider.ADDRESS_GENERATION_NODE_ID_KEY
+import com.d3.btc.generation.provider.ADDRESS_GENERATION_TIME_KEY
 import com.d3.btc.model.AddressInfo
 import com.d3.btc.model.BtcAddressType
-import com.d3.btc.provider.generation.ADDRESS_GENERATION_NODE_ID_KEY
-import com.d3.btc.provider.generation.ADDRESS_GENERATION_TIME_KEY
 import com.github.kittinunf.result.failure
 import integration.btc.environment.BtcAddressGenerationTestEnvironment
 import integration.helper.BtcIntegrationHelperUtil
@@ -73,7 +73,6 @@ class BtcAddressGenerationIntegrationTest {
             nodeId.toString()
         ).fold({ logger.info { "session $sessionAccountName was created" } },
             { ex -> fail("cannot create session", ex) })
-        environment.triggerProvider.trigger(sessionAccountName)
         Thread.sleep(WAIT_PREGEN_PROCESS_MILLIS)
         val sessionDetails =
             integrationHelper.getAccountDetails(
@@ -118,7 +117,6 @@ class BtcAddressGenerationIntegrationTest {
             nodeId.toString()
         ).fold({ logger.info { "session $sessionAccountName was created" } },
             { ex -> fail("cannot create session", ex) })
-        environment.triggerProvider.trigger(sessionAccountName)
         Thread.sleep(WAIT_PREGEN_PROCESS_MILLIS)
         val sessionDetails =
             integrationHelper.getAccountDetails(

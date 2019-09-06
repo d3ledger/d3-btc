@@ -6,20 +6,20 @@
 package com.d3.btc.generation.handler
 
 import com.d3.btc.generation.config.BtcAddressGenerationConfig
+import com.d3.btc.generation.provider.ADDRESS_GENERATION_NODE_ID_KEY
+import com.d3.btc.generation.provider.ADDRESS_GENERATION_TIME_KEY
+import com.d3.btc.generation.provider.BTC_SESSION_DOMAIN
+import com.d3.btc.generation.provider.BtcPublicKeyProvider
 import com.d3.btc.handler.SetAccountDetailEvent
 import com.d3.btc.handler.SetAccountDetailHandler
 import com.d3.btc.model.BtcAddressType
 import com.d3.btc.model.getAddressTypeByAccountId
-import com.d3.btc.provider.generation.ADDRESS_GENERATION_NODE_ID_KEY
-import com.d3.btc.provider.generation.ADDRESS_GENERATION_TIME_KEY
-import com.d3.btc.provider.generation.BtcPublicKeyProvider
 import com.d3.btc.wallet.safeSave
 import com.d3.commons.sidechain.iroha.util.IrohaQueryHelper
 import com.github.kittinunf.result.Result
 import com.github.kittinunf.result.failure
 import com.github.kittinunf.result.flatMap
 import com.github.kittinunf.result.map
-import iroha.protocol.Commands
 import mu.KLogging
 import org.bitcoinj.wallet.Wallet
 import org.springframework.beans.factory.annotation.Qualifier
@@ -90,7 +90,7 @@ class NewKeyHandler(
      * @return true if given event is a 'new key' event
      */
     override fun filter(setAccountDetailEvent: SetAccountDetailEvent) =
-        setAccountDetailEvent.command.accountId.endsWith("btcSession")
+        setAccountDetailEvent.command.accountId.endsWith("@$BTC_SESSION_DOMAIN")
                 && setAccountDetailEvent.command.key != ADDRESS_GENERATION_TIME_KEY
                 && setAccountDetailEvent.command.key != ADDRESS_GENERATION_NODE_ID_KEY
                 && setAccountDetailEvent.creator == btcAddressGenerationConfig.registrationAccount.accountId

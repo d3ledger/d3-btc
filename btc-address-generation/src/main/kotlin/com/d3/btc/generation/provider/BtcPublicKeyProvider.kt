@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package com.d3.btc.provider.generation
+package com.d3.btc.generation.provider
 
 import com.d3.btc.helper.address.createMsAddress
 import com.d3.btc.model.AddressInfo
@@ -29,7 +29,7 @@ import org.springframework.stereotype.Component
  *  Used to store free BTC addresses that can be registered by clients later
  *  @param changeAddressStorageAccount - Iroha account used to store change addresses
  *  @param multiSigConsumer - consumer of multisignature Iroha account. Used to create multisignature transactions.
- *  @param sessionConsumer - consumer of session Iroha account. Used to store session data.
+ *  @param addressGenerationConsumer - consumer of session Iroha account. Used to store session data.
  *  @param btcNetworkConfigProvider - provider of network configuration
  */
 @Component
@@ -43,8 +43,8 @@ class BtcPublicKeyProvider(
     private val changeAddressStorageAccount: String,
     @Qualifier("multiSigConsumer")
     private val multiSigConsumer: IrohaConsumer,
-    @Qualifier("sessionConsumer")
-    private val sessionConsumer: IrohaConsumer,
+    @Qualifier("addressGenerationConsumer")
+    private val addressGenerationConsumer: IrohaConsumer,
     private val btcNetworkConfigProvider: BtcNetworkConfigProvider
 ) {
     init {
@@ -53,18 +53,18 @@ class BtcPublicKeyProvider(
 
     /**
      * Creates notary public key and sets it into session account details
-     * @param sessionAccountName - name of session account
+     * @param sessionAccountId - id of session account
      * @param onKeyCreated - function that will be called right after key creation
      * @return new public key created by notary
      */
-    fun createKey(sessionAccountName: String, onKeyCreated: () -> Unit): Result<String, Exception> {
+    fun createKey(sessionAccountId: String, onKeyCreated: () -> Unit): Result<String, Exception> {
         // Generate new key from wallet
         val key = keysWallet.freshReceiveKey()
         onKeyCreated()
         val pubKey = key.publicKeyAsHex
         return ModelUtil.setAccountDetail(
-            sessionConsumer,
-            "$sessionAccountName@btcSession",
+            addressGenerationConsumer,
+            sessionAccountId,
             String.getRandomId(),
             pubKey
         ).map {
