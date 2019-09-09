@@ -63,7 +63,7 @@ class BtcAddressGenerationIntegrationTest {
      * Note: Iroha must be deployed to pass the test.
      * @given "free" session account is created
      * @when special generation account is triggered
-     * @then new free multisig btc address is created
+     * @then new free MultiSig btc address is created
      */
     @Test
     fun testGenerateFreeAddress() {
@@ -101,13 +101,14 @@ class BtcAddressGenerationIntegrationTest {
         assertNull(generatedAddress.irohaClient)
         assertEquals(notaryKeys, generatedAddress.notaryKeys.toList())
         assertEquals(nodeId.toString(), generatedAddress.nodeId)
+        assertFalse(environment.btcFreeAddressesProvider.ableToRegisterAsFree(expectedMsAddress.toBase58()).get())
     }
 
     /**
      * Note: Iroha must be deployed to pass the test.
      * @given "change" session account is created
      * @when special generation account is triggered
-     * @then new multisig btc address that stores change is created
+     * @then new MultiSig btc address that stores change is created
      */
     @Test
     fun testGenerateChangeAddress() {
@@ -144,6 +145,7 @@ class BtcAddressGenerationIntegrationTest {
         assertNull(generatedAddress.irohaClient)
         assertEquals(notaryKeys, generatedAddress.notaryKeys.toList())
         assertEquals(nodeId.toString(), generatedAddress.nodeId)
+        assertTrue(environment.btcFreeAddressesProvider.ableToRegisterAsFree(expectedMsAddress.toBase58()).get())
     }
 
     /**

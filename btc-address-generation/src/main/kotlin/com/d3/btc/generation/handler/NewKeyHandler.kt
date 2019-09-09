@@ -40,7 +40,7 @@ class NewKeyHandler(
 
     override fun handle(setAccountDetailEvent: SetAccountDetailEvent) {
         val accountId = setAccountDetailEvent.command.accountId
-        //create multisignature address, if we have enough keys in session account
+        //create a MultiSig address, if we have enough keys in session account
         onGenerateMultiSigAddress(
             accountId,
             getAddressTypeByAccountId(accountId)
@@ -52,8 +52,8 @@ class NewKeyHandler(
     }
 
     /**
-     * Generates multisig address
-     * @param sessionAccount - account that holds public keys that are used in multisig address generation
+     * Generates MultiSig address
+     * @param sessionAccount - account that holds public keys that are used in MultiSig address generation
      * @param addressType - type of address to generate
      */
     private fun onGenerateMultiSigAddress(

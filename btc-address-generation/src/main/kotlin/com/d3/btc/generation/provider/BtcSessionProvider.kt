@@ -18,8 +18,8 @@ const val ADDRESS_GENERATION_NODE_ID_KEY = "nodeId"
 // Class for creating session accounts. These accounts are used to store BTC public keys.
 @Component
 class BtcSessionProvider(
-    @Qualifier("addressGenerationConsumer")
-    private val addressGenerationConsumer: IrohaConsumer
+    @Qualifier("registrationConsumer")
+    private val registrationConsumer: IrohaConsumer
 ) {
 
     /**
@@ -30,7 +30,7 @@ class BtcSessionProvider(
      * @return Result of session creation process
      */
     fun createPubKeyCreationSession(sessionId: String, nodeId: String) =
-        addressGenerationConsumer.send(createPubKeyCreationSessionTx(sessionId, nodeId))
+        registrationConsumer.send(createPubKeyCreationSessionTx(sessionId, nodeId))
 
     /**
      * Creates a transaction that may be used to create special session account for notaries public key storage
@@ -40,7 +40,7 @@ class BtcSessionProvider(
      * @return transaction full of session creation commands
      */
     private fun createPubKeyCreationSessionTx(sessionId: String, nodeId: String): Transaction {
-        return Transaction.builder(addressGenerationConsumer.creator)
+        return Transaction.builder(registrationConsumer.creator)
             .createAccount(
                 sessionId,
                 BTC_SESSION_DOMAIN,

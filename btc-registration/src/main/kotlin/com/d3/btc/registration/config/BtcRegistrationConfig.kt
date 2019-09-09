@@ -32,4 +32,7 @@ interface BtcRegistrationConfig {
 
     /** Timeout for Iroha queries */
     val irohaQueryTimeoutMls: Int
+
+    //Account that stores free Bitcoin addresses
+    val freeAddressesStorageAccount: String
 }

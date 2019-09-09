@@ -12,7 +12,6 @@ import com.d3.btc.deposit.expansion.DepositServiceExpansion
 import com.d3.btc.deposit.handler.NewBtcChangeAddressDepositHandler
 import com.d3.btc.deposit.init.BtcNotaryInitialization
 import com.d3.btc.deposit.service.BtcWalletListenerRestartService
-import com.d3.btc.dwbridge.config.depositConfig
 import com.d3.btc.handler.NewBtcClientRegistrationHandler
 import com.d3.btc.peer.SharedPeerGroup
 import com.d3.btc.provider.BtcChangeAddressProvider
@@ -100,7 +99,7 @@ class BtcNotaryTestEnvironment(
         loadRawLocalConfigs("rmq", RMQConfig::class.java, "rmq.properties")
 
     private val depositReliableIrohaChainListener = ReliableIrohaChainListener(
-        rmqConfig, depositConfig.irohaBlockQueue,
+        rmqConfig, notaryConfig.irohaBlockQueue,
         consumerExecutorService = createPrettySingleThreadPool(
             BTC_DEPOSIT_SERVICE_NAME,
             "rmq-consumer"
@@ -120,7 +119,7 @@ class BtcNotaryTestEnvironment(
                 btcAddressStorage,
                 notaryConfig.registrationAccount
             ),
-            NewBtcChangeAddressDepositHandler(btcAddressStorage, depositConfig)
+            NewBtcChangeAddressDepositHandler(btcAddressStorage, notaryConfig)
         )
     }
 

@@ -8,7 +8,6 @@ package com.d3.btc.registration.config
 import com.d3.btc.provider.BtcFreeAddressesProvider
 import com.d3.btc.provider.BtcRegisteredAddressesProvider
 import com.d3.btc.provider.account.IrohaBtcAccountRegistrator
-import com.d3.btc.provider.address.BtcAddressesProvider
 import com.d3.commons.config.loadRawLocalConfigs
 import com.d3.commons.model.IrohaCredential
 import com.d3.commons.sidechain.iroha.consumer.IrohaConsumerImpl
@@ -19,7 +18,7 @@ import jp.co.soramitsu.iroha.java.Utils
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
-val btcRegistrationConfig = loadRawLocalConfigs(
+private val btcRegistrationConfig = loadRawLocalConfigs(
     "btc-registration",
     BtcRegistrationConfig::class.java,
     "registration.properties"
@@ -41,7 +40,7 @@ class BtcRegistrationAppConfiguration {
         IrohaAPI(btcRegistrationConfig.iroha.hostname, btcRegistrationConfig.iroha.port)
 
     @Bean
-    fun queryHelper() = RobustIrohaQueryHelperImpl(
+    fun registrationQueryHelper() = RobustIrohaQueryHelperImpl(
         IrohaQueryHelperImpl(
             irohaAPI(),
             btcRegistrationCredential.accountId,
@@ -51,30 +50,20 @@ class BtcRegistrationAppConfiguration {
     )
 
     @Bean
-    fun btcRegistrationConfig() = btcRegistrationConfig
+    fun btcRegistrationConsumer() = IrohaConsumerImpl(btcRegistrationCredential, irohaAPI())
 
     @Bean
-    fun btcRegisteredAddressesProvider() = BtcRegisteredAddressesProvider(
-        queryHelper(),
-        btcRegistrationCredential.accountId,
-        btcRegistrationConfig.notaryAccount
-    )
+    fun btcRegistrationConfig() = btcRegistrationConfig
 
     @Bean
     fun btcFreeAddressesProvider(): BtcFreeAddressesProvider {
         return BtcFreeAddressesProvider(
             btcRegistrationConfig.nodeId,
-            BtcAddressesProvider(
-                queryHelper(),
-                btcRegistrationConfig.mstRegistrationAccount,
-                btcRegistrationConfig.notaryAccount
-            ),
-            btcRegisteredAddressesProvider()
+            btcRegistrationConfig.freeAddressesStorageAccount,
+            registrationQueryHelper(),
+            btcRegistrationConsumer()
         )
     }
-
-    @Bean
-    fun btcRegistrationConsumer() = IrohaConsumerImpl(btcRegistrationCredential, irohaAPI())
 
     @Bean
     fun irohaBtcAccountCreator(): IrohaBtcAccountRegistrator {
@@ -83,4 +72,11 @@ class BtcRegistrationAppConfiguration {
             btcRegistrationConfig.notaryAccount
         )
     }
+
+    @Bean
+    fun btcRegisteredAddressesProvider() = BtcRegisteredAddressesProvider(
+        registrationQueryHelper(),
+        btcRegistrationConfig.registrationCredential.accountId,
+        btcRegistrationConfig.notaryAccount
+    )
 }

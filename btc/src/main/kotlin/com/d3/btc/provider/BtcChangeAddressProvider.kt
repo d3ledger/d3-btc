@@ -47,7 +47,7 @@ open class BtcChangeAddressProvider(
             mstRegistrationAccount
         ) { key, _ -> key == btcAddress }.map { detail ->
             if (detail.isPresent) {
-                val addressInfoJson = detail.get().second
+                val addressInfoJson = detail.get().value
                 Optional.of(AddressInfo.fromJson(addressInfoJson))
             } else {
                 Optional.empty()

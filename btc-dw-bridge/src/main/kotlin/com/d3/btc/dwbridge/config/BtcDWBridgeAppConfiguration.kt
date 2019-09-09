@@ -51,14 +51,14 @@ import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
-val withdrawalConfig =
+private val withdrawalConfig =
     loadLocalConfigs(
         "btc-withdrawal",
         BtcWithdrawalConfig::class.java,
         "withdrawal.properties"
     ).get()
 
-val depositConfig =
+private val depositConfig =
     loadLocalConfigs("btc-deposit", BtcDepositConfig::class.java, "deposit.properties").get()
 val dwBridgeConfig =
     loadLocalConfigs("btc-dw-bridge", BtcDWBridgeConfig::class.java, "dw-bridge.properties").get()

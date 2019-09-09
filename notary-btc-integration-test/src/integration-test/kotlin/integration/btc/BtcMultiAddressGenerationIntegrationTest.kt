@@ -73,9 +73,9 @@ class BtcMultiAddressGenerationIntegrationTest {
 
     /**
      * Note: Iroha must be deployed to pass the test.
-     * @given 3 address generation services working in a multisig mode and one "free" session account
+     * @given 3 address generation services working in a MultiSig mode and one "free" session account
      * @when special generation account is triggered
-     * @then new free multisig btc address is created
+     * @then new free MultiSig btc address is created
      */
     @Test
     fun testGenerateFreeAddress() {

@@ -18,6 +18,7 @@ import integration.btc.environment.BtcWithdrawalTestEnvironment
 import integration.helper.BTC_PRECISION
 import integration.helper.BtcIntegrationHelperUtil
 import integration.helper.D3_DOMAIN
+import integration.helper.NODE_ID
 import integration.registration.RegistrationServiceTestEnvironment
 import mu.KLogging
 import org.bitcoinj.core.Address
@@ -72,7 +73,8 @@ class BtcWithdrawalIntegrationTest {
             .fold({ address -> changeAddress = address }, { ex -> throw  ex })
         integrationHelper.preGenFreeBtcAddresses(
             environment.btcWithdrawalConfig.btcKeysWalletPath,
-            TOTAL_TESTS
+            TOTAL_TESTS,
+            NODE_ID
         )
         environment.newSignatureEventHandler.addBroadcastTransactionListeners { tx ->
             if (tx.outputs.any { output -> output.value.value == FAILED_BROADCAST_AMOUNT }) {

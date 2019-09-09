@@ -5,10 +5,10 @@
 
 package com.d3.btc.model
 
+import com.d3.commons.util.GsonInstance
 import com.d3.commons.util.irohaEscape
-import com.squareup.moshi.Moshi
 
-private val addressInfoJsonAdapter = Moshi.Builder().build().adapter(AddressInfo::class.java)
+private val gson = GsonInstance.get()
 
 data class BtcAddress(val address: String, val info: AddressInfo)
 
@@ -26,10 +26,12 @@ data class AddressInfo(
     val generationTime: Long?
 ) {
 
-    fun toJson() = addressInfoJsonAdapter.toJson(this).irohaEscape()
+    fun toJson() = gson.toJson(this)!!
 
     companion object {
-        fun fromJson(json: String) = addressInfoJsonAdapter.fromJson(json)!!
+
+        fun fromJson(json: String) = gson.fromJson(json, AddressInfo::class.java)!!
+
         fun createFreeAddressInfo(notaryKeys: List<String>, nodeId: String, generationTime: Long) =
             AddressInfo(null, notaryKeys, nodeId, generationTime)
 

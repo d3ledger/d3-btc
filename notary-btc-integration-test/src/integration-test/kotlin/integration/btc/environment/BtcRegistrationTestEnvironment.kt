@@ -15,6 +15,7 @@ import com.d3.commons.model.IrohaCredential
 import com.d3.commons.registration.NotaryRegistrationConfig
 import com.d3.commons.sidechain.iroha.consumer.IrohaConsumerImpl
 import com.d3.commons.sidechain.iroha.util.ModelUtil
+import com.d3.commons.sidechain.iroha.util.impl.IrohaQueryHelperImpl
 import com.d3.commons.sidechain.iroha.util.impl.RobustIrohaQueryHelperImpl
 import com.d3.commons.util.toHexString
 import integration.helper.BtcIntegrationHelperUtil
@@ -46,15 +47,20 @@ class BtcRegistrationTestEnvironment(
             )
         )
 
-    private val btcClientCreatorConsumer =
+    private val registrationConsumer =
         IrohaConsumerImpl(btcRegistrationCredential, integrationHelper.irohaAPI)
 
-    private val robustIrohaQueryHelper =
-        RobustIrohaQueryHelperImpl(integrationHelper.queryHelper, btcRegistrationConfig.irohaQueryTimeoutMls)
+    private val registrationQueryHelper =
+        RobustIrohaQueryHelperImpl(
+            IrohaQueryHelperImpl(integrationHelper.irohaAPI, btcRegistrationCredential),
+            btcRegistrationConfig.irohaQueryTimeoutMls
+        )
 
     val btcFreeAddressesProvider = BtcFreeAddressesProvider(
-        btcRegistrationConfig.nodeId, btcAddressesProvider(),
-        btcRegisteredAddressesProvider()
+        btcRegistrationConfig.nodeId,
+        btcRegistrationConfig.freeAddressesStorageAccount,
+        registrationQueryHelper,
+        registrationConsumer
     )
 
     val btcRegistrationServiceInitialization = BtcRegistrationServiceInitialization(
@@ -66,25 +72,19 @@ class BtcRegistrationTestEnvironment(
         )
     )
 
-    private fun btcAddressesProvider() = BtcAddressesProvider(
-        robustIrohaQueryHelper,
-        btcRegistrationConfig.mstRegistrationAccount,
-        btcRegistrationConfig.notaryAccount
-    )
-
     private fun btcRegisteredAddressesProvider() = BtcRegisteredAddressesProvider(
-        robustIrohaQueryHelper,
+        registrationQueryHelper,
         btcRegistrationCredential.accountId,
         btcRegistrationConfig.notaryAccount
     )
 
     private fun irohaBtcAccountCreator() = IrohaBtcAccountRegistrator(
-        btcClientCreatorConsumer,
+        registrationConsumer,
         btcRegistrationConfig.notaryAccount
     )
 
     val btcRegisteredAddressesProvider = BtcRegisteredAddressesProvider(
-        robustIrohaQueryHelper,
+        registrationQueryHelper,
         btcRegistrationConfig.registrationCredential.accountId,
         integrationHelper.accountHelper.notaryAccount.accountId
     )

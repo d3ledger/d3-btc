@@ -17,6 +17,7 @@ import integration.btc.environment.BtcWithdrawalTestEnvironment
 import integration.helper.BTC_PRECISION
 import integration.helper.BtcIntegrationHelperUtil
 import integration.helper.D3_DOMAIN
+import integration.helper.NODE_ID
 import integration.registration.RegistrationServiceTestEnvironment
 import mu.KLogging
 import org.bitcoinj.core.Address
@@ -68,7 +69,8 @@ class BtcWithdrawalFailResistanceIntegrationTest {
             .fold({ address -> changeAddress = address }, { ex -> throw  ex })
         integrationHelper.preGenFreeBtcAddresses(
             environment.btcWithdrawalConfig.btcKeysWalletPath,
-            TOTAL_TESTS * 2
+            TOTAL_TESTS * 2,
+            NODE_ID
         )
         environment.utxoProvider.addToBlackList(changeAddress.toBase58())
     }
