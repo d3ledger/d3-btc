@@ -11,6 +11,7 @@ import com.d3.btc.helper.address.createMsAddress
 import com.d3.btc.helper.currency.satToBtc
 import com.d3.btc.model.AddressInfo
 import com.d3.btc.peer.SharedPeerGroup
+import com.d3.btc.peer.SharedPeerGroupConfig
 import com.d3.btc.provider.BtcFreeAddressesProvider
 import com.d3.btc.provider.BtcRegisteredAddressesProvider
 import com.d3.btc.provider.account.IrohaBtcAccountRegistrator
@@ -183,9 +184,12 @@ class BtcIntegrationHelperUtil(peers: Int = 1) : IrohaIntegrationHelperUtil(peer
         return SharedPeerGroup(
             btcNetworkConfigProvider,
             wallet,
-            blockStoragePath,
-            hosts,
-            emptyList(),
+            SharedPeerGroupConfig(
+                blockStoragePath = blockStoragePath,
+                hosts = hosts,
+                dnsSeeds = emptyList(),
+                minBlockHeightForPeer = 0
+            ),
             walletInitializer
         )
     }

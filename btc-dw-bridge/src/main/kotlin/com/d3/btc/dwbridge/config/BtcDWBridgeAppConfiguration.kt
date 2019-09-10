@@ -11,6 +11,7 @@ import com.d3.btc.deposit.config.BtcDepositConfig
 import com.d3.btc.deposit.handler.NewBtcChangeAddressDepositHandler
 import com.d3.btc.dwbridge.BTC_DW_BRIDGE_SERVICE_NAME
 import com.d3.btc.handler.NewBtcClientRegistrationHandler
+import com.d3.btc.peer.SharedPeerGroupConfig
 import com.d3.btc.provider.BtcChangeAddressProvider
 import com.d3.btc.provider.BtcRegisteredAddressesProvider
 import com.d3.btc.provider.network.BtcNetworkConfigProvider
@@ -267,14 +268,10 @@ class BtcDWBridgeAppConfiguration {
         )
     }
 
-    @Bean
-    fun blockStoragePath() = dwBridgeConfig.bitcoin.blockStoragePath
 
     @Bean
     fun bitcoinConfig() = dwBridgeConfig.bitcoin
 
-    @Bean
-    fun btcHosts() = extractHosts(dwBridgeConfig.bitcoin)
 
     @Bean
     fun btcAddressStorage() = BtcAddressStorage(btcRegisteredAddressesProvider(), btcChangeAddressProvider())
@@ -292,7 +289,12 @@ class BtcDWBridgeAppConfiguration {
         )
 
     @Bean
-    fun dnsSeeds() = BtcDWBridgeConfig.extractSeeds(dwBridgeConfig)
+    fun sharedPeerGroupConfig() = SharedPeerGroupConfig(
+        blockStoragePath = dwBridgeConfig.bitcoin.blockStoragePath,
+        minBlockHeightForPeer = dwBridgeConfig.minBlockHeightForPeer,
+        hosts = extractHosts(dwBridgeConfig.bitcoin),
+        dnsSeeds = BtcDWBridgeConfig.extractSeeds(dwBridgeConfig)
+    )
 
     @Bean
     fun txStorageAccount() = withdrawalConfig.txStorageAccount

@@ -10,17 +10,16 @@ import com.d3.btc.provider.network.BtcNetworkConfigProvider
 import com.d3.btc.wallet.WalletInitializer
 import com.google.common.util.concurrent.ListenableFuture
 import mu.KLogging
+import org.bitcoinj.core.Peer
 import org.bitcoinj.core.PeerGroup
 import org.bitcoinj.core.Sha256Hash
 import org.bitcoinj.net.discovery.DnsDiscovery
 import org.bitcoinj.wallet.Wallet
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 import java.net.InetAddress
-import java.util.*
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.math.max
 
 /**
  * This is a peer group implementation that can be used in multiple services simultaneously with no fear of getting exception while calling 'startAsync()' or 'stopAsync()' twice
@@ -29,29 +28,35 @@ import java.util.concurrent.atomic.AtomicBoolean
 class SharedPeerGroup(
     btcNetworkConfigProvider: BtcNetworkConfigProvider,
     private val wallet: Wallet,
-    @Qualifier("blockStoragePath")
-    blockStoragePath: String,
-    @Qualifier("btcHosts")
-    hosts: List<String>,
-    @Qualifier("dnsSeeds")
-    private val dnsSeeds: List<String>,
+    sharedPeerGroupConfig: SharedPeerGroupConfig,
     private val walletInitializer: WalletInitializer
 ) :
     PeerGroup(
         btcNetworkConfigProvider.getConfig(),
-        getBlockChain(wallet, btcNetworkConfigProvider.getConfig(), blockStoragePath)
+        getBlockChain(wallet, btcNetworkConfigProvider.getConfig(), sharedPeerGroupConfig.blockStoragePath)
     ) {
 
     init {
-        hosts.forEach { host ->
+        // Add peers
+        sharedPeerGroupConfig.hosts.forEach { host ->
             this.addAddress(InetAddress.getByName(host))
             logger.info { "$host was added to peer group" }
         }
-        if (dnsSeeds.isNotEmpty()) {
-            logger.info("Peer discovery has been configured. DNS seeds are $dnsSeeds.")
+        // Add peer discovery
+        if (sharedPeerGroupConfig.dnsSeeds.isNotEmpty()) {
+            logger.info("Peer discovery has been configured. DNS seeds are ${sharedPeerGroupConfig.dnsSeeds}.")
             this.addPeerDiscovery(
-                DnsDiscovery(dnsSeeds.toTypedArray(), btcNetworkConfigProvider.getConfig())
+                DnsDiscovery(sharedPeerGroupConfig.dnsSeeds.toTypedArray(), btcNetworkConfigProvider.getConfig())
             )
+        }
+        // Filter peers
+        this.addConnectedEventListener { peer: Peer, _ ->
+            val minPeerChainHeight = max(wallet.lastBlockSeenHeight, sharedPeerGroupConfig.minBlockHeightForPeer)
+            if (peer.bestHeight < minPeerChainHeight) {
+                logger.warn("Peer $peer hasn't got enough blockchain data. Need at least $minPeerChainHeight while $peer has just ${peer.bestHeight} ")
+                peer.close()
+                logger.warn("Peer $peer has been closed.")
+            }
         }
     }
 
@@ -104,3 +109,13 @@ class SharedPeerGroup(
      */
     companion object : KLogging()
 }
+
+/**
+ * Shared peer group configuration class
+ */
+data class SharedPeerGroupConfig(
+    val blockStoragePath: String,
+    val hosts: List<String>,
+    val dnsSeeds: List<String>,
+    val minBlockHeightForPeer: Int
+)
