@@ -19,7 +19,8 @@ import org.springframework.stereotype.Component
 
 @Component
 open class UsedUTXOProvider(
-    private val irohaQueryHelper: IrohaQueryHelper,
+    @Qualifier("withdrawalQueryHelper")
+    private val withdrawalQueryHelper: IrohaQueryHelper,
     @Qualifier("withdrawalConsumer")
     private val withdrawalConsumer: IrohaConsumer,
     @Qualifier("utxoStorageAccount")
@@ -35,7 +36,7 @@ open class UsedUTXOProvider(
      * @return true if output has been used
      */
     fun isUsed(withdrawalDetails: WithdrawalDetails, output: TransactionOutput): Result<Boolean, Exception> {
-        return irohaQueryHelper.getAccountDetails(
+        return withdrawalQueryHelper.getAccountDetails(
             utxoStorageAccount, withdrawalConsumer.creator, output.irohaKey()
         ).map { value ->
             if (value.isPresent) {
