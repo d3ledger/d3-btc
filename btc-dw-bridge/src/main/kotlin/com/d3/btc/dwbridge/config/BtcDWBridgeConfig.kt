@@ -29,6 +29,9 @@ interface BtcDWBridgeConfig {
     // Bitcoin DNS seeds. Seeds are separated with comma (',') symbol
     val dnsSeedAddresses: String?
 
+    /** Timeout for Iroha queries */
+    val irohaQueryTimeoutMls: Int
+
     companion object {
         fun extractSeeds(btcDWBridgeConfig: BtcDWBridgeConfig): List<String> =
             extractCommaSeparatedList(btcDWBridgeConfig.dnsSeedAddresses)

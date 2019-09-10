@@ -34,6 +34,7 @@ import com.d3.commons.sidechain.SideChainEvent
 import com.d3.commons.sidechain.iroha.consumer.IrohaConsumerImpl
 import com.d3.commons.sidechain.iroha.consumer.MultiSigIrohaConsumer
 import com.d3.commons.sidechain.iroha.util.impl.IrohaQueryHelperImpl
+import com.d3.commons.sidechain.iroha.util.impl.RobustIrohaQueryHelperImpl
 import com.d3.commons.util.createPrettySingleThreadPool
 import com.d3.reverse.adapter.ReverseChainAdapter
 import com.d3.reverse.client.ReliableIrohaConsumerImpl
@@ -113,6 +114,11 @@ class BtcDWBridgeAppConfiguration {
     private val notaryCredential =
         IrohaCredential(depositConfig.notaryCredential.accountId, notaryKeypair)
 
+    private val signatureCollectorCredential = IrohaCredential(
+        withdrawalConfig.signatureCollectorCredential.accountId,
+        signatureCollectorKeypair
+    )
+
     @Bean
     fun notaryCredential() = notaryCredential
 
@@ -182,27 +188,31 @@ class BtcDWBridgeAppConfiguration {
     }
 
     @Bean
+    fun signatureCollectorQueryHelper() = RobustIrohaQueryHelperImpl(
+        IrohaQueryHelperImpl(irohaAPI(), signatureCollectorCredential),
+        dwBridgeConfig.irohaQueryTimeoutMls
+    )
+
+    @Bean
+    fun notaryQueryHelper() = RobustIrohaQueryHelperImpl(
+        IrohaQueryHelperImpl(
+            irohaAPI(),
+            depositConfig.notaryCredential.accountId,
+            notaryKeypair
+        ), dwBridgeConfig.irohaQueryTimeoutMls
+    )
+
+    @Bean
     fun btcRegisteredAddressesProvider(): BtcRegisteredAddressesProvider {
         return BtcRegisteredAddressesProvider(
-            IrohaQueryHelperImpl(
-                irohaAPI(),
-                depositConfig.notaryCredential.accountId,
-                notaryKeypair
-            ),
+            notaryQueryHelper(),
             depositConfig.registrationAccount,
             depositConfig.notaryCredential.accountId
         )
     }
 
     @Bean
-    fun signatureCollectorCredential() =
-        IrohaCredential(
-            withdrawalConfig.signatureCollectorCredential.accountId,
-            signatureCollectorKeypair
-        )
-
-    @Bean
-    fun signatureCollectorConsumer() = IrohaConsumerImpl(signatureCollectorCredential(), irohaAPI())
+    fun signatureCollectorConsumer() = IrohaConsumerImpl(signatureCollectorCredential, irohaAPI())
 
     @Bean
     fun transferWallet(networkProvider: BtcNetworkConfigProvider): Wallet {
@@ -240,12 +250,13 @@ class BtcDWBridgeAppConfiguration {
     fun broadcastsIrohaConsumer() = IrohaConsumerImpl(broadcastCredential, irohaAPI())
 
     @Bean
-    fun withdrawalQueryHelper() =
+    fun withdrawalQueryHelper() = RobustIrohaQueryHelperImpl(
         IrohaQueryHelperImpl(
             irohaAPI(),
             withdrawalCredential().accountId,
             withdrawalCredential().keyPair
-        )
+        ), dwBridgeConfig.irohaQueryTimeoutMls
+    )
 
     @Bean
     fun btcChangeAddressProvider(): BtcChangeAddressProvider {

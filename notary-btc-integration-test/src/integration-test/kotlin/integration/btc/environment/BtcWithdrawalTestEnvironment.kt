@@ -6,6 +6,7 @@
 package integration.btc.environment
 
 import com.d3.btc.config.BitcoinConfig
+import com.d3.btc.dwbridge.config.BtcDWBridgeConfig
 import com.d3.btc.handler.NewBtcClientRegistrationHandler
 import com.d3.btc.helper.address.outPutToBase58Address
 import com.d3.btc.peer.SharedPeerGroup
@@ -32,6 +33,7 @@ import com.d3.btc.withdrawal.statistics.WithdrawalStatistics
 import com.d3.btc.withdrawal.transaction.*
 import com.d3.chainadapter.client.RMQConfig
 import com.d3.chainadapter.client.ReliableIrohaChainListener
+import com.d3.commons.config.loadLocalConfigs
 import com.d3.commons.config.loadRawLocalConfigs
 import com.d3.commons.expansion.ServiceExpansion
 import com.d3.commons.model.IrohaCredential
@@ -39,6 +41,7 @@ import com.d3.commons.service.WithdrawalFinalizer
 import com.d3.commons.sidechain.iroha.consumer.IrohaConsumerImpl
 import com.d3.commons.sidechain.iroha.consumer.MultiSigIrohaConsumer
 import com.d3.commons.sidechain.iroha.util.impl.IrohaQueryHelperImpl
+import com.d3.commons.sidechain.iroha.util.impl.RobustIrohaQueryHelperImpl
 import com.d3.commons.util.createPrettySingleThreadPool
 import com.d3.reverse.adapter.ReverseChainAdapter
 import com.d3.reverse.client.ReliableIrohaConsumerImpl
@@ -82,6 +85,9 @@ class BtcWithdrawalTestEnvironment(
         ),
     private val peers: Int = 1
 ) : Closeable {
+
+    private val dwBridgeConfig =
+        loadLocalConfigs("btc-dw-bridge", BtcDWBridgeConfig::class.java, "dw-bridge.properties").get()
 
     val createdTransactions = ConcurrentHashMap<String, Pair<Long, Transaction>>()
 
@@ -183,7 +189,7 @@ class BtcWithdrawalTestEnvironment(
     private val withdrawalQueryHelper by lazy {
         val irohaQueryHelper = spy(IrohaQueryHelperImpl(irohaApi, withdrawalCredential))
         doReturn(Result.of { peers }).whenever(irohaQueryHelper).getPeersCount()
-        irohaQueryHelper
+        RobustIrohaQueryHelperImpl(irohaQueryHelper, dwBridgeConfig.irohaQueryTimeoutMls)
     }
 
     private val broadcastsProvider = BroadcastsProvider(broadcastIrohaConsumer, withdrawalQueryHelper)
@@ -239,7 +245,7 @@ class BtcWithdrawalTestEnvironment(
 
     private val btcAddressStorage = BtcAddressStorage(btcRegisteredAddressesProvider, btcChangeAddressProvider)
 
-    val usedUTXOProvider =
+    private val usedUTXOProvider =
         UsedUTXOProvider(withdrawalQueryHelper, withdrawalIrohaConsumer, btcWithdrawalConfig.utxoStorageAccount)
 
     val utxoProvider =
@@ -247,12 +253,11 @@ class BtcWithdrawalTestEnvironment(
             transferWallet,
             peerGroup,
             btcNetworkConfigProvider,
-            btcRegisteredAddressesProvider,
-            btcChangeAddressProvider,
+            btcAddressStorage,
             usedUTXOProvider
         )
 
-    val transactionsStorage =
+    private val transactionsStorage =
         TransactionsStorage(
             BtcRegTestConfigProvider(),
             withdrawalQueryHelper,
@@ -265,11 +270,17 @@ class BtcWithdrawalTestEnvironment(
         TransactionCreator(btcChangeAddressProvider, btcNetworkConfigProvider, utxoProvider, transactionsStorage)
     private val transactionSigner =
         TransactionSigner(btcRegisteredAddressesProvider, btcChangeAddressProvider, transferWallet)
+
+    private val signatureCollectorQueryHelper = RobustIrohaQueryHelperImpl(
+        IrohaQueryHelperImpl(irohaApi, signaturesCollectorCredential),
+        dwBridgeConfig
+            .irohaQueryTimeoutMls
+    )
+
     val signCollector =
         SignCollector(
-            signaturesCollectorCredential,
+            signatureCollectorQueryHelper,
             signaturesCollectorIrohaConsumer,
-            irohaApi,
             transactionSigner,
             transferWallet
         )
@@ -409,15 +420,13 @@ class BtcWithdrawalTestEnvironment(
         transferWallet: Wallet,
         peerGroup: SharedPeerGroup,
         btcNetworkConfigProvider: BtcNetworkConfigProvider,
-        btcRegisteredAddressesProvider: BtcRegisteredAddressesProvider,
-        btcChangeAddressProvider: BtcChangeAddressProvider,
+        btcAddressStorage: BtcAddressStorage,
         usedUTXOProvider: UsedUTXOProvider
     ) : UTXOProvider(
         transferWallet,
         peerGroup,
         btcNetworkConfigProvider,
-        btcRegisteredAddressesProvider,
-        btcChangeAddressProvider,
+        btcAddressStorage,
         usedUTXOProvider
 
     ) {

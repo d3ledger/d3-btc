@@ -16,7 +16,7 @@ import mu.KLogging
  * In-memory BTC address storage.
  * Created to reduce Iroha querying.
  */
-class BtcAddressStorage(
+open class BtcAddressStorage(
     btcRegisteredAddressesProvider: BtcRegisteredAddressesProvider,
     btcChangeAddressProvider: BtcChangeAddressProvider
 ) {
@@ -101,7 +101,6 @@ class BtcAddressStorage(
     @Synchronized
     fun isChangeAddress(address: String) = changeAddressesStorage.contains(address)
 
-
     /**
      * Checks if address is a client address
      * @param address - address to check
@@ -118,6 +117,17 @@ class BtcAddressStorage(
     @Synchronized
     fun getClientAccountId(address: String) = clientAddressesStorage[address]
 
-    companion object : KLogging()
+    /**
+     * Returns all change addresses
+     */
+    @Synchronized
+    fun getChangeAddresses(): Set<String> = HashSet(changeAddressesStorage)
 
+    /**
+     * Returns all client addresses
+     */
+    @Synchronized
+    fun getClientAddresses(): Set<String> = HashSet(clientAddressesStorage.keys)
+
+    companion object : KLogging()
 }

@@ -29,7 +29,7 @@ data class AddressInfo(
     fun toJson() = addressInfoJsonAdapter.toJson(this).irohaEscape()
 
     companion object {
-        fun fromJson(json: String) = addressInfoJsonAdapter.fromJson(json)
+        fun fromJson(json: String) = addressInfoJsonAdapter.fromJson(json)!!
         fun createFreeAddressInfo(notaryKeys: List<String>, nodeId: String, generationTime: Long) =
             AddressInfo(null, notaryKeys, nodeId, generationTime)
 
