@@ -11,6 +11,7 @@ import com.d3.btc.provider.account.BTC_CURRENCY_NAME_KEY
 import com.d3.commons.sidechain.iroha.util.IrohaQueryHelper
 import com.github.kittinunf.result.Result
 import com.github.kittinunf.result.map
+import java.util.*
 
 //Class that provides all registered BTC addresses
 open class BtcRegisteredAddressesProvider(
@@ -46,7 +47,26 @@ open class BtcRegisteredAddressesProvider(
             registrationAccount
         ).map { addresses ->
             addresses.map { entry ->
-                BtcAddress(entry.key, AddressInfo.fromJson(entry.value)!!)
+                BtcAddress(entry.key, AddressInfo.fromJson(entry.value))
+            }
+        }
+    }
+
+    /**
+     * Returns given address info
+     * @param btcAddress - Bitcoin address
+     * @return address info or null if there is no such an address
+     */
+    fun getAddressInfo(btcAddress: String): Result<Optional<AddressInfo>, Exception> {
+        return queryHelper.getAccountDetailsFirst(
+            notaryAccount,
+            registrationAccount
+        ) { key, _ -> key == btcAddress }.map { detail ->
+            if (detail.isPresent) {
+                val addressInfoJson = detail.get().second
+                Optional.of(AddressInfo.fromJson(addressInfoJson))
+            } else {
+                Optional.empty()
             }
         }
     }

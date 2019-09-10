@@ -9,6 +9,7 @@ import com.d3.btc.peer.SharedPeerGroup;
 import com.d3.btc.provider.BtcChangeAddressProvider;
 import com.d3.btc.provider.BtcRegisteredAddressesProvider;
 import com.d3.btc.provider.network.BtcRegTestConfigProvider;
+import com.d3.btc.storage.BtcAddressStorage;
 import com.d3.btc.withdrawal.transaction.WithdrawalDetails;
 import com.d3.commons.sidechain.iroha.consumer.IrohaConsumer;
 import com.d3.commons.sidechain.iroha.util.IrohaQueryHelper;
@@ -46,8 +47,7 @@ public class UTXOProviderTest {
                     wallet,
                     peerGroup,
                     new BtcRegTestConfigProvider(),
-                    mock(BtcRegisteredAddressesProvider.class),
-                    mock(BtcChangeAddressProvider.class),
+                    mock(BtcAddressStorage.class),
                     usedUTXOProvider
             ));
 
