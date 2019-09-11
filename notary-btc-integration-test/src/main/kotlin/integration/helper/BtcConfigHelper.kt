@@ -28,11 +28,12 @@ class BtcConfigHelper(
     private val accountHelper: IrohaAccountHelper
 ) : IrohaConfigHelper() {
 
-    private val utxoStorageAccountCredential = accountHelper.createTesterAccount("utxo_storage")
-    private val txStorageAccountCredential = accountHelper.createTesterAccount("tx_storage")
-    private val broadcastCredential = accountHelper.createTesterAccount("broadcast", listOf("broadcast"))
+    private val utxoStorageAccountCredential by lazy { accountHelper.createTesterAccount("utxo_storage") }
+    val freeAddressesStorageAccountCredential by lazy { accountHelper.createTesterAccount("free_address_storage") }
+    private val txStorageAccountCredential by lazy { accountHelper.createTesterAccount("tx_storage") }
+    private val broadcastCredential by lazy { accountHelper.createTesterAccount("broadcast", listOf("broadcast")) }
 
-    /** Creates config for BTC multisig addresses generation
+    /** Creates config for BTC MultiSig addresses generation
      * @param initAddresses - number of addresses that will be generated at initial phase
      * @param testName - name of test
      * @return config
@@ -50,6 +51,7 @@ class BtcConfigHelper(
             ).get()
 
         return object : BtcAddressGenerationConfig {
+            override val freeAddressesStorageAccount = freeAddressesStorageAccountCredential.accountId
             override val irohaQueryTimeoutMls = 180_000
             override val clientStorageAccount = registrationConfig.clientStorageAccount
             override val registrationServiceAccountName =
@@ -186,6 +188,7 @@ class BtcConfigHelper(
 
     fun createBtcRegistrationConfig(): BtcRegistrationConfig {
         return object : BtcRegistrationConfig {
+            override val freeAddressesStorageAccount = freeAddressesStorageAccountCredential.accountId
             override val irohaQueryTimeoutMls = 25_000
             override val nodeId = NODE_ID
             override val notaryAccount = accountHelper.notaryAccount.accountId

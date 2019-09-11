@@ -10,6 +10,7 @@ import com.d3.btc.generation.config.BtcAddressGenerationConfig
 import com.d3.btc.generation.expansion.AddressGenerationServiceExpansion
 import com.d3.btc.generation.handler.BtcAddressGenerationTriggerHandler
 import com.d3.btc.generation.handler.BtcAddressRegisteredHandler
+import com.d3.btc.generation.handler.BtcMultiSigAddressGeneratedHandler
 import com.d3.btc.generation.handler.NewKeyHandler
 import com.d3.btc.generation.init.BtcAddressGenerationInitialization
 import com.d3.btc.generation.provider.ADDRESS_GENERATION_NODE_ID_KEY
@@ -21,8 +22,6 @@ import com.d3.btc.helper.address.createMsAddress
 import com.d3.btc.model.BtcAddressType
 import com.d3.btc.provider.BtcChangeAddressProvider
 import com.d3.btc.provider.BtcFreeAddressesProvider
-import com.d3.btc.provider.BtcRegisteredAddressesProvider
-import com.d3.btc.provider.address.BtcAddressesProvider
 import com.d3.btc.provider.network.BtcRegTestConfigProvider
 import com.d3.chainadapter.client.RMQConfig
 import com.d3.chainadapter.client.ReliableIrohaChainListener
@@ -106,10 +105,10 @@ class BtcAddressGenerationTestEnvironment(
     private val registrationCredential =
         IrohaCredential(btcGenerationConfig.registrationAccount.accountId, registrationKeyPair)
 
-    private val addressGenerationConsumer =
+    private val registrationConsumer =
         IrohaConsumerImpl(registrationCredential, irohaApi)
 
-    val btcKeyGenSessionProvider = BtcSessionProvider(addressGenerationConsumer)
+    val btcKeyGenSessionProvider = BtcSessionProvider(registrationConsumer)
 
     private val multiSigConsumer = MultiSigIrohaConsumer(
         mstRegistrationCredential,
@@ -134,10 +133,9 @@ class BtcAddressGenerationTestEnvironment(
         return BtcPublicKeyProvider(
             registrationQueryHelper,
             keysWallet,
-            btcGenerationConfig.notaryAccount,
-            btcGenerationConfig.changeAddressesStorageAccount,
+            btcGenerationConfig,
             multiSigConsumer,
-            addressGenerationConsumer,
+            registrationConsumer,
             btcNetworkConfigProvider
         )
     }
@@ -154,23 +152,12 @@ class BtcAddressGenerationTestEnvironment(
         autoAck = true
     )
 
-    private val btcAddressesProvider = BtcAddressesProvider(
-        registrationQueryHelper,
-        btcGenerationConfig.mstRegistrationAccount.accountId,
-        btcGenerationConfig.notaryAccount
-    )
-
-    private val btcRegisteredAddressesProvider = BtcRegisteredAddressesProvider(
-        registrationQueryHelper,
-        registrationCredential.accountId,
-        btcGenerationConfig.notaryAccount
-    )
-
     val btcFreeAddressesProvider =
         BtcFreeAddressesProvider(
             btcGenerationConfig.nodeId,
-            btcAddressesProvider,
-            btcRegisteredAddressesProvider
+            btcGenerationConfig.freeAddressesStorageAccount,
+            registrationQueryHelper,
+            registrationConsumer
         )
 
     private val btcChangeAddressesProvider = BtcChangeAddressProvider(
@@ -185,6 +172,8 @@ class BtcAddressGenerationTestEnvironment(
         btcChangeAddressesProvider
     )
 
+    private val btcMstAddressGeneratedHandler =
+        BtcMultiSigAddressGeneratedHandler(btcFreeAddressesProvider, btcGenerationConfig)
     private val newKeyHandler =
         NewKeyHandler(btcGenerationConfig, keysWallet, registrationQueryHelper, btcPublicKeyProvider())
     private val btcAddressRegisteredHandler =
@@ -212,7 +201,12 @@ class BtcAddressGenerationTestEnvironment(
                 irohaApi
             ), mstRegistrationCredential
         ),
-        listOf(newKeyHandler, btcAddressGenerationTriggerHandler, btcAddressRegisteredHandler),
+        listOf(
+            newKeyHandler,
+            btcAddressGenerationTriggerHandler,
+            btcAddressRegisteredHandler,
+            btcMstAddressGeneratedHandler
+        ),
         notaryClientsProvider
     )
 
@@ -221,13 +215,13 @@ class BtcAddressGenerationTestEnvironment(
      * @throws IllegalStateException if not enough
      */
     fun checkIfFreeAddressesWereGeneratedAtInitialPhase() {
-        btcFreeAddressesProvider.getFreeAddresses()
+        btcFreeAddressesProvider.countFreeAddresses()
             .fold({ freeAddresses ->
-                if (freeAddresses.size < btcGenerationConfig.threshold) {
+                if (freeAddresses < btcGenerationConfig.threshold) {
                     throw IllegalStateException(
                         "Generation service was not properly started." +
                                 " Not enough address were generated at initial phase " +
-                                "(${freeAddresses.size} out of ${btcGenerationConfig.threshold})."
+                                "($freeAddresses out of ${btcGenerationConfig.threshold})."
                     )
                 }
             }, { ex -> throw IllegalStateException("Cannot get free addresses", ex) })

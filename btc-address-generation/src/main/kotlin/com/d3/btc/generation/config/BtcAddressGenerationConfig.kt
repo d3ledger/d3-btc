@@ -27,6 +27,9 @@ interface BtcAddressGenerationConfig {
     //Account that stores change addresses
     val changeAddressesStorageAccount: String
 
+    //Account that stores free Bitcoin addresses
+    val freeAddressesStorageAccount: String
+
     //Port of health check service
     val healthCheckPort: Int
 

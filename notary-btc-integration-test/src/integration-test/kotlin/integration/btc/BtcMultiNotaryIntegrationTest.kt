@@ -73,7 +73,7 @@ class BtcMultiNotaryIntegrationTest {
 
     /**
      * Note: Iroha and bitcoind must be deployed to pass the test.
-     * @given 3 notary services working in a multisig mode and new registered account
+     * @given 3 notary services working in a MultiSig mode and new registered account
      * @when 1 btc was sent to new account
      * @then balance of new account is increased by 1 btc(or 100.000.000 sat)
      */

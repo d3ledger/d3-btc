@@ -10,12 +10,12 @@ import com.d3.btc.config.BitcoinConfig
 import com.d3.btc.helper.address.createMsAddress
 import com.d3.btc.helper.currency.satToBtc
 import com.d3.btc.model.AddressInfo
+import com.d3.btc.model.BtcAddress
 import com.d3.btc.peer.SharedPeerGroup
 import com.d3.btc.peer.SharedPeerGroupConfig
 import com.d3.btc.provider.BtcFreeAddressesProvider
 import com.d3.btc.provider.BtcRegisteredAddressesProvider
 import com.d3.btc.provider.account.IrohaBtcAccountRegistrator
-import com.d3.btc.provider.address.BtcAddressesProvider
 import com.d3.btc.provider.network.BtcNetworkConfigProvider
 import com.d3.btc.registration.strategy.BtcRegistrationStrategyImpl
 import com.d3.btc.wallet.WalletInitializer
@@ -26,6 +26,8 @@ import com.d3.commons.notary.IrohaTransaction
 import com.d3.commons.sidechain.iroha.consumer.IrohaConsumerImpl
 import com.d3.commons.sidechain.iroha.consumer.IrohaConverter
 import com.d3.commons.sidechain.iroha.util.ModelUtil
+import com.d3.commons.sidechain.iroha.util.impl.IrohaQueryHelperImpl
+import com.d3.commons.util.irohaEscape
 import com.d3.commons.util.toHexString
 import com.github.jleskovar.btcrpc.BitcoinRpcClientFactory
 import com.github.kittinunf.result.Result
@@ -35,12 +37,12 @@ import jp.co.soramitsu.bootstrap.changelog.ExpansionDetails
 import jp.co.soramitsu.bootstrap.changelog.ExpansionUtils
 import mu.KLogging
 import org.bitcoinj.core.Address
-import org.bitcoinj.crypto.DeterministicKey
 import org.bitcoinj.params.RegTestParams
 import org.bitcoinj.wallet.Wallet
 import java.io.File
 import java.math.BigDecimal
 import java.security.KeyPair
+import kotlin.math.ceil
 
 const val BTC_PRECISION = 8
 // Default node id
@@ -53,6 +55,14 @@ private const val BTC_INITIAL_BLOCKS = 101
 class BtcIntegrationHelperUtil(peers: Int = 1) : IrohaIntegrationHelperUtil(peers) {
 
     override val configHelper by lazy { BtcConfigHelper(accountHelper) }
+
+    private val registrationQueryHelper by lazy {
+        IrohaQueryHelperImpl(irohaAPI, accountHelper.registrationAccount)
+    }
+
+    private val registrationIrohaConsumer by lazy {
+        IrohaConsumerImpl(accountHelper.registrationAccount, irohaAPI)
+    }
 
     private val mstRegistrationIrohaConsumer by lazy {
         IrohaConsumerImpl(accountHelper.mstRegistrationAccount, irohaAPI)
@@ -72,7 +82,6 @@ class BtcIntegrationHelperUtil(peers: Int = 1) : IrohaIntegrationHelperUtil(peer
             BTC_PRECISION
         )
 
-
     private val rpcClient by lazy {
         BitcoinRpcClientFactory.createClient(
             user = "test",
@@ -89,30 +98,24 @@ class BtcIntegrationHelperUtil(peers: Int = 1) : IrohaIntegrationHelperUtil(peer
         accountHelper.notaryAccount.accountId
     )
 
+    private val btcFreeAddress by lazy {
+        BtcFreeAddressesProvider(
+            NODE_ID,
+            configHelper.freeAddressesStorageAccountCredential.accountId,
+            registrationQueryHelper,
+            registrationIrohaConsumer
+
+        )
+    }
+
     private val btcRegistrationStrategy by lazy {
-        val btcAddressesProvider =
-            BtcAddressesProvider(
-                queryHelper,
-                accountHelper.mstRegistrationAccount.accountId,
-                accountHelper.notaryAccount.accountId
-            )
-        val btcTakenAddressesProvider =
-            BtcRegisteredAddressesProvider(
-                queryHelper,
-                accountHelper.registrationAccount.accountId,
-                accountHelper.notaryAccount.accountId
-            )
         val irohaBtcAccountCreator = IrohaBtcAccountRegistrator(
             registrationConsumer,
             accountHelper.notaryAccount.accountId
         )
         BtcRegistrationStrategyImpl(
             btcRegisteredAddressesProvider,
-            BtcFreeAddressesProvider(
-                NODE_ID,
-                btcAddressesProvider,
-                btcTakenAddressesProvider
-            ),
+            btcFreeAddress,
             irohaBtcAccountCreator
         )
     }
@@ -121,10 +124,10 @@ class BtcIntegrationHelperUtil(peers: Int = 1) : IrohaIntegrationHelperUtil(peer
      * Pregenerates multiple BTC addresses that can be registered later
      * @param walletFilePath - path to wallet file
      * @param addressesToGenerate - number of addresses to generate
+     * @param nodeId - if of node
      */
-    fun preGenFreeBtcAddresses(walletFilePath: String, addressesToGenerate: Int) {
-        val totalBatches =
-            Math.ceil(addressesToGenerate.div(GENERATED_ADDRESSES_PER_BATCH.toDouble())).toInt()
+    fun preGenFreeBtcAddresses(walletFilePath: String, addressesToGenerate: Int, nodeId: String) {
+        val totalBatches = ceil(addressesToGenerate.div(GENERATED_ADDRESSES_PER_BATCH.toDouble())).toInt()
         /*
          Iroha dies if it sees too much of transactions in a batch.
           */
@@ -132,10 +135,11 @@ class BtcIntegrationHelperUtil(peers: Int = 1) : IrohaIntegrationHelperUtil(peer
             if (batch == totalBatches) {
                 preGenFreeBtcAddressesBatch(
                     walletFilePath,
-                    addressesToGenerate - (totalBatches - 1) * GENERATED_ADDRESSES_PER_BATCH
+                    addressesToGenerate - (totalBatches - 1) * GENERATED_ADDRESSES_PER_BATCH,
+                    nodeId
                 )
             } else {
-                preGenFreeBtcAddressesBatch(walletFilePath, GENERATED_ADDRESSES_PER_BATCH)
+                preGenFreeBtcAddressesBatch(walletFilePath, GENERATED_ADDRESSES_PER_BATCH, nodeId)
             }
         }
     }
@@ -144,31 +148,28 @@ class BtcIntegrationHelperUtil(peers: Int = 1) : IrohaIntegrationHelperUtil(peer
      * Creates and executes a batch full of generated BTC addresses
      * @param walletFilePath - path to wallet file
      * @param addressesToGenerate - number of addresses to generate
+     * @param nodeId - id of node
      */
-    private fun preGenFreeBtcAddressesBatch(walletFilePath: String, addressesToGenerate: Int) {
+    private fun preGenFreeBtcAddressesBatch(walletFilePath: String, addressesToGenerate: Int, nodeId: String) {
         val irohaTxList = ArrayList<IrohaTransaction>()
         for (i in 1..addressesToGenerate) {
-            val (key, address) = generateKeyAndAddress(walletFilePath)
+            val btcAddress = generateKeyAndAddress(walletFilePath, nodeId)
             val irohaTx = IrohaTransaction(
-                mstRegistrationIrohaConsumer.creator,
+                registrationIrohaConsumer.creator,
                 ModelUtil.getCurrentTime(),
                 1,
                 arrayListOf(
                     IrohaCommand.CommandSetAccountDetail(
-                        accountHelper.notaryAccount.accountId,
-                        address.toBase58(),
-                        AddressInfo.createFreeAddressInfo(
-                            listOf(key.publicKeyAsHex),
-                            NODE_ID,
-                            System.currentTimeMillis()
-                        ).toJson()
+                        configHelper.freeAddressesStorageAccountCredential.accountId,
+                        btcAddress.address,
+                        btcAddress.info.toJson().irohaEscape()
                     )
                 )
             )
             irohaTxList.add(irohaTx)
         }
         val utx = IrohaConverter.convert(IrohaOrderedBatch(irohaTxList))
-        mstRegistrationIrohaConsumer.send(utx).failure { ex -> throw ex }
+        registrationIrohaConsumer.send(utx).failure { ex -> throw ex }
     }
 
     /**
@@ -204,17 +205,9 @@ class BtcIntegrationHelperUtil(peers: Int = 1) : IrohaIntegrationHelperUtil(peer
         walletFilePath: String,
         nodeId: String = NODE_ID
     ): Result<Address, Exception> {
-        val (key, address) = generateKeyAndAddress(walletFilePath)
-        return ModelUtil.setAccountDetail(
-            mstRegistrationIrohaConsumer,
-            accountHelper.notaryAccount.accountId,
-            address.toBase58(),
-            AddressInfo.createFreeAddressInfo(
-                listOf(key.publicKeyAsHex),
-                nodeId,
-                System.currentTimeMillis()
-            ).toJson()
-        ).map { address }
+        val btcAddress = generateKeyAndAddress(walletFilePath, nodeId)
+        return btcFreeAddress.createFreeAddress(btcAddress)
+            .map { Address.fromBase58(RegTestParams.get(), btcAddress.address) }
     }
 
     /**
@@ -223,21 +216,17 @@ class BtcIntegrationHelperUtil(peers: Int = 1) : IrohaIntegrationHelperUtil(peer
      * @return randomly generated BTC address
      */
     fun genChangeBtcAddress(walletFilePath: String): Result<Address, Exception> {
-        val (key, address) = generateKeyAndAddress(walletFilePath)
+        val btcAddress = generateKeyAndAddress(walletFilePath, "any_node")
         return ModelUtil.setAccountDetail(
             mstRegistrationIrohaConsumer,
             accountHelper.changeAddressesStorageAccount.accountId,
-            address.toBase58(),
-            AddressInfo.createChangeAddressInfo(
-                listOf(key.publicKeyAsHex),
-                NODE_ID,
-                System.currentTimeMillis()
-            ).toJson()
-        ).map { address }
+            btcAddress.address,
+            btcAddress.info.toJson().irohaEscape()
+        ).map { Address.fromBase58(RegTestParams.get(), btcAddress.address) }
     }
 
     // Generates key and key based address
-    private fun generateKeyAndAddress(walletFilePath: String): Pair<DeterministicKey, Address> {
+    private fun generateKeyAndAddress(walletFilePath: String, nodeId: String): BtcAddress {
         val walletFile = File(walletFilePath)
         val wallet = Wallet.loadFromFile(walletFile)
         val key = wallet.freshReceiveKey()
@@ -245,7 +234,10 @@ class BtcIntegrationHelperUtil(peers: Int = 1) : IrohaIntegrationHelperUtil(peer
         wallet.addWatchedAddress(address)
         wallet.saveToFile(walletFile)
         logger.info { "generated address $address" }
-        return Pair(key, address)
+        return BtcAddress(
+            address.toBase58(),
+            AddressInfo.createFreeAddressInfo(listOf(key.publicKeyAsHex), nodeId, System.currentTimeMillis())
+        )
     }
 
     /**

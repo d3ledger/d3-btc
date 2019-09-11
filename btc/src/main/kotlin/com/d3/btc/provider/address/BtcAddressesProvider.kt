@@ -11,6 +11,7 @@ import com.d3.commons.sidechain.iroha.util.IrohaQueryHelper
 import com.github.kittinunf.result.Result
 import com.github.kittinunf.result.map
 
+//TODO delete probably
 //Class that provides all created BTC addresses
 class BtcAddressesProvider(
     private val queryHelper: IrohaQueryHelper,

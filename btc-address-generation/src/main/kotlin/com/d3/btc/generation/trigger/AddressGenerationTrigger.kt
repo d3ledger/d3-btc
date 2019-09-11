@@ -38,7 +38,8 @@ class AddressGenerationTrigger(
         return Result.of {
             repeat(addressesToGenerate) {
                 val sessionAccountName = addressType.createSessionAccountName()
-                btcSessionProvider.createPubKeyCreationSession(sessionAccountName, nodeId).failure { ex -> throw ex }
+                btcSessionProvider.createPubKeyCreationSession(sessionAccountName, nodeId)
+                    .failure { ex -> throw ex }
             }
         }
     }
@@ -53,9 +54,9 @@ class AddressGenerationTrigger(
         addressesThreshold: Int,
         nodeId: String
     ): Result<Unit, Exception> {
-        return btcFreeAddressesProvider.getFreeAddresses().flatMap { freeAddresses ->
-            if (freeAddresses.size < addressesThreshold) {
-                val addressesToGenerate = addressesThreshold - freeAddresses.size
+        return btcFreeAddressesProvider.countFreeAddresses().flatMap { freeAddressesCount ->
+            if (freeAddressesCount < addressesThreshold) {
+                val addressesToGenerate = addressesThreshold - freeAddressesCount
                 logger.info("Generating $addressesToGenerate free addresses")
                 startAddressGeneration(BtcAddressType.FREE, addressesToGenerate, nodeId)
             } else {
@@ -71,6 +72,7 @@ class AddressGenerationTrigger(
      * @param nodeId - node id
      */
     fun startChangeAddressGenerationIfNeeded(nodeId: String): Result<Unit, Exception> {
+        //TODO use filter
         return btcChangeAddressesProvider.getAllChangeAddresses().flatMap { changeAddresses ->
             if (!changeAddresses.any { changeAddress -> changeAddress.info.nodeId == nodeId }) {
                 logger.info("Generating change address")
