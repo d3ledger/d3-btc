@@ -46,7 +46,7 @@ class NewTransactionCreatedHandler(
             }
             val transaction = savedTransaction!!
             logger.info { "Tx to sign\n$savedTransaction" }
-            signCollector.signAndSave(transaction, btcWithdrawalConfig.btcKeysWalletPath)
+            signCollector.signAndSave(savedWithdrawalDetails!!, transaction, btcWithdrawalConfig.btcKeysWalletPath)
         }.map {
             logger.info { "Signatures for ${savedTransaction!!.hashAsString} were successfully processed" }
         }.failure { ex ->
