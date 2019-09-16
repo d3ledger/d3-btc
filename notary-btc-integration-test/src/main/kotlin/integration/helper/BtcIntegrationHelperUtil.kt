@@ -20,6 +20,8 @@ import com.d3.btc.provider.network.BtcNetworkConfigProvider
 import com.d3.btc.registration.strategy.BtcRegistrationStrategyImpl
 import com.d3.btc.wallet.WalletInitializer
 import com.d3.btc.withdrawal.config.BtcWithdrawalConfig
+import com.d3.commons.expansion.ExpansionDetails
+import com.d3.commons.expansion.ExpansionUtils
 import com.d3.commons.notary.IrohaCommand
 import com.d3.commons.notary.IrohaOrderedBatch
 import com.d3.commons.notary.IrohaTransaction
@@ -33,8 +35,6 @@ import com.github.jleskovar.btcrpc.BitcoinRpcClientFactory
 import com.github.kittinunf.result.Result
 import com.github.kittinunf.result.failure
 import com.github.kittinunf.result.map
-import jp.co.soramitsu.bootstrap.changelog.ExpansionDetails
-import jp.co.soramitsu.bootstrap.changelog.ExpansionUtils
 import mu.KLogging
 import org.bitcoinj.core.Address
 import org.bitcoinj.params.RegTestParams
@@ -72,13 +72,20 @@ class BtcIntegrationHelperUtil(peers: Int = 1) : IrohaIntegrationHelperUtil(peer
      * Returns withdrawal fees
      */
     fun getWithdrawalFees() =
-        BigDecimal(getIrohaAccountBalance("withdrawal_billing@$D3_DOMAIN", BTC_ASSET)).setScale(BTC_PRECISION)
+        BigDecimal(getIrohaAccountBalance("withdrawal_billing@$D3_DOMAIN", BTC_ASSET)).setScale(
+            BTC_PRECISION
+        )
 
     /**
      * Returns withdrawal account balance
      */
     fun getWithdrawalAccountBalance(btcWithdrawalConfig: BtcWithdrawalConfig) =
-        BigDecimal(getIrohaAccountBalance(btcWithdrawalConfig.withdrawalCredential.accountId, BTC_ASSET)).setScale(
+        BigDecimal(
+            getIrohaAccountBalance(
+                btcWithdrawalConfig.withdrawalCredential.accountId,
+                BTC_ASSET
+            )
+        ).setScale(
             BTC_PRECISION
         )
 
@@ -127,7 +134,8 @@ class BtcIntegrationHelperUtil(peers: Int = 1) : IrohaIntegrationHelperUtil(peer
      * @param nodeId - if of node
      */
     fun preGenFreeBtcAddresses(walletFilePath: String, addressesToGenerate: Int, nodeId: String) {
-        val totalBatches = ceil(addressesToGenerate.div(GENERATED_ADDRESSES_PER_BATCH.toDouble())).toInt()
+        val totalBatches =
+            ceil(addressesToGenerate.div(GENERATED_ADDRESSES_PER_BATCH.toDouble())).toInt()
         /*
          Iroha dies if it sees too much of transactions in a batch.
           */
@@ -150,7 +158,11 @@ class BtcIntegrationHelperUtil(peers: Int = 1) : IrohaIntegrationHelperUtil(peer
      * @param addressesToGenerate - number of addresses to generate
      * @param nodeId - id of node
      */
-    private fun preGenFreeBtcAddressesBatch(walletFilePath: String, addressesToGenerate: Int, nodeId: String) {
+    private fun preGenFreeBtcAddressesBatch(
+        walletFilePath: String,
+        addressesToGenerate: Int,
+        nodeId: String
+    ) {
         val irohaTxList = ArrayList<IrohaTransaction>()
         for (i in 1..addressesToGenerate) {
             val btcAddress = generateKeyAndAddress(walletFilePath, nodeId)
@@ -236,7 +248,11 @@ class BtcIntegrationHelperUtil(peers: Int = 1) : IrohaIntegrationHelperUtil(peer
         logger.info { "generated address $address" }
         return BtcAddress(
             address.toBase58(),
-            AddressInfo.createFreeAddressInfo(listOf(key.publicKeyAsHex), nodeId, System.currentTimeMillis())
+            AddressInfo.createFreeAddressInfo(
+                listOf(key.publicKeyAsHex),
+                nodeId,
+                System.currentTimeMillis()
+            )
         )
     }
 
@@ -345,15 +361,13 @@ class BtcIntegrationHelperUtil(peers: Int = 1) : IrohaIntegrationHelperUtil(peer
         publicKey: String,
         quorum: Int
     ) {
-        val expansionDetails = ExpansionDetails()
-        expansionDetails.accountIdToExpand = accountId
-        expansionDetails.publicKey = publicKey
-        expansionDetails.quorum = quorum
+        val expansionDetails = ExpansionDetails(accountId, publicKey, quorum)
         IrohaConsumerImpl(
             accountHelper.superuserAccount,
             irohaAPI
         ).send(
             ExpansionUtils.createExpansionTriggerTx(
+                accountId,
                 expansionDetails,
                 accountHelper.expansionTriggerAccount.accountId
             )

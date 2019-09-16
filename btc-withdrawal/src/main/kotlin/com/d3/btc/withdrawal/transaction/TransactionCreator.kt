@@ -70,7 +70,7 @@ class TransactionCreator(
                     )
                 )
                 unspents
-            }.map { unspents ->
+            }.map { _ ->
                 transactionsStorage.save(withdrawalDetails, transaction).failure { ex -> throw ex }
                 transaction
             }

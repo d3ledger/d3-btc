@@ -42,12 +42,12 @@ check.dependsOn integrationTest
 
 
 dependencies {
-    compile project(":btc-registration")
-    compile project(":btc-address-generation")
-    compile project(":btc-deposit")
-    compile project(":btc-withdrawal")
-    compile project(":btc-dw-bridge")
+    implementation project(":btc-registration")
+    implementation project(":btc-address-generation")
+    implementation project(":btc-deposit")
+    implementation project(":btc-withdrawal")
+    implementation project(":btc-dw-bridge")
 
-    compile "com.github.d3ledger.notary:notary-registration:$notary_version"
-    compile "com.github.d3ledger.notary:notary-iroha-integration-test:$notary_version"
+    implementation "com.github.d3ledger.notary:notary-registration:$notary_version"
+    implementation "com.github.d3ledger.notary:notary-iroha-integration-test:$notary_version"
 }

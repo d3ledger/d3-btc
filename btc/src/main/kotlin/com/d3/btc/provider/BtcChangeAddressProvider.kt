@@ -31,7 +31,7 @@ open class BtcChangeAddressProvider(
         ).map { details ->
             // Map details into BtcAddress collection
             details.entries.map { entry ->
-                BtcAddress(entry.key, AddressInfo.fromJson(entry.value)!!)
+                BtcAddress(entry.key, AddressInfo.fromJson(entry.value))
             }
         }
     }
