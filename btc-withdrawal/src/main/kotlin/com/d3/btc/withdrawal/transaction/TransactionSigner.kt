@@ -15,6 +15,7 @@ import com.d3.btc.wallet.safeLoad
 import com.d3.commons.util.hex
 import com.github.kittinunf.result.Result
 import com.github.kittinunf.result.fanout
+import com.github.kittinunf.result.flatMap
 import com.github.kittinunf.result.map
 import mu.KLogging
 import org.bitcoinj.core.ECKey
@@ -49,13 +50,21 @@ class TransactionSigner(
      * @return - result with list full of public keys that were used in [btcAddress] creation
      */
     fun getUsedPubKeys(btcAddress: String): Result<List<String>, Exception> {
-        return btcRegisteredAddressesProvider.getRegisteredAddresses()
-            .fanout {
-                btcChangeAddressesProvider.getAllChangeAddresses()
-            }.map { (registeredAddresses, changeAddresses) ->
-                registeredAddresses + changeAddresses
-            }.map { availableAddresses ->
-                availableAddresses.find { availableAddress -> availableAddress.address == btcAddress }!!.info.notaryKeys
+        // Try to find the address among change addresses
+        return btcChangeAddressesProvider.getAddressInfo(btcAddress)
+            .flatMap { addressInfo ->
+                // Try to find the address among registered addresses if it wasn't found among change addresses
+                if (!addressInfo.isPresent) {
+                    btcRegisteredAddressesProvider.getAddressInfo(btcAddress)
+                } else {
+                    Result.of { addressInfo }
+                }
+            }.map { addressInfo ->
+                if (addressInfo.isPresent) {
+                    addressInfo.get().notaryKeys
+                } else {
+                    throw java.lang.IllegalStateException("Cannot find BTC address $btcAddress")
+                }
             }
     }
 

@@ -12,7 +12,6 @@ import com.d3.btc.deposit.expansion.DepositServiceExpansion
 import com.d3.btc.deposit.handler.NewBtcChangeAddressDepositHandler
 import com.d3.btc.deposit.init.BtcNotaryInitialization
 import com.d3.btc.deposit.service.BtcWalletListenerRestartService
-import com.d3.btc.dwbridge.config.depositConfig
 import com.d3.btc.handler.NewBtcClientRegistrationHandler
 import com.d3.btc.peer.SharedPeerGroup
 import com.d3.btc.provider.BtcChangeAddressProvider
@@ -27,6 +26,7 @@ import com.d3.commons.config.loadRawLocalConfigs
 import com.d3.commons.expansion.ServiceExpansion
 import com.d3.commons.model.IrohaCredential
 import com.d3.commons.notary.NotaryImpl
+import com.d3.commons.registration.NotaryRegistrationConfig
 import com.d3.commons.sidechain.SideChainEvent
 import com.d3.commons.sidechain.iroha.util.impl.IrohaQueryHelperImpl
 import com.d3.commons.util.createPrettySingleThreadPool
@@ -49,6 +49,7 @@ import java.io.File
  */
 class BtcNotaryTestEnvironment(
     private val integrationHelper: BtcIntegrationHelperUtil,
+    private val registrationConfig: NotaryRegistrationConfig,
     testName: String = "",
     val notaryConfig: BtcDepositConfig = integrationHelper.configHelper.createBtcDepositConfig(
         testName
@@ -88,7 +89,7 @@ class BtcNotaryTestEnvironment(
     )
 
     val btcAddressGenerationConfig =
-        integrationHelper.configHelper.createBtcAddressGenerationConfig(0)
+        integrationHelper.configHelper.createBtcAddressGenerationConfig(registrationConfig, 0)
 
     private val btcNetworkConfigProvider = BtcRegTestConfigProvider()
 
@@ -98,7 +99,7 @@ class BtcNotaryTestEnvironment(
         loadRawLocalConfigs("rmq", RMQConfig::class.java, "rmq.properties")
 
     private val depositReliableIrohaChainListener = ReliableIrohaChainListener(
-        rmqConfig, depositConfig.irohaBlockQueue,
+        rmqConfig, notaryConfig.irohaBlockQueue,
         consumerExecutorService = createPrettySingleThreadPool(
             BTC_DEPOSIT_SERVICE_NAME,
             "rmq-consumer"
@@ -112,8 +113,13 @@ class BtcNotaryTestEnvironment(
 
     private val depositHandlers by lazy {
         listOf(
-            NewBtcClientRegistrationHandler(btcNetworkConfigProvider, transferWallet, btcAddressStorage),
-            NewBtcChangeAddressDepositHandler(btcAddressStorage, depositConfig)
+            NewBtcClientRegistrationHandler(
+                btcNetworkConfigProvider,
+                transferWallet,
+                btcAddressStorage,
+                notaryConfig.registrationAccount
+            ),
+            NewBtcChangeAddressDepositHandler(btcAddressStorage, notaryConfig)
         )
     }
 

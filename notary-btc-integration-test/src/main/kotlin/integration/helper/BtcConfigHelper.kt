@@ -13,6 +13,7 @@ import com.d3.btc.registration.config.BtcRegistrationConfig
 import com.d3.btc.withdrawal.config.BtcWithdrawalConfig
 import com.d3.commons.config.loadLocalConfigs
 import com.d3.commons.model.IrohaCredential
+import com.d3.commons.registration.NotaryRegistrationConfig
 import com.d3.commons.util.getRandomString
 import org.bitcoinj.params.RegTestParams
 import org.bitcoinj.wallet.Wallet
@@ -27,16 +28,18 @@ class BtcConfigHelper(
     private val accountHelper: IrohaAccountHelper
 ) : IrohaConfigHelper() {
 
-    private val utxoStorageAccountCredential = accountHelper.createTesterAccount("utxo_storage")
-    private val txStorageAccountCredential = accountHelper.createTesterAccount("tx_storage")
-    private val broadcastCredential = accountHelper.createTesterAccount("broadcast", "broadcast")
+    private val utxoStorageAccountCredential by lazy { accountHelper.createTesterAccount("utxo_storage") }
+    val freeAddressesStorageAccountCredential by lazy { accountHelper.createTesterAccount("free_address_storage") }
+    private val txStorageAccountCredential by lazy { accountHelper.createTesterAccount("tx_storage") }
+    private val broadcastCredential by lazy { accountHelper.createTesterAccount("broadcast", listOf("broadcast")) }
 
-    /** Creates config for BTC multisig addresses generation
+    /** Creates config for BTC MultiSig addresses generation
      * @param initAddresses - number of addresses that will be generated at initial phase
      * @param testName - name of test
      * @return config
      * */
     fun createBtcAddressGenerationConfig(
+        registrationConfig: NotaryRegistrationConfig,
         initAddresses: Int,
         testName: String = "test"
     ): BtcAddressGenerationConfig {
@@ -48,6 +51,11 @@ class BtcConfigHelper(
             ).get()
 
         return object : BtcAddressGenerationConfig {
+            override val freeAddressesStorageAccount = freeAddressesStorageAccountCredential.accountId
+            override val irohaQueryTimeoutMls = 180_000
+            override val clientStorageAccount = registrationConfig.clientStorageAccount
+            override val registrationServiceAccountName =
+                registrationConfig.registrationCredential.accountId.substringBefore("@")
             override val irohaBlockQueue = testName + "_" + String.getRandomString(5)
             override val expansionTriggerAccount = accountHelper.expansionTriggerAccount.accountId
             override val threshold = initAddresses
@@ -55,11 +63,8 @@ class BtcConfigHelper(
             override val changeAddressesStorageAccount =
                 accountHelper.changeAddressesStorageAccount.accountId
             override val healthCheckPort = btcAddressGenConfig.healthCheckPort
-            override val notaryListStorageAccount = accountHelper.notaryListStorageAccount.accountId
-            override val notaryListSetterAccount = accountHelper.notaryAccount.accountId
             override val mstRegistrationAccount =
                 accountHelper.createCredentialRawConfig(accountHelper.mstRegistrationAccount)
-            override val pubKeyTriggerAccount = btcAddressGenConfig.pubKeyTriggerAccount
             override val expansionTriggerCreatorAccountId = accountHelper.superuserAccount.accountId
             override val notaryAccount = accountHelper.notaryAccount.accountId
             override val iroha = createIrohaConfig()
@@ -91,8 +96,6 @@ class BtcConfigHelper(
             override val irohaBlockQueue = testName + "_" + String.getRandomString(5)
             override val btcKeysWalletPath = createWalletFile("keys.$testName")
             override val btcTransfersWalletPath = createWalletFile("transfers.$testName")
-            override val notaryListStorageAccount = accountHelper.notaryListStorageAccount.accountId
-            override val notaryListSetterAccount = accountHelper.notaryAccount.accountId
             override val signatureCollectorCredential =
                 accountHelper.createCredentialRawConfig(accountHelper.btcWithdrawalSignatureCollectorAccount)
             override val changeAddressesStorageAccount =
@@ -185,6 +188,8 @@ class BtcConfigHelper(
 
     fun createBtcRegistrationConfig(): BtcRegistrationConfig {
         return object : BtcRegistrationConfig {
+            override val freeAddressesStorageAccount = freeAddressesStorageAccountCredential.accountId
+            override val irohaQueryTimeoutMls = 25_000
             override val nodeId = NODE_ID
             override val notaryAccount = accountHelper.notaryAccount.accountId
             override val mstRegistrationAccount = accountHelper.mstRegistrationAccount.accountId

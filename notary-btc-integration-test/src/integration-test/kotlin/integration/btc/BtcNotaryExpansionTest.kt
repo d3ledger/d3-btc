@@ -19,9 +19,10 @@ import java.io.File
 class BtcNotaryExpansionTest {
 
     private val integrationHelper = BtcIntegrationHelperUtil()
-    private val environment = BtcNotaryTestEnvironment(integrationHelper)
     private val registrationServiceEnvironment =
         RegistrationServiceTestEnvironment(integrationHelper)
+    private val environment =
+        BtcNotaryTestEnvironment(integrationHelper, registrationServiceEnvironment.registrationConfig)
     private val irohaQueryHelper = IrohaQueryHelperImpl(
         integrationHelper.irohaAPI,
         integrationHelper.accountHelper.notaryAccount.accountId,
@@ -42,7 +43,6 @@ class BtcNotaryExpansionTest {
         //Recreate folder
         blockStorageFolder.mkdirs()
         integrationHelper.generateBtcInitialBlocks()
-        integrationHelper.addBtcNotary("test_notary", "test_notary_address")
         environment.btcNotaryInitialization.init()
             .failure { ex -> fail("Cannot run BTC notary", ex) }
     }

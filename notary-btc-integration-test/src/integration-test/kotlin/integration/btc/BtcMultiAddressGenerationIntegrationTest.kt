@@ -7,11 +7,12 @@ package integration.btc
 
 import com.d3.btc.model.AddressInfo
 import com.d3.btc.model.BtcAddressType
-import com.d3.btc.provider.generation.ADDRESS_GENERATION_NODE_ID_KEY
-import com.d3.btc.provider.generation.ADDRESS_GENERATION_TIME_KEY
+import com.d3.btc.generation.provider.ADDRESS_GENERATION_NODE_ID_KEY
+import com.d3.btc.generation.provider.ADDRESS_GENERATION_TIME_KEY
 import com.github.kittinunf.result.failure
 import integration.btc.environment.BtcAddressGenerationTestEnvironment
 import integration.helper.BtcIntegrationHelperUtil
+import integration.registration.RegistrationServiceTestEnvironment
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import mu.KLogging
@@ -33,6 +34,7 @@ class BtcMultiAddressGenerationIntegrationTest {
     private val peers = 3
     private val integrationHelper = BtcIntegrationHelperUtil(peers)
     private val environments = ArrayList<BtcAddressGenerationTestEnvironment>()
+    private val registrationEnvironment = RegistrationServiceTestEnvironment(integrationHelper)
 
     @AfterAll
     fun dropDown() {
@@ -45,19 +47,22 @@ class BtcMultiAddressGenerationIntegrationTest {
         var peerCount = 0
         integrationHelper.accountHelper.mstRegistrationAccounts.forEach { mstRegistrationAccount ->
             val walletPostfix = "test-multisig-generation-$peerCount"
-            integrationHelper.addBtcNotary("test_notary_${peerCount++}", "test_notary_address")
             val environment = BtcAddressGenerationTestEnvironment(
                 integrationHelper,
                 btcGenerationConfig = integrationHelper.configHelper.createBtcAddressGenerationConfig(
+                    registrationEnvironment.registrationConfig,
                     0,
                     walletPostfix
                 ),
-                mstRegistrationCredential = mstRegistrationAccount
+                mstRegistrationCredential = mstRegistrationAccount,
+                peers = peers,
+                registrationConfig = registrationEnvironment.registrationConfig
             )
             environments.add(environment)
             GlobalScope.launch {
                 environment.btcAddressGenerationInitialization.init().failure { ex -> throw ex }
             }
+            peerCount++
         }
         //Wait services to init
         Thread.sleep(WAIT_PREGEN_PROCESS_MILLIS)
@@ -68,9 +73,9 @@ class BtcMultiAddressGenerationIntegrationTest {
 
     /**
      * Note: Iroha must be deployed to pass the test.
-     * @given 3 address generation services working in a multisig mode and one "free" session account
+     * @given 3 address generation services working in a MultiSig mode and one "free" session account
      * @when special generation account is triggered
-     * @then new free multisig btc address is created
+     * @then new free MultiSig btc address is created
      */
     @Test
     fun testGenerateFreeAddress() {
@@ -82,7 +87,6 @@ class BtcMultiAddressGenerationIntegrationTest {
         )
             .fold({ BtcAddressGenerationIntegrationTest.logger.info { "session $sessionAccountName was created" } },
                 { ex -> fail("cannot create session", ex) })
-        environment.triggerProvider.trigger(sessionAccountName)
         Thread.sleep(WAIT_PREGEN_PROCESS_MILLIS)
         val sessionDetails =
             integrationHelper.getAccountDetails(

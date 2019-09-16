@@ -12,6 +12,8 @@ plugins {
 dependencies {
     compile project(":btc")
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+    // Swagger
+    compile 'de.nielsfalk.ktor:ktor-swagger:0.5.0'
 }
 
 apply plugin: 'application'

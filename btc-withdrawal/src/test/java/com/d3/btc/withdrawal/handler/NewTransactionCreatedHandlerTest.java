@@ -59,13 +59,13 @@ public class NewTransactionCreatedHandlerTest {
      */
     @Test
     public void testHandleHasBeenBroadcasted() {
+        WithdrawalDetails withdrawalDetails = new WithdrawalDetails(
+                "source account",
+                "destination address",
+                1,
+                System.currentTimeMillis(),
+                0);
         when(transactionsStorage.get(anyString())).thenReturn(Result.Companion.of(() -> {
-            WithdrawalDetails withdrawalDetails = new WithdrawalDetails(
-                    "source account",
-                    "destination address",
-                    1,
-                    System.currentTimeMillis(),
-                    0);
             Transaction transaction = mock(Transaction.class);
             return new Pair<>(withdrawalDetails, transaction);
         }));
@@ -73,7 +73,7 @@ public class NewTransactionCreatedHandlerTest {
         Commands.SetAccountDetail createdTxCommand = Commands.SetAccountDetail.newBuilder().setKey("abc").build();
         SetAccountDetailEvent event = new SetAccountDetailEvent(createdTxCommand, withdrawalAccountId);
         newTransactionCreatedHandler.handle(event);
-        verify(signCollector, never()).signAndSave(any(), any());
+        verify(signCollector, never()).signAndSave(eq(withdrawalDetails), any(), any());
     }
 
     /**
@@ -83,13 +83,13 @@ public class NewTransactionCreatedHandlerTest {
      */
     @Test
     public void testHandleHasNotBeenBroadcasted() {
+        WithdrawalDetails withdrawalDetails = new WithdrawalDetails(
+                "source account",
+                "destination address",
+                1,
+                System.currentTimeMillis(),
+                0);
         when(transactionsStorage.get(anyString())).thenReturn(Result.Companion.of(() -> {
-            WithdrawalDetails withdrawalDetails = new WithdrawalDetails(
-                    "source account",
-                    "destination address",
-                    1,
-                    System.currentTimeMillis(),
-                    0);
             Transaction transaction = mock(Transaction.class);
             return new Pair<>(withdrawalDetails, transaction);
         }));
@@ -97,7 +97,7 @@ public class NewTransactionCreatedHandlerTest {
         Commands.SetAccountDetail createdTxCommand = Commands.SetAccountDetail.newBuilder().setKey("abc").build();
         SetAccountDetailEvent event = new SetAccountDetailEvent(createdTxCommand, withdrawalAccountId);
         newTransactionCreatedHandler.handle(event);
-        verify(signCollector).signAndSave(any(), any());
+        verify(signCollector).signAndSave(eq(withdrawalDetails), any(), any());
     }
 
     /**
@@ -107,13 +107,13 @@ public class NewTransactionCreatedHandlerTest {
      */
     @Test
     public void testHandleBroadcastFail() {
+        WithdrawalDetails withdrawalDetails = new WithdrawalDetails(
+                "source account",
+                "destination address",
+                1,
+                System.currentTimeMillis(),
+                0);
         when(transactionsStorage.get(anyString())).thenReturn(Result.Companion.of(() -> {
-            WithdrawalDetails withdrawalDetails = new WithdrawalDetails(
-                    "source account",
-                    "destination address",
-                    1,
-                    System.currentTimeMillis(),
-                    0);
             Transaction transaction = mock(Transaction.class);
             return new Pair<>(withdrawalDetails, transaction);
         }));
@@ -124,7 +124,7 @@ public class NewTransactionCreatedHandlerTest {
         Commands.SetAccountDetail createdTxCommand = Commands.SetAccountDetail.newBuilder().setKey("abc").build();
         SetAccountDetailEvent event = new SetAccountDetailEvent(createdTxCommand, withdrawalAccountId);
         newTransactionCreatedHandler.handle(event);
-        verify(signCollector, never()).signAndSave(any(), any());
+        verify(signCollector, never()).signAndSave(eq(withdrawalDetails), any(), any());
         verify(btcRollbackService).rollback(any(WithdrawalDetails.class), any());
         verify(utxoProvider).unregisterUnspents(any(), any());
     }

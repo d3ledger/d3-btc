@@ -10,6 +10,7 @@ import com.d3.commons.util.toHexString
 import com.github.kittinunf.result.failure
 import integration.btc.environment.BtcAddressGenerationTestEnvironment
 import integration.helper.BtcIntegrationHelperUtil
+import integration.registration.RegistrationServiceTestEnvironment
 import jp.co.soramitsu.crypto.ed25519.Ed25519Sha3
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -30,8 +31,13 @@ class BtcAddressGenerationExpansionTest {
         integrationHelper.accountHelper.notaryAccount.keyPair
     )
 
+    private val registrationEnvironment = RegistrationServiceTestEnvironment(integrationHelper)
+
     private val environment =
-        BtcAddressGenerationTestEnvironment(integrationHelper)
+        BtcAddressGenerationTestEnvironment(
+            integrationHelper,
+            registrationConfig = registrationEnvironment.registrationConfig
+        )
 
     @AfterAll
     fun dropDown() {
@@ -39,7 +45,6 @@ class BtcAddressGenerationExpansionTest {
     }
 
     init {
-        integrationHelper.addBtcNotary("test_notary", "test_notary_address")
         GlobalScope.launch {
             environment.btcAddressGenerationInitialization.init().failure { ex -> throw ex }
         }

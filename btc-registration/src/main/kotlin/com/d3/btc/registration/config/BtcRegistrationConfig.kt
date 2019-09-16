@@ -6,7 +6,6 @@
 package com.d3.btc.registration.config
 
 import com.d3.commons.config.IrohaConfig
-import com.d3.commons.config.IrohaCredentialConfig
 import com.d3.commons.config.IrohaCredentialRawConfig
 
 /**
@@ -30,4 +29,10 @@ interface BtcRegistrationConfig {
 
     /** Node id */
     val nodeId: String
+
+    /** Timeout for Iroha queries */
+    val irohaQueryTimeoutMls: Int
+
+    //Account that stores free Bitcoin addresses
+    val freeAddressesStorageAccount: String
 }

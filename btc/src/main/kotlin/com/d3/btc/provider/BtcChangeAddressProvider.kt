@@ -10,6 +10,7 @@ import com.d3.btc.model.BtcAddress
 import com.d3.commons.sidechain.iroha.util.IrohaQueryHelper
 import com.github.kittinunf.result.Result
 import com.github.kittinunf.result.map
+import java.util.*
 
 /*
     Class that is used to get change address
@@ -19,6 +20,7 @@ open class BtcChangeAddressProvider(
     private val mstRegistrationAccount: String,
     private val changeAddressesStorageAccount: String
 ) {
+
     /**
      * Returns all change addresses
      */
@@ -34,6 +36,24 @@ open class BtcChangeAddressProvider(
         }
     }
 
+    /**
+     * Returns given address info
+     * @param btcAddress - Bitcoin address
+     * @return address info or null if there is no such an address
+     */
+    fun getAddressInfo(btcAddress: String): Result<Optional<AddressInfo>, Exception> {
+        return queryHelper.getAccountDetailsFirst(
+            changeAddressesStorageAccount,
+            mstRegistrationAccount
+        ) { key, _ -> key == btcAddress }.map { detail ->
+            if (detail.isPresent) {
+                val addressInfoJson = detail.get().value
+                Optional.of(AddressInfo.fromJson(addressInfoJson))
+            } else {
+                Optional.empty()
+            }
+        }
+    }
 
     /**
      * Returns all change addresses that were generated before given time

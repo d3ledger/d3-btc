@@ -5,13 +5,14 @@
 
 package integration.btc
 
+import com.d3.btc.generation.provider.ADDRESS_GENERATION_NODE_ID_KEY
+import com.d3.btc.generation.provider.ADDRESS_GENERATION_TIME_KEY
 import com.d3.btc.model.AddressInfo
 import com.d3.btc.model.BtcAddressType
-import com.d3.btc.provider.generation.ADDRESS_GENERATION_NODE_ID_KEY
-import com.d3.btc.provider.generation.ADDRESS_GENERATION_TIME_KEY
 import com.github.kittinunf.result.failure
 import integration.btc.environment.BtcAddressGenerationTestEnvironment
 import integration.helper.BtcIntegrationHelperUtil
+import integration.registration.RegistrationServiceTestEnvironment
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import mu.KLogging
@@ -35,8 +36,13 @@ class BtcAddressGenerationIntegrationTest {
 
     private val integrationHelper = BtcIntegrationHelperUtil()
 
+    private val registrationEnvironment = RegistrationServiceTestEnvironment(integrationHelper)
+
     private val environment =
-        BtcAddressGenerationTestEnvironment(integrationHelper)
+        BtcAddressGenerationTestEnvironment(
+            integrationHelper,
+            registrationConfig = registrationEnvironment.registrationConfig
+        )
 
     @AfterAll
     fun dropDown() {
@@ -44,7 +50,6 @@ class BtcAddressGenerationIntegrationTest {
     }
 
     init {
-        integrationHelper.addBtcNotary("test_notary", "test_notary_address")
         GlobalScope.launch {
             environment.btcAddressGenerationInitialization.init().failure { ex -> throw ex }
         }
@@ -58,7 +63,7 @@ class BtcAddressGenerationIntegrationTest {
      * Note: Iroha must be deployed to pass the test.
      * @given "free" session account is created
      * @when special generation account is triggered
-     * @then new free multisig btc address is created
+     * @then new free MultiSig btc address is created
      */
     @Test
     fun testGenerateFreeAddress() {
@@ -68,7 +73,6 @@ class BtcAddressGenerationIntegrationTest {
             nodeId.toString()
         ).fold({ logger.info { "session $sessionAccountName was created" } },
             { ex -> fail("cannot create session", ex) })
-        environment.triggerProvider.trigger(sessionAccountName)
         Thread.sleep(WAIT_PREGEN_PROCESS_MILLIS)
         val sessionDetails =
             integrationHelper.getAccountDetails(
@@ -97,13 +101,14 @@ class BtcAddressGenerationIntegrationTest {
         assertNull(generatedAddress.irohaClient)
         assertEquals(notaryKeys, generatedAddress.notaryKeys.toList())
         assertEquals(nodeId.toString(), generatedAddress.nodeId)
+        assertFalse(environment.btcFreeAddressesProvider.ableToRegisterAsFree(expectedMsAddress.toBase58()).get())
     }
 
     /**
      * Note: Iroha must be deployed to pass the test.
      * @given "change" session account is created
      * @when special generation account is triggered
-     * @then new multisig btc address that stores change is created
+     * @then new MultiSig btc address that stores change is created
      */
     @Test
     fun testGenerateChangeAddress() {
@@ -113,7 +118,6 @@ class BtcAddressGenerationIntegrationTest {
             nodeId.toString()
         ).fold({ logger.info { "session $sessionAccountName was created" } },
             { ex -> fail("cannot create session", ex) })
-        environment.triggerProvider.trigger(sessionAccountName)
         Thread.sleep(WAIT_PREGEN_PROCESS_MILLIS)
         val sessionDetails =
             integrationHelper.getAccountDetails(
@@ -141,6 +145,7 @@ class BtcAddressGenerationIntegrationTest {
         assertNull(generatedAddress.irohaClient)
         assertEquals(notaryKeys, generatedAddress.notaryKeys.toList())
         assertEquals(nodeId.toString(), generatedAddress.nodeId)
+        assertTrue(environment.btcFreeAddressesProvider.ableToRegisterAsFree(expectedMsAddress.toBase58()).get())
     }
 
     /**

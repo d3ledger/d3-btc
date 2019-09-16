@@ -15,7 +15,7 @@ import com.d3.btc.healthcheck.HealthyService
 import com.d3.btc.provider.network.BtcNetworkConfigProvider
 import com.d3.btc.wallet.checkWalletNetwork
 import com.d3.chainadapter.client.ReliableIrohaChainListener
-import com.d3.commons.sidechain.iroha.CLIENT_DOMAIN
+import com.d3.commons.provider.NotaryClientsProvider
 import com.d3.commons.sidechain.iroha.util.getCreateAccountCommands
 import com.d3.commons.sidechain.iroha.util.getSetDetailCommandsWithCreator
 import com.d3.commons.util.createPrettySingleThreadPool
@@ -44,7 +44,8 @@ class BtcAddressGenerationInitialization(
     private val btcNetworkConfigProvider: BtcNetworkConfigProvider,
     private val addressGenerationServiceExpansion: AddressGenerationServiceExpansion,
     @Qualifier("addressGenerationHandlers")
-    private val handlers: List<SetAccountDetailHandler>
+    private val handlers: List<SetAccountDetailHandler>,
+    private val notaryClientsProvider: NotaryClientsProvider
 ) : HealthyService() {
 
     /**
@@ -127,8 +128,12 @@ class BtcAddressGenerationInitialization(
     }
 
     // Checks if new client was registered
-    private fun isNewClientRegistered(createAccountCommand: Commands.CreateAccount) =
-        createAccountCommand.domainId == CLIENT_DOMAIN
+    private fun isNewClientRegistered(createAccountCommand: Commands.CreateAccount): Boolean = try {
+        notaryClientsProvider.isClient("${createAccountCommand.accountName}@${createAccountCommand.domainId}").get()
+    } catch (e: Exception) {
+        logger.error("Cannot check if `CreateAccount` is related to new client registration event", e)
+        false
+    }
 
     /**
      * Logger

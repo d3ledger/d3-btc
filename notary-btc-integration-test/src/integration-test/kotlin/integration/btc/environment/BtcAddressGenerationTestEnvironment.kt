@@ -10,30 +10,35 @@ import com.d3.btc.generation.config.BtcAddressGenerationConfig
 import com.d3.btc.generation.expansion.AddressGenerationServiceExpansion
 import com.d3.btc.generation.handler.BtcAddressGenerationTriggerHandler
 import com.d3.btc.generation.handler.BtcAddressRegisteredHandler
+import com.d3.btc.generation.handler.BtcMultiSigAddressGeneratedHandler
 import com.d3.btc.generation.handler.NewKeyHandler
 import com.d3.btc.generation.init.BtcAddressGenerationInitialization
+import com.d3.btc.generation.provider.ADDRESS_GENERATION_NODE_ID_KEY
+import com.d3.btc.generation.provider.ADDRESS_GENERATION_TIME_KEY
+import com.d3.btc.generation.provider.BtcPublicKeyProvider
+import com.d3.btc.generation.provider.BtcSessionProvider
 import com.d3.btc.generation.trigger.AddressGenerationTrigger
+import com.d3.btc.helper.address.createMsAddress
 import com.d3.btc.model.BtcAddressType
 import com.d3.btc.provider.BtcChangeAddressProvider
 import com.d3.btc.provider.BtcFreeAddressesProvider
-import com.d3.btc.provider.BtcRegisteredAddressesProvider
-import com.d3.btc.provider.address.BtcAddressesProvider
-import com.d3.btc.provider.generation.ADDRESS_GENERATION_NODE_ID_KEY
-import com.d3.btc.provider.generation.ADDRESS_GENERATION_TIME_KEY
-import com.d3.btc.provider.generation.BtcPublicKeyProvider
-import com.d3.btc.provider.generation.BtcSessionProvider
 import com.d3.btc.provider.network.BtcRegTestConfigProvider
 import com.d3.chainadapter.client.RMQConfig
 import com.d3.chainadapter.client.ReliableIrohaChainListener
 import com.d3.commons.config.loadRawLocalConfigs
 import com.d3.commons.expansion.ServiceExpansion
 import com.d3.commons.model.IrohaCredential
-import com.d3.commons.provider.NotaryPeerListProviderImpl
-import com.d3.commons.provider.TriggerProvider
+import com.d3.commons.provider.NotaryClientsProvider
+import com.d3.commons.registration.NotaryRegistrationConfig
 import com.d3.commons.sidechain.iroha.consumer.IrohaConsumerImpl
 import com.d3.commons.sidechain.iroha.consumer.MultiSigIrohaConsumer
 import com.d3.commons.sidechain.iroha.util.impl.IrohaQueryHelperImpl
+import com.d3.commons.sidechain.iroha.util.impl.RobustIrohaQueryHelperImpl
 import com.d3.commons.util.createPrettySingleThreadPool
+import com.github.kittinunf.result.Result
+import com.nhaarman.mockito_kotlin.doReturn
+import com.nhaarman.mockito_kotlin.spy
+import com.nhaarman.mockito_kotlin.whenever
 import integration.btc.WAIT_PREGEN_PROCESS_MILLIS
 import integration.helper.BtcIntegrationHelperUtil
 import io.grpc.ManagedChannelBuilder
@@ -56,8 +61,9 @@ private const val INIT_ADDRESSES = 3
 class BtcAddressGenerationTestEnvironment(
     private val integrationHelper: BtcIntegrationHelperUtil,
     val testName: String = "test",
+    val registrationConfig: NotaryRegistrationConfig,
     val btcGenerationConfig: BtcAddressGenerationConfig =
-        integrationHelper.configHelper.createBtcAddressGenerationConfig(INIT_ADDRESSES, testName),
+        integrationHelper.configHelper.createBtcAddressGenerationConfig(registrationConfig, INIT_ADDRESSES, testName),
     mstRegistrationCredential: IrohaCredential = IrohaCredential(
         btcGenerationConfig.mstRegistrationAccount.accountId,
         Utils.parseHexKeypair(
@@ -65,6 +71,7 @@ class BtcAddressGenerationTestEnvironment(
             btcGenerationConfig.mstRegistrationAccount.privkey
         )
     )
+    , private val peers: Int = 1
 ) : Closeable {
 
     private val keysWallet = Wallet.loadFromFile(File(btcGenerationConfig.btcKeysWalletPath))
@@ -89,17 +96,6 @@ class BtcAddressGenerationTestEnvironment(
         )
         irohaAPI
     }
-
-    val triggerProvider = TriggerProvider(
-        integrationHelper.accountHelper.registrationAccount,
-        irohaApi,
-        btcGenerationConfig.pubKeyTriggerAccount
-    )
-    val btcKeyGenSessionProvider = BtcSessionProvider(
-        integrationHelper.accountHelper.registrationAccount,
-        irohaApi
-    )
-
     private val registrationKeyPair =
         Utils.parseHexKeypair(
             btcGenerationConfig.registrationAccount.pubkey,
@@ -109,8 +105,10 @@ class BtcAddressGenerationTestEnvironment(
     private val registrationCredential =
         IrohaCredential(btcGenerationConfig.registrationAccount.accountId, registrationKeyPair)
 
-    private val sessionConsumer =
+    private val registrationConsumer =
         IrohaConsumerImpl(registrationCredential, irohaApi)
+
+    val btcKeyGenSessionProvider = BtcSessionProvider(registrationConsumer)
 
     private val multiSigConsumer = MultiSigIrohaConsumer(
         mstRegistrationCredential,
@@ -119,25 +117,25 @@ class BtcAddressGenerationTestEnvironment(
 
     private val btcNetworkConfigProvider = BtcRegTestConfigProvider()
 
-    private val registrationQueryHelper = IrohaQueryHelperImpl(
-        irohaApi,
-        registrationCredential.accountId,
-        registrationCredential.keyPair
-    )
+    private val registrationQueryHelper by lazy {
+        val irohaQueryHelper = spy(
+            IrohaQueryHelperImpl(
+                irohaApi,
+                registrationCredential.accountId,
+                registrationCredential.keyPair
+            )
+        )
+        doReturn(Result.of { peers }).whenever(irohaQueryHelper).getPeersCount()
+        RobustIrohaQueryHelperImpl(irohaQueryHelper, btcGenerationConfig.irohaQueryTimeoutMls)
+    }
 
     private fun btcPublicKeyProvider(): BtcPublicKeyProvider {
-        val notaryPeerListProvider = NotaryPeerListProviderImpl(
-            registrationQueryHelper,
-            btcGenerationConfig.notaryListStorageAccount,
-            btcGenerationConfig.notaryListSetterAccount
-        )
         return BtcPublicKeyProvider(
+            registrationQueryHelper,
             keysWallet,
-            notaryPeerListProvider,
-            btcGenerationConfig.notaryAccount,
-            btcGenerationConfig.changeAddressesStorageAccount,
+            btcGenerationConfig,
             multiSigConsumer,
-            sessionConsumer,
+            registrationConsumer,
             btcNetworkConfigProvider
         )
     }
@@ -154,23 +152,12 @@ class BtcAddressGenerationTestEnvironment(
         autoAck = true
     )
 
-    private val btcAddressesProvider = BtcAddressesProvider(
-        registrationQueryHelper,
-        btcGenerationConfig.mstRegistrationAccount.accountId,
-        btcGenerationConfig.notaryAccount
-    )
-
-    private val btcRegisteredAddressesProvider = BtcRegisteredAddressesProvider(
-        registrationQueryHelper,
-        registrationCredential.accountId,
-        btcGenerationConfig.notaryAccount
-    )
-
     val btcFreeAddressesProvider =
         BtcFreeAddressesProvider(
             btcGenerationConfig.nodeId,
-            btcAddressesProvider,
-            btcRegisteredAddressesProvider
+            btcGenerationConfig.freeAddressesStorageAccount,
+            registrationQueryHelper,
+            registrationConsumer
         )
 
     private val btcChangeAddressesProvider = BtcChangeAddressProvider(
@@ -181,17 +168,24 @@ class BtcAddressGenerationTestEnvironment(
 
     private val addressGenerationTrigger = AddressGenerationTrigger(
         btcKeyGenSessionProvider,
-        triggerProvider,
         btcFreeAddressesProvider,
-        IrohaConsumerImpl(registrationCredential, irohaApi),
         btcChangeAddressesProvider
     )
 
+    private val btcMstAddressGeneratedHandler =
+        BtcMultiSigAddressGeneratedHandler(btcFreeAddressesProvider, btcGenerationConfig)
     private val newKeyHandler =
         NewKeyHandler(btcGenerationConfig, keysWallet, registrationQueryHelper, btcPublicKeyProvider())
-    private val btcAddressRegisteredHandler = BtcAddressRegisteredHandler(addressGenerationTrigger, btcGenerationConfig)
+    private val btcAddressRegisteredHandler =
+        BtcAddressRegisteredHandler(addressGenerationTrigger, btcGenerationConfig)
     private val btcAddressGenerationTriggerHandler =
         BtcAddressGenerationTriggerHandler(btcGenerationConfig, keysWallet, btcPublicKeyProvider())
+
+    private val notaryClientsProvider = NotaryClientsProvider(
+        registrationQueryHelper,
+        registrationConfig.clientStorageAccount,
+        registrationConfig.registrationCredential.accountId.substringBefore("@")
+    )
 
     val btcAddressGenerationInitialization = BtcAddressGenerationInitialization(
         keysWallet,
@@ -207,7 +201,13 @@ class BtcAddressGenerationTestEnvironment(
                 irohaApi
             ), mstRegistrationCredential
         ),
-        listOf(newKeyHandler, btcAddressGenerationTriggerHandler, btcAddressRegisteredHandler)
+        listOf(
+            newKeyHandler,
+            btcAddressGenerationTriggerHandler,
+            btcAddressRegisteredHandler,
+            btcMstAddressGeneratedHandler
+        ),
+        notaryClientsProvider
     )
 
     /**
@@ -215,13 +215,13 @@ class BtcAddressGenerationTestEnvironment(
      * @throws IllegalStateException if not enough
      */
     fun checkIfFreeAddressesWereGeneratedAtInitialPhase() {
-        btcFreeAddressesProvider.getFreeAddresses()
+        btcFreeAddressesProvider.countFreeAddresses()
             .fold({ freeAddresses ->
-                if (freeAddresses.size < btcGenerationConfig.threshold) {
+                if (freeAddresses < btcGenerationConfig.threshold) {
                     throw IllegalStateException(
                         "Generation service was not properly started." +
                                 " Not enough address were generated at initial phase " +
-                                "(${freeAddresses.size} out of ${btcGenerationConfig.threshold})."
+                                "($freeAddresses out of ${btcGenerationConfig.threshold})."
                     )
                 }
             }, { ex -> throw IllegalStateException("Cannot get free addresses", ex) })
@@ -241,7 +241,6 @@ class BtcAddressGenerationTestEnvironment(
         })
     }
 
-
     /**
      * Generates address
      * @param addressType - type of address to generate
@@ -254,7 +253,6 @@ class BtcAddressGenerationTestEnvironment(
             btcGenerationConfig.nodeId
         ).fold({ logger.info { "session $sessionAccountName was created" } },
             { ex -> fail("cannot create session", ex) })
-        triggerProvider.trigger(sessionAccountName)
         Thread.sleep(WAIT_PREGEN_PROCESS_MILLIS)
         val sessionDetails =
             integrationHelper.getAccountDetails(
@@ -266,7 +264,7 @@ class BtcAddressGenerationTestEnvironment(
                 entry.key != ADDRESS_GENERATION_TIME_KEY
                         && entry.key != ADDRESS_GENERATION_NODE_ID_KEY
             }.map { entry -> entry.value }
-        return com.d3.btc.helper.address.createMsAddress(notaryKeys, RegTestParams.get()).toBase58()
+        return createMsAddress(notaryKeys, RegTestParams.get()).toBase58()
     }
 
     override fun close() {

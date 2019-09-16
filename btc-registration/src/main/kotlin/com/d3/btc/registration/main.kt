@@ -15,6 +15,7 @@ import com.github.kittinunf.result.flatMap
 import mu.KLogging
 import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import org.springframework.context.annotation.ComponentScan
+import kotlin.system.exitProcess
 
 private val logger = KLogging().logger
 
@@ -24,7 +25,7 @@ class BtcRegistrationApplication
 /**
  * Entry point for Registration Service
  */
-fun main(args: Array<String>) {
+fun main() {
     Result.of {
         val context = AnnotationConfigApplicationContext()
         context.environment.setActiveProfiles(getProfile())
@@ -35,6 +36,6 @@ fun main(args: Array<String>) {
         context.getBean(BtcRegistrationServiceInitialization::class.java).init()
     }.failure { ex ->
         logger.error("Cannot run btc registration", ex)
-        System.exit(1)
+        exitProcess(1)
     }
 }

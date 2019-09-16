@@ -9,11 +9,6 @@ import com.d3.commons.config.IrohaConfig
 import com.d3.commons.config.IrohaCredentialRawConfig
 
 interface BtcAddressGenerationConfig {
-    /*
-    Account for triggering.
-    Triggering this account means starting BTC addresses generation
-    */
-    val pubKeyTriggerAccount: String
 
     val notaryAccount: String
 
@@ -23,21 +18,17 @@ interface BtcAddressGenerationConfig {
     //Path to BTC wallet file
     val btcKeysWalletPath: String
 
-    //TODO the only purpose of this account is creating PeerListProvider. This account must be removed from config.
     //Account that is used to register BTC addresses
     val registrationAccount: IrohaCredentialRawConfig
 
     //Account that is used to register BTC addresses in MST fashion
     val mstRegistrationAccount: IrohaCredentialRawConfig
 
-    //Account that stores all registered notaries
-    val notaryListStorageAccount: String
-
     //Account that stores change addresses
     val changeAddressesStorageAccount: String
 
-    //Account that sets registered notaries
-    val notaryListSetterAccount: String
+    //Account that stores free Bitcoin addresses
+    val freeAddressesStorageAccount: String
 
     //Port of health check service
     val healthCheckPort: Int
@@ -56,4 +47,13 @@ interface BtcAddressGenerationConfig {
 
     // Queue where chain-adapter saves Iroha blocks
     val irohaBlockQueue: String
+
+    // Name of registration service account (no domain)
+    val registrationServiceAccountName: String
+
+    // Name of registration service account (no domain)
+    val clientStorageAccount: String
+
+    /** Timeout for Iroha queries */
+    val irohaQueryTimeoutMls: Int
 }

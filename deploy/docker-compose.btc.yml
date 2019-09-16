@@ -8,6 +8,9 @@ services:
     restart: on-failure
     ports:
       - 8086:8086
+      - 19010:9010
+    env_file:
+      - ../deploy/.env-default-jvm-options
     environment:
       WAIT_HOSTS: d3-iroha:50051
       WAIT_BEFORE_HOSTS: 10
@@ -21,6 +24,9 @@ services:
     restart: on-failure
     ports:
       - 7074:7074
+      - 19011:9010
+    env_file:
+      - ../deploy/.env-default-jvm-options
     environment:
       WAIT_HOSTS: d3-rmq:5672, d3-iroha:50051
       WAIT_BEFORE_HOSTS: 10
@@ -40,6 +46,9 @@ services:
     restart: on-failure
     ports:
       - 7071:7071
+      - 19012:9010
+    env_file:
+      - ../deploy/.env-default-jvm-options
     volumes:
       - ../deploy/bitcoin:/deploy/bitcoin
     networks:
@@ -58,6 +67,18 @@ services:
       - 8332:8332
       - 18333:18333
       - 18444:18444
+    networks:
+      - d3-network
+
+  # bitcoin testing endpoint. don't use in production
+  d3-btc-testing:
+    image: nexus.iroha.tech:19002/d3-deploy/btc-testing-endpoints:develop
+    container_name: d3-btc-testing
+    restart: on-failure
+    ports:
+      - 18981:18981
+    env_file:
+      - ../deploy/.env-default-jvm-options
     networks:
       - d3-network
 

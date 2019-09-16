@@ -12,15 +12,14 @@ import com.d3.commons.registration.RegistrationStrategy
 import com.github.kittinunf.result.Result
 import com.github.kittinunf.result.flatMap
 import com.github.kittinunf.result.map
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
 //Strategy for registering BTC addresses
 @Component
 class BtcRegistrationStrategyImpl(
-    @Autowired private val btcRegisteredAddressesProvider: BtcRegisteredAddressesProvider,
-    @Autowired private val btcFreeAddressesProvider: BtcFreeAddressesProvider,
-    @Autowired private val irohaBtcAccountCreator: IrohaBtcAccountRegistrator
+    private val btcRegisteredAddressesProvider: BtcRegisteredAddressesProvider,
+    private val btcFreeAddressesProvider: BtcFreeAddressesProvider,
+    private val irohaBtcAccountCreator: IrohaBtcAccountRegistrator
 ) : RegistrationStrategy {
 
     /**
@@ -42,33 +41,22 @@ class BtcRegistrationStrategyImpl(
                     throw IllegalStateException("Not able to register $accountName@$domainId")
                 }
             }
-            .flatMap { btcFreeAddressesProvider.getFreeAddresses() }
-            .flatMap { freeAddresses ->
-                if (freeAddresses.isEmpty()) {
-                    throw IllegalStateException("No free btc address to register")
-                }
-                // Get the newest address among free addresses
-                val freeAddress =
-                    freeAddresses.maxBy { address -> address.info.generationTime ?: 0 }
-
+            .flatMap { btcFreeAddressesProvider.getFreeAddress() }
+            .flatMap { freeAddress ->
                 irohaBtcAccountCreator.create(
-                    freeAddress!!.address,
+                    freeAddress.address,
                     accountName,
                     domainId,
-                    publicKey,
                     freeAddress.info.notaryKeys,
-                    btcFreeAddressesProvider.nodeId
-                )
+                    freeAddress.info.nodeId
+                ) {
+                    btcFreeAddressesProvider.addRegisterFreeAddressCommands(it, freeAddress)
+                }
             }
     }
 
     /**
      * Get number of free addresses.
      */
-    override fun getFreeAddressNumber(): Result<Int, Exception> {
-        return btcFreeAddressesProvider.getFreeAddresses().map { freeAddresses ->
-            freeAddresses.size
-        }
-    }
-
+    override fun getFreeAddressNumber() = btcFreeAddressesProvider.countFreeAddresses()
 }

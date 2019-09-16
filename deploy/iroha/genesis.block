@@ -39,6 +39,14 @@
               },
               {
                 "createRole": {
+                  "roleName": "data_collector",
+                  "permissions": [
+                    "can_get_blocks"
+                  ]
+                }
+              },
+              {
+                "createRole": {
                   "roleName": "registration_service",
                   "permissions": [
                     "can_append_role",
@@ -50,7 +58,7 @@
                     "can_get_blocks",
                     "can_set_quorum",
                     "can_grant_can_set_my_quorum",
-                    "can_grant_can_add_my_signatory"
+                    "can_grant_can_add_my_signatory",
                     "can_get_peers",
                     "can_get_all_signatories"
                   ]
@@ -106,7 +114,8 @@
                     "can_add_signatory",
                     "can_set_quorum",
                     "can_set_detail",
-                    "can_subtract_asset_qty"
+                    "can_subtract_asset_qty",
+                    "can_get_peers"
                   ]
                 }
               },
@@ -317,6 +326,26 @@
               },
               {
                 "createAccount": {
+                  "accountName": "btc_free_addresses_storage",
+                  "domainId": "notary",
+                  "publicKey": "0000000000000000000000000000000000000000000000000000000000000000"
+                }
+              },
+              {
+                "createAccount": {
+                  "accountName": "data_collector",
+                  "domainId": "notary",
+                  "publicKey": "97B888554684FB30F29FAB92991AB7ECEFFFE433AB3AF501E5DEAEE69392518C"
+                }
+              },
+              {
+                "appendRole": {
+                  "accountId": "data_collector@notary",
+                  "roleName": "data_collector"
+                }
+              },
+              {
+                "createAccount": {
                   "accountName": "brvs",
                   "domainId": "brvs",
                   "publicKey": "b9679bbf526a1c936cd1144b56a370d376fa8246b248cd72f952b45a2f20bdad"
@@ -398,20 +427,14 @@
               {
                 "createAccount": {
                   "accountName": "registration_service",
-                  "domainId": "notary",
+                  "domainId": "d3",
                   "publicKey": "28da166c2c37e302d751ad8442af5ebfab097df522bcf4717f9ef24e722375de"
                 }
               },
               {
                 "appendRole": {
-                  "accountId": "registration_service@notary",
+                  "accountId": "registration_service@d3",
                   "roleName": "registration_service"
-                }
-              },
-              {
-                "appendRole": {
-                  "accountId": "registration_service@notary",
-                  "roleName": "client"
                 }
               },
               {
@@ -580,13 +603,6 @@
                   "accountId": "notaries@notary",
                   "key": "some_notary",
                   "value": "http://localhost:20000"
-                }
-              },
-              {
-                "createAccount": {
-                  "accountName": "gen_btc_pk_trigger",
-                  "domainId": "notary",
-                  "publicKey": "0000000000000000000000000000000000000000000000000000000000000000"
                 }
               }
             ],

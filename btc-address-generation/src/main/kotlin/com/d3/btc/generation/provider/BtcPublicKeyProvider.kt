@@ -3,17 +3,20 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package com.d3.btc.provider.generation
+package com.d3.btc.generation.provider
 
+import com.d3.btc.generation.config.BtcAddressGenerationConfig
 import com.d3.btc.helper.address.createMsAddress
 import com.d3.btc.model.AddressInfo
 import com.d3.btc.model.BtcAddressType
 import com.d3.btc.provider.network.BtcNetworkConfigProvider
-import com.d3.commons.provider.NotaryPeerListProvider
 import com.d3.commons.sidechain.iroha.consumer.IrohaConsumer
+import com.d3.commons.sidechain.iroha.util.IrohaQueryHelper
 import com.d3.commons.sidechain.iroha.util.ModelUtil
 import com.d3.commons.util.getRandomId
+import com.d3.commons.util.irohaEscape
 import com.github.kittinunf.result.Result
+import com.github.kittinunf.result.fanout
 import com.github.kittinunf.result.map
 import mu.KLogging
 import org.bitcoinj.wallet.Wallet
@@ -22,47 +25,40 @@ import org.springframework.stereotype.Component
 
 /**
  *  Bitcoin keys provider
+ *  @param queryHelper - query helper that is used to get number of peers
  *  @param keysWallet - bitcoin wallet
- *  @param notaryPeerListProvider - provider to query all current notaries
- *  @param notaryAccount - Iroha account of notary service.
- *  Used to store free BTC addresses that can be registered by clients later
- *  @param changeAddressStorageAccount - Iroha account used to store change addresses
+ *  @param btcAddressGenerationConfig - address generation configuration object
  *  @param multiSigConsumer - consumer of multisignature Iroha account. Used to create multisignature transactions.
- *  @param sessionConsumer - consumer of session Iroha account. Used to store session data.
+ *  @param registrationConsumer - consumer of session Iroha account. Used to store session data.
  *  @param btcNetworkConfigProvider - provider of network configuration
  */
 @Component
 class BtcPublicKeyProvider(
+    private val queryHelper: IrohaQueryHelper,
+    @Qualifier("keysWallet")
     private val keysWallet: Wallet,
-    private val notaryPeerListProvider: NotaryPeerListProvider,
-    @Qualifier("notaryAccount")
-    private val notaryAccount: String,
-    @Qualifier("changeAddressStorageAccount")
-    private val changeAddressStorageAccount: String,
+    private val btcAddressGenerationConfig: BtcAddressGenerationConfig,
     @Qualifier("multiSigConsumer")
     private val multiSigConsumer: IrohaConsumer,
-    @Qualifier("sessionConsumer")
-    private val sessionConsumer: IrohaConsumer,
+    @Qualifier("registrationConsumer")
+    private val registrationConsumer: IrohaConsumer,
     private val btcNetworkConfigProvider: BtcNetworkConfigProvider
 ) {
-    init {
-        logger.info { "BtcPublicKeyProvider was successfully initialized" }
-    }
 
     /**
      * Creates notary public key and sets it into session account details
-     * @param sessionAccountName - name of session account
+     * @param sessionAccountId - id of session account
      * @param onKeyCreated - function that will be called right after key creation
      * @return new public key created by notary
      */
-    fun createKey(sessionAccountName: String, onKeyCreated: () -> Unit): Result<String, Exception> {
+    fun createKey(sessionAccountId: String, onKeyCreated: () -> Unit): Result<String, Exception> {
         // Generate new key from wallet
         val key = keysWallet.freshReceiveKey()
         onKeyCreated()
         val pubKey = key.publicKeyAsHex
         return ModelUtil.setAccountDetail(
-            sessionConsumer,
-            "$sessionAccountName@btcSession",
+            registrationConsumer,
+            sessionAccountId,
             String.getRandomId(),
             pubKey
         ).map {
@@ -87,18 +83,19 @@ class BtcPublicKeyProvider(
         nodeId: String,
         onMsAddressCreated: () -> Unit
     ): Result<Unit, Exception> {
-        return multiSigConsumer.getConsumerQuorum().map { quorum ->
-            val peers = notaryPeerListProvider.getPeerList().size
+        return queryHelper.getPeersCount().fanout {
+            multiSigConsumer.getConsumerQuorum()
+        }.map { (peers, quorum) ->
             if (peers == 0) {
-                throw IllegalStateException("No peers to create btc multisignature address")
+                throw IllegalStateException("No peers to create btc MultiSig address")
             } else if (notaryKeys.size != peers) {
-                logger.info {
-                    "Not enough keys are collected to generate a multisig address(${notaryKeys.size}" +
+                logger.info(
+                    "Not enough keys are collected to generate a MultiSig address(${notaryKeys.size}" +
                             " out of $peers)"
-                }
+                )
                 return@map
             } else if (!hasMyKey(notaryKeys)) {
-                logger.info { "Cannot be involved in address generation. No access to $notaryKeys." }
+                logger.info("Cannot be involved in address generation. No access to $notaryKeys.")
                 return@map
             }
             val msAddress = createMsAddress(notaryKeys, btcNetworkConfigProvider.getConfig())
@@ -116,12 +113,12 @@ class BtcPublicKeyProvider(
                 multiSigConsumer,
                 addressStorage.storageAccount,
                 msAddress.toBase58(),
-                addressStorage.addressInfo.toJson(),
+                addressStorage.addressInfo.toJson().irohaEscape(),
                 generationTime,
                 quorum
             ).fold({
-                logger.info { "New BTC ${addressType.title} address $msAddress was created. Node id '$nodeId'" }
-            }, { ex -> throw Exception("Cannot create Bitcoin multisig address", ex) })
+                logger.info("New BTC ${addressType.title} address $msAddress was created. Node id '$nodeId'")
+            }, { ex -> throw Exception("Cannot create Bitcoin MultiSig address", ex) })
         }
     }
 
@@ -133,7 +130,6 @@ class BtcPublicKeyProvider(
     private fun hasMyKey(notaryKeys: Collection<String>) = notaryKeys.find { key ->
         keysWallet.issuedReceiveKeys.find { ecKey -> ecKey.publicKeyAsHex == key } != null
     } != null
-
 
     /**
      * Creates address storage object that depends on generated address type
@@ -157,7 +153,7 @@ class BtcPublicKeyProvider(
                         nodeId,
                         generationTime
                     ),
-                    changeAddressStorageAccount
+                    btcAddressGenerationConfig.changeAddressesStorageAccount
                 )
             }
             BtcAddressType.FREE -> {
@@ -169,7 +165,7 @@ class BtcPublicKeyProvider(
                         generationTime
                     ),
                     //TODO use another account to store addresses
-                    notaryAccount
+                    btcAddressGenerationConfig.notaryAccount
                 )
             }
         }

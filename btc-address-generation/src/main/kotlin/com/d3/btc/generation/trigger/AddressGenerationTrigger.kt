@@ -5,21 +5,14 @@
 
 package com.d3.btc.generation.trigger
 
+import com.d3.btc.generation.provider.BtcSessionProvider
 import com.d3.btc.model.BtcAddressType
 import com.d3.btc.provider.BtcChangeAddressProvider
 import com.d3.btc.provider.BtcFreeAddressesProvider
-import com.d3.btc.provider.generation.BtcSessionProvider
-import com.d3.commons.notary.IrohaOrderedBatch
-import com.d3.commons.notary.IrohaTransaction
-import com.d3.commons.provider.TriggerProvider
-import com.d3.commons.sidechain.iroha.consumer.IrohaConsumer
-import com.d3.commons.sidechain.iroha.consumer.IrohaConverter
 import com.github.kittinunf.result.Result
+import com.github.kittinunf.result.failure
 import com.github.kittinunf.result.flatMap
-import com.github.kittinunf.result.map
 import mu.KLogging
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 
 /*
@@ -27,12 +20,9 @@ import org.springframework.stereotype.Component
  */
 @Component
 class AddressGenerationTrigger(
-    @Autowired private val btcSessionProvider: BtcSessionProvider,
-    @Autowired private val btcAddressGenerationTriggerProvider: TriggerProvider,
-    @Autowired private val btcFreeAddressesProvider: BtcFreeAddressesProvider,
-    @Qualifier("addressGenerationConsumer")
-    @Autowired private val addressGenerationConsumer: IrohaConsumer,
-    @Autowired private val btcChangeAddressesProvider: BtcChangeAddressProvider
+    private val btcSessionProvider: BtcSessionProvider,
+    private val btcFreeAddressesProvider: BtcFreeAddressesProvider,
+    private val btcChangeAddressesProvider: BtcChangeAddressProvider
 ) {
     /**
      * Starts address generation process
@@ -45,19 +35,13 @@ class AddressGenerationTrigger(
         addressesToGenerate: Int = 1,
         nodeId: String
     ): Result<Unit, Exception> {
-        val txList = ArrayList<IrohaTransaction>()
-        for (addresses in 1..addressesToGenerate) {
-            val sessionAccountName = addressType.createSessionAccountName()
-            txList.add(btcSessionProvider.createPubKeyCreationSessionTx(sessionAccountName, nodeId))
-            txList.add(
-                btcAddressGenerationTriggerProvider.triggerTx(
-                    sessionAccountName
-                )
-            )
+        return Result.of {
+            repeat(addressesToGenerate) {
+                val sessionAccountName = addressType.createSessionAccountName()
+                btcSessionProvider.createPubKeyCreationSession(sessionAccountName, nodeId)
+                    .failure { ex -> throw ex }
+            }
         }
-        val utx = IrohaConverter.convert(IrohaOrderedBatch(txList))
-        return addressGenerationConsumer.send(utx)
-            .map { Unit }
     }
 
     /**
@@ -70,9 +54,9 @@ class AddressGenerationTrigger(
         addressesThreshold: Int,
         nodeId: String
     ): Result<Unit, Exception> {
-        return btcFreeAddressesProvider.getFreeAddresses().flatMap { freeAddresses ->
-            if (freeAddresses.size < addressesThreshold) {
-                val addressesToGenerate = addressesThreshold - freeAddresses.size
+        return btcFreeAddressesProvider.countFreeAddresses().flatMap { freeAddressesCount ->
+            if (freeAddressesCount < addressesThreshold) {
+                val addressesToGenerate = addressesThreshold - freeAddressesCount
                 logger.info("Generating $addressesToGenerate free addresses")
                 startAddressGeneration(BtcAddressType.FREE, addressesToGenerate, nodeId)
             } else {
@@ -88,6 +72,7 @@ class AddressGenerationTrigger(
      * @param nodeId - node id
      */
     fun startChangeAddressGenerationIfNeeded(nodeId: String): Result<Unit, Exception> {
+        //TODO use filter
         return btcChangeAddressesProvider.getAllChangeAddresses().flatMap { changeAddresses ->
             if (!changeAddresses.any { changeAddress -> changeAddress.info.nodeId == nodeId }) {
                 logger.info("Generating change address")

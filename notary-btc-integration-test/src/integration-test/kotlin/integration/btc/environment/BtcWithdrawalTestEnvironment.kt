@@ -6,6 +6,7 @@
 package integration.btc.environment
 
 import com.d3.btc.config.BitcoinConfig
+import com.d3.btc.dwbridge.config.BtcDWBridgeConfig
 import com.d3.btc.handler.NewBtcClientRegistrationHandler
 import com.d3.btc.helper.address.outPutToBase58Address
 import com.d3.btc.peer.SharedPeerGroup
@@ -32,18 +33,24 @@ import com.d3.btc.withdrawal.statistics.WithdrawalStatistics
 import com.d3.btc.withdrawal.transaction.*
 import com.d3.chainadapter.client.RMQConfig
 import com.d3.chainadapter.client.ReliableIrohaChainListener
+import com.d3.commons.config.loadLocalConfigs
 import com.d3.commons.config.loadRawLocalConfigs
 import com.d3.commons.expansion.ServiceExpansion
 import com.d3.commons.model.IrohaCredential
-import com.d3.commons.provider.NotaryPeerListProviderImpl
 import com.d3.commons.service.WithdrawalFinalizer
 import com.d3.commons.sidechain.iroha.consumer.IrohaConsumerImpl
 import com.d3.commons.sidechain.iroha.consumer.MultiSigIrohaConsumer
+import com.d3.commons.sidechain.iroha.util.impl.IrohaQueryHelperImpl
+import com.d3.commons.sidechain.iroha.util.impl.RobustIrohaQueryHelperImpl
 import com.d3.commons.util.createPrettySingleThreadPool
 import com.d3.reverse.adapter.ReverseChainAdapter
 import com.d3.reverse.client.ReliableIrohaConsumerImpl
 import com.d3.reverse.client.ReverseChainAdapterClientConfig
 import com.d3.reverse.config.ReverseChainAdapterConfig
+import com.github.kittinunf.result.Result
+import com.nhaarman.mockito_kotlin.doReturn
+import com.nhaarman.mockito_kotlin.spy
+import com.nhaarman.mockito_kotlin.whenever
 import com.rabbitmq.client.ConnectionFactory
 import integration.btc.FAILED_WITHDRAW_AMOUNT
 import integration.helper.BtcIntegrationHelperUtil
@@ -75,8 +82,12 @@ class BtcWithdrawalTestEnvironment(
                 btcWithdrawalConfig.withdrawalCredential.pubkey,
                 btcWithdrawalConfig.withdrawalCredential.privkey
             )
-        )
+        ),
+    private val peers: Int = 1
 ) : Closeable {
+
+    private val dwBridgeConfig =
+        loadLocalConfigs("btc-dw-bridge", BtcDWBridgeConfig::class.java, "dw-bridge.properties").get()
 
     val createdTransactions = ConcurrentHashMap<String, Pair<Long, Transaction>>()
 
@@ -170,12 +181,18 @@ class BtcWithdrawalTestEnvironment(
         irohaApi
     )
 
-    private val broadcastsProvider = BroadcastsProvider(broadcastIrohaConsumer, integrationHelper.queryHelper)
-
     private val withdrawalIrohaConsumer = IrohaConsumerImpl(
         withdrawalCredential,
         irohaApi
     )
+
+    private val withdrawalQueryHelper by lazy {
+        val irohaQueryHelper = spy(IrohaQueryHelperImpl(irohaApi, withdrawalCredential))
+        doReturn(Result.of { peers }).whenever(irohaQueryHelper).getPeersCount()
+        RobustIrohaQueryHelperImpl(irohaQueryHelper, dwBridgeConfig.irohaQueryTimeoutMls)
+    }
+
+    private val broadcastsProvider = BroadcastsProvider(broadcastIrohaConsumer, withdrawalQueryHelper)
 
     private val withdrawalIrohaConsumerMultiSig = MultiSigIrohaConsumer(
         withdrawalCredential,
@@ -199,7 +216,7 @@ class BtcWithdrawalTestEnvironment(
     val reverseChainAdapter by reverseChainAdapterDelegate
 
     val btcRegisteredAddressesProvider = BtcRegisteredAddressesProvider(
-        integrationHelper.queryHelper,
+        withdrawalQueryHelper,
         btcWithdrawalConfig.registrationCredential.accountId,
         integrationHelper.accountHelper.notaryAccount.accountId
     )
@@ -207,7 +224,7 @@ class BtcWithdrawalTestEnvironment(
     private val btcNetworkConfigProvider = BtcRegTestConfigProvider()
 
     val btcChangeAddressProvider = BtcChangeAddressProvider(
-        integrationHelper.queryHelper,
+        withdrawalQueryHelper,
         btcWithdrawalConfig.mstRegistrationAccount,
         btcWithdrawalConfig.changeAddressesStorageAccount
     )
@@ -228,23 +245,22 @@ class BtcWithdrawalTestEnvironment(
 
     private val btcAddressStorage = BtcAddressStorage(btcRegisteredAddressesProvider, btcChangeAddressProvider)
 
-    val usedUTXOProvider =
-        UsedUTXOProvider(integrationHelper.queryHelper, withdrawalIrohaConsumer, btcWithdrawalConfig.utxoStorageAccount)
+    private val usedUTXOProvider =
+        UsedUTXOProvider(withdrawalQueryHelper, withdrawalIrohaConsumer, btcWithdrawalConfig.utxoStorageAccount)
 
     val utxoProvider =
         BlackListableBitcoinUTXOProvider(
             transferWallet,
             peerGroup,
             btcNetworkConfigProvider,
-            btcRegisteredAddressesProvider,
-            btcChangeAddressProvider,
+            btcAddressStorage,
             usedUTXOProvider
         )
 
-    val transactionsStorage =
+    private val transactionsStorage =
         TransactionsStorage(
             BtcRegTestConfigProvider(),
-            integrationHelper.queryHelper,
+            withdrawalQueryHelper,
             withdrawalIrohaConsumer,
             btcWithdrawalConfig.txStorageAccount,
             btcWithdrawalConfig.utxoStorageAccount,
@@ -254,21 +270,22 @@ class BtcWithdrawalTestEnvironment(
         TransactionCreator(btcChangeAddressProvider, btcNetworkConfigProvider, utxoProvider, transactionsStorage)
     private val transactionSigner =
         TransactionSigner(btcRegisteredAddressesProvider, btcChangeAddressProvider, transferWallet)
+
+    private val signatureCollectorQueryHelper = RobustIrohaQueryHelperImpl(
+        IrohaQueryHelperImpl(irohaApi, signaturesCollectorCredential),
+        dwBridgeConfig
+            .irohaQueryTimeoutMls
+    )
+
     val signCollector =
         SignCollector(
-            signaturesCollectorCredential,
+            signatureCollectorQueryHelper,
             signaturesCollectorIrohaConsumer,
-            irohaApi,
             transactionSigner,
             transferWallet
         )
 
     private val withdrawalStatistics = WithdrawalStatistics.create()
-    private val notaryPeerListProvider = NotaryPeerListProviderImpl(
-        integrationHelper.queryHelper,
-        btcWithdrawalConfig.notaryListStorageAccount,
-        btcWithdrawalConfig.notaryListSetterAccount
-    )
 
     private val reliableWithdrawalConsumer =
         ReliableIrohaConsumerImpl(reverseChainAdapterClientConfig, withdrawalCredential, irohaApi, fireAndForget = true)
@@ -278,8 +295,7 @@ class BtcWithdrawalTestEnvironment(
     private val withdrawalConsensusProvider = WithdrawalConsensusProvider(
         withdrawalCredential,
         btcConsensusIrohaConsumer,
-        integrationHelper.queryHelper,
-        notaryPeerListProvider,
+        withdrawalQueryHelper,
         utxoProvider,
         bitcoinConfig
     )
@@ -370,7 +386,12 @@ class BtcWithdrawalTestEnvironment(
             newTransferHandler,
             listOf(
                 newSignatureEventHandler,
-                NewBtcClientRegistrationHandler(btcNetworkConfigProvider, transferWallet, btcAddressStorage),
+                NewBtcClientRegistrationHandler(
+                    btcNetworkConfigProvider,
+                    transferWallet,
+                    btcAddressStorage,
+                    btcWithdrawalConfig.registrationCredential.accountId
+                ),
                 newChangeAddressHandler,
                 newConsensusDataHandler,
                 newTransactionCreatedHandler,
@@ -399,15 +420,13 @@ class BtcWithdrawalTestEnvironment(
         transferWallet: Wallet,
         peerGroup: SharedPeerGroup,
         btcNetworkConfigProvider: BtcNetworkConfigProvider,
-        btcRegisteredAddressesProvider: BtcRegisteredAddressesProvider,
-        btcChangeAddressProvider: BtcChangeAddressProvider,
+        btcAddressStorage: BtcAddressStorage,
         usedUTXOProvider: UsedUTXOProvider
     ) : UTXOProvider(
         transferWallet,
         peerGroup,
         btcNetworkConfigProvider,
-        btcRegisteredAddressesProvider,
-        btcChangeAddressProvider,
+        btcAddressStorage,
         usedUTXOProvider
 
     ) {

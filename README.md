@@ -8,9 +8,4 @@
 5) Run notary service `PROFILE=mainnet ./gradlew runBtcDepositWithdrawal`
 
 ## Testing Bitcoin
-`./gradlew btcRefreshWallets` — recreates Bitcoin wallets in RegTests mode
-
-`./gradlew btcSendToAddress -Paddress=<address> -PamountBtc=<amount>` — sends `<amount>` BTC to `<address>` in Bitcoin regtest network
-
-`./gradlew btcGenerateBlocks -Pblocks=<blocks>` — generates `<blocks>` in Bitcoin regtest network
-
+There is a dedicated endpoint for testing purposes. Visit [Swagger](http://127.0.0.1:18981/apidocs) for more details.

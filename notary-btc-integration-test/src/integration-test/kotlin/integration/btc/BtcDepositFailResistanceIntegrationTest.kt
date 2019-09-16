@@ -6,11 +6,11 @@
 package integration.btc
 
 import com.d3.btc.config.BTC_ASSET
-import com.d3.commons.sidechain.iroha.CLIENT_DOMAIN
 import com.d3.commons.util.getRandomString
 import com.github.kittinunf.result.failure
 import integration.btc.environment.BtcNotaryTestEnvironment
 import integration.helper.BtcIntegrationHelperUtil
+import integration.helper.D3_DOMAIN
 import integration.registration.RegistrationServiceTestEnvironment
 import mu.KLogging
 import org.bitcoinj.core.Address
@@ -25,9 +25,10 @@ import java.util.concurrent.TimeUnit
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class BtcDepositFailResistanceIntegrationTest {
     private val integrationHelper = BtcIntegrationHelperUtil()
-    private val environment = BtcNotaryTestEnvironment(integrationHelper)
     private val registrationServiceEnvironment =
         RegistrationServiceTestEnvironment(integrationHelper)
+    private val environment =
+        BtcNotaryTestEnvironment(integrationHelper, registrationServiceEnvironment.registrationConfig)
 
     @AfterAll
     fun dropDown() {
@@ -43,7 +44,6 @@ class BtcDepositFailResistanceIntegrationTest {
         //Recreate folder
         blockStorageFolder.mkdirs()
         integrationHelper.generateBtcInitialBlocks()
-        integrationHelper.addBtcNotary("test_notary", "test_notary_address")
         environment.reverseChainAdapter.init().failure { ex -> throw ex }
     }
 
@@ -60,14 +60,14 @@ class BtcDepositFailResistanceIntegrationTest {
         val transfersWallet = Wallet.loadFromFile(walletFile)
         val initUTXOCount = transfersWallet.unspents.size
         val randomName = String.getRandomString(9)
-        val testClient = "$randomName@$CLIENT_DOMAIN"
+        val testClient = "$randomName@$D3_DOMAIN"
         val res = registrationServiceEnvironment.register(randomName)
         Assertions.assertEquals(200, res.statusCode)
         val btcAddress =
             integrationHelper.registerBtcAddress(
                 environment.btcAddressGenerationConfig.btcKeysWalletPath,
                 randomName,
-                CLIENT_DOMAIN
+                D3_DOMAIN
             )
         val initialBalance = integrationHelper.getIrohaAccountBalance(
             testClient,

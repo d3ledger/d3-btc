@@ -11,6 +11,7 @@ import com.d3.btc.deposit.config.BtcDepositConfig
 import com.d3.btc.deposit.handler.NewBtcChangeAddressDepositHandler
 import com.d3.btc.dwbridge.BTC_DW_BRIDGE_SERVICE_NAME
 import com.d3.btc.handler.NewBtcClientRegistrationHandler
+import com.d3.btc.peer.SharedPeerGroupConfig
 import com.d3.btc.provider.BtcChangeAddressProvider
 import com.d3.btc.provider.BtcRegisteredAddressesProvider
 import com.d3.btc.provider.network.BtcNetworkConfigProvider
@@ -29,12 +30,12 @@ import com.d3.commons.config.loadRawLocalConfigs
 import com.d3.commons.expansion.ServiceExpansion
 import com.d3.commons.model.IrohaCredential
 import com.d3.commons.notary.NotaryImpl
-import com.d3.commons.provider.NotaryPeerListProviderImpl
 import com.d3.commons.service.WithdrawalFinalizer
 import com.d3.commons.sidechain.SideChainEvent
 import com.d3.commons.sidechain.iroha.consumer.IrohaConsumerImpl
 import com.d3.commons.sidechain.iroha.consumer.MultiSigIrohaConsumer
 import com.d3.commons.sidechain.iroha.util.impl.IrohaQueryHelperImpl
+import com.d3.commons.sidechain.iroha.util.impl.RobustIrohaQueryHelperImpl
 import com.d3.commons.util.createPrettySingleThreadPool
 import com.d3.reverse.adapter.ReverseChainAdapter
 import com.d3.reverse.client.ReliableIrohaConsumerImpl
@@ -46,17 +47,18 @@ import io.reactivex.subjects.PublishSubject
 import jp.co.soramitsu.iroha.java.IrohaAPI
 import jp.co.soramitsu.iroha.java.Utils
 import org.bitcoinj.wallet.Wallet
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
-val withdrawalConfig =
+private val withdrawalConfig =
     loadLocalConfigs(
         "btc-withdrawal",
         BtcWithdrawalConfig::class.java,
         "withdrawal.properties"
     ).get()
 
-val depositConfig =
+private val depositConfig =
     loadLocalConfigs("btc-deposit", BtcDepositConfig::class.java, "deposit.properties").get()
 val dwBridgeConfig =
     loadLocalConfigs("btc-dw-bridge", BtcDWBridgeConfig::class.java, "dw-bridge.properties").get()
@@ -112,6 +114,11 @@ class BtcDWBridgeAppConfiguration {
 
     private val notaryCredential =
         IrohaCredential(depositConfig.notaryCredential.accountId, notaryKeypair)
+
+    private val signatureCollectorCredential = IrohaCredential(
+        withdrawalConfig.signatureCollectorCredential.accountId,
+        signatureCollectorKeypair
+    )
 
     @Bean
     fun notaryCredential() = notaryCredential
@@ -182,27 +189,31 @@ class BtcDWBridgeAppConfiguration {
     }
 
     @Bean
+    fun signatureCollectorQueryHelper() = RobustIrohaQueryHelperImpl(
+        IrohaQueryHelperImpl(irohaAPI(), signatureCollectorCredential),
+        dwBridgeConfig.irohaQueryTimeoutMls
+    )
+
+    @Bean
+    fun notaryQueryHelper() = RobustIrohaQueryHelperImpl(
+        IrohaQueryHelperImpl(
+            irohaAPI(),
+            depositConfig.notaryCredential.accountId,
+            notaryKeypair
+        ), dwBridgeConfig.irohaQueryTimeoutMls
+    )
+
+    @Bean
     fun btcRegisteredAddressesProvider(): BtcRegisteredAddressesProvider {
         return BtcRegisteredAddressesProvider(
-            IrohaQueryHelperImpl(
-                irohaAPI(),
-                depositConfig.notaryCredential.accountId,
-                notaryKeypair
-            ),
+            notaryQueryHelper(),
             depositConfig.registrationAccount,
             depositConfig.notaryCredential.accountId
         )
     }
 
     @Bean
-    fun signatureCollectorCredential() =
-        IrohaCredential(
-            withdrawalConfig.signatureCollectorCredential.accountId,
-            signatureCollectorKeypair
-        )
-
-    @Bean
-    fun signatureCollectorConsumer() = IrohaConsumerImpl(signatureCollectorCredential(), irohaAPI())
+    fun signatureCollectorConsumer() = IrohaConsumerImpl(signatureCollectorCredential, irohaAPI())
 
     @Bean
     fun transferWallet(networkProvider: BtcNetworkConfigProvider): Wallet {
@@ -240,12 +251,13 @@ class BtcDWBridgeAppConfiguration {
     fun broadcastsIrohaConsumer() = IrohaConsumerImpl(broadcastCredential, irohaAPI())
 
     @Bean
-    fun withdrawalQueryHelper() =
+    fun withdrawalQueryHelper() = RobustIrohaQueryHelperImpl(
         IrohaQueryHelperImpl(
             irohaAPI(),
             withdrawalCredential().accountId,
             withdrawalCredential().keyPair
-        )
+        ), dwBridgeConfig.irohaQueryTimeoutMls
+    )
 
     @Bean
     fun btcChangeAddressProvider(): BtcChangeAddressProvider {
@@ -256,22 +268,10 @@ class BtcDWBridgeAppConfiguration {
         )
     }
 
-    @Bean
-    fun blockStoragePath() = dwBridgeConfig.bitcoin.blockStoragePath
 
     @Bean
     fun bitcoinConfig() = dwBridgeConfig.bitcoin
 
-    @Bean
-    fun btcHosts() = extractHosts(dwBridgeConfig.bitcoin)
-
-    @Bean
-    fun notaryPeerListProvider() =
-        NotaryPeerListProviderImpl(
-            withdrawalQueryHelper(),
-            withdrawalConfig.notaryListStorageAccount,
-            withdrawalConfig.notaryListSetterAccount
-        )
 
     @Bean
     fun btcAddressStorage() = BtcAddressStorage(btcRegisteredAddressesProvider(), btcChangeAddressProvider())
@@ -289,7 +289,12 @@ class BtcDWBridgeAppConfiguration {
         )
 
     @Bean
-    fun dnsSeeds() = BtcDWBridgeConfig.extractSeeds(dwBridgeConfig)
+    fun sharedPeerGroupConfig() = SharedPeerGroupConfig(
+        blockStoragePath = dwBridgeConfig.bitcoin.blockStoragePath,
+        minBlockHeightForPeer = dwBridgeConfig.minBlockHeightForPeer,
+        hosts = extractHosts(dwBridgeConfig.bitcoin),
+        dnsSeeds = BtcDWBridgeConfig.extractSeeds(dwBridgeConfig)
+    )
 
     @Bean
     fun txStorageAccount() = withdrawalConfig.txStorageAccount
@@ -351,4 +356,18 @@ class BtcDWBridgeAppConfiguration {
         ),
         autoAck = false
     )
+
+    @Bean
+    fun newBtcClientRegistrationHandler(
+        btcNetworkConfigProvider: BtcNetworkConfigProvider,
+        @Qualifier("transferWallet")
+        transferWallet: Wallet,
+        btcAddressStorage: BtcAddressStorage
+    ) =
+        NewBtcClientRegistrationHandler(
+            btcNetworkConfigProvider,
+            transferWallet,
+            btcAddressStorage,
+            withdrawalConfig.registrationCredential.accountId
+        )
 }

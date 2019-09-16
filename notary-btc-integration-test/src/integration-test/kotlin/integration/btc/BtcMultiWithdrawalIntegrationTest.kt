@@ -9,7 +9,6 @@ import com.d3.btc.config.BTC_ASSET
 import com.d3.btc.helper.address.outPutToBase58Address
 import com.d3.btc.helper.currency.satToBtc
 import com.d3.btc.model.BtcAddressType
-import com.d3.commons.sidechain.iroha.CLIENT_DOMAIN
 import com.d3.commons.sidechain.iroha.FEE_DESCRIPTION
 import com.d3.commons.sidechain.iroha.util.ModelUtil
 import com.d3.commons.util.getRandomString
@@ -19,6 +18,7 @@ import integration.btc.environment.BtcAddressGenerationTestEnvironment
 import integration.btc.environment.BtcWithdrawalTestEnvironment
 import integration.helper.BTC_PRECISION
 import integration.helper.BtcIntegrationHelperUtil
+import integration.helper.D3_DOMAIN
 import integration.registration.RegistrationServiceTestEnvironment
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -60,7 +60,6 @@ class BtcMultiWithdrawalIntegrationTest {
         val testNames = ArrayList<String>()
         repeat(peers) { peer ->
             testNames.add("multi_withdrawal_${String.getRandomString(5)}_$peer")
-            integrationHelper.addBtcNotary("test_notary_$peer", "test")
         }
         var peerCount = 0
         integrationHelper.accountHelper.btcWithdrawalAccounts
@@ -73,7 +72,8 @@ class BtcMultiWithdrawalIntegrationTest {
                         integrationHelper,
                         testName,
                         btcWithdrawalConfig = withdrawalConfig,
-                        withdrawalCredential = withdrawalAccount
+                        withdrawalCredential = withdrawalAccount,
+                        peers = peers
                     )
                 withdrawalEnvironments.add(environment)
                 val blockStorageFolder =
@@ -90,10 +90,13 @@ class BtcMultiWithdrawalIntegrationTest {
             val environment = BtcAddressGenerationTestEnvironment(
                 integrationHelper,
                 btcGenerationConfig = integrationHelper.configHelper.createBtcAddressGenerationConfig(
+                    registrationServiceEnvironment.registrationConfig,
                     0,
                     testName
                 ),
-                mstRegistrationCredential = mstRegistrationAccount
+                mstRegistrationCredential = mstRegistrationAccount,
+                peers = peers,
+                registrationConfig = registrationServiceEnvironment.registrationConfig
             )
             addressGenerationEnvironments.add(environment)
             GlobalScope.launch {
@@ -126,7 +129,7 @@ class BtcMultiWithdrawalIntegrationTest {
         val amount = satToBtc(1L)
         val randomNameSrc = String.getRandomString(9)
         val testClientSrcKeypair = ModelUtil.generateKeypair()
-        val testClientSrc = "$randomNameSrc@$CLIENT_DOMAIN"
+        val testClientSrc = "$randomNameSrc@$D3_DOMAIN"
         val res = registrationServiceEnvironment.register(
             randomNameSrc,
             testClientSrcKeypair.public.toHexString()
@@ -135,7 +138,7 @@ class BtcMultiWithdrawalIntegrationTest {
         addressGenerationEnvironments.first().generateAddress(BtcAddressType.FREE)
         integrationHelper.registerBtcAddressNoPreGen(
             randomNameSrc,
-            CLIENT_DOMAIN,
+            D3_DOMAIN,
             testClientSrcKeypair
         )
         val btcAddressDest = integrationHelper.createBtcAddress()
@@ -182,7 +185,7 @@ class BtcMultiWithdrawalIntegrationTest {
         val amount = satToBtc(10000L)
         val randomNameSrc = String.getRandomString(9)
         val testClientSrcKeypair = ModelUtil.generateKeypair()
-        val testClientSrc = "$randomNameSrc@$CLIENT_DOMAIN"
+        val testClientSrc = "$randomNameSrc@$D3_DOMAIN"
         val res = registrationServiceEnvironment.register(
             randomNameSrc,
             testClientSrcKeypair.public.toHexString()
@@ -192,7 +195,7 @@ class BtcMultiWithdrawalIntegrationTest {
         val btcAddressSrc =
             integrationHelper.registerBtcAddressNoPreGen(
                 randomNameSrc,
-                CLIENT_DOMAIN,
+                D3_DOMAIN,
                 testClientSrcKeypair
             )
         integrationHelper.sendBtc(

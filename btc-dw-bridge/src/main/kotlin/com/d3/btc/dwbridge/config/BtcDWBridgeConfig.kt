@@ -11,6 +11,9 @@ import com.d3.commons.config.IrohaConfig
 
 interface BtcDWBridgeConfig {
 
+    // Peers must have at least this number of blocks to be used by D3
+    val minBlockHeightForPeer: Int
+
     val expansionTriggerAccount: String
 
     // Account that triggers 'expansion' events
@@ -28,6 +31,9 @@ interface BtcDWBridgeConfig {
 
     // Bitcoin DNS seeds. Seeds are separated with comma (',') symbol
     val dnsSeedAddresses: String?
+
+    /** Timeout for Iroha queries */
+    val irohaQueryTimeoutMls: Int
 
     companion object {
         fun extractSeeds(btcDWBridgeConfig: BtcDWBridgeConfig): List<String> =

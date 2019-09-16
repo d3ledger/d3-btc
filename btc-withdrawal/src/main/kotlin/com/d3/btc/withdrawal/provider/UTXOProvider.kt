@@ -10,13 +10,11 @@ import com.d3.btc.fee.getTxFee
 import com.d3.btc.helper.address.outPutToBase58Address
 import com.d3.btc.helper.output.info
 import com.d3.btc.peer.SharedPeerGroup
-import com.d3.btc.provider.BtcChangeAddressProvider
-import com.d3.btc.provider.BtcRegisteredAddressesProvider
 import com.d3.btc.provider.network.BtcNetworkConfigProvider
+import com.d3.btc.storage.BtcAddressStorage
 import com.d3.btc.withdrawal.transaction.WithdrawalDetails
 import com.d3.btc.withdrawal.transaction.isDust
 import com.github.kittinunf.result.Result
-import com.github.kittinunf.result.fanout
 import com.github.kittinunf.result.map
 import mu.KLogging
 import org.bitcoinj.core.Address
@@ -37,8 +35,7 @@ class UTXOProvider(
     private val transfersWallet: Wallet,
     private val peerGroup: SharedPeerGroup,
     private val btcNetworkConfigProvider: BtcNetworkConfigProvider,
-    private val btcRegisteredAddressesProvider: BtcRegisteredAddressesProvider,
-    private val btcChangeAddressProvider: BtcChangeAddressProvider,
+    private val btcAddressStorage: BtcAddressStorage,
     private val usedUTXOProvider: UsedUTXOProvider
 ) {
 
@@ -111,26 +108,20 @@ class UTXOProvider(
      * @return result with set full of available addresses
      */
     fun getAvailableAddresses(generatedBefore: Long): Result<Set<String>, Exception> {
-        return btcRegisteredAddressesProvider.getRegisteredAddresses()
-            .map { registeredAddresses ->
-                logger.info("Registered addresses ${registeredAddresses.map { address -> address.address }}")
-                registeredAddresses.filter { btcAddress ->
-                    transfersWallet.isAddressWatched(
-                        Address.fromBase58(
-                            btcNetworkConfigProvider.getConfig(),
-                            btcAddress.address
-                        )
+        return Result.of {
+            val allAddresses = HashSet<String>()
+            allAddresses.addAll(btcAddressStorage.getClientAddresses())
+            allAddresses.addAll(btcAddressStorage.getChangeAddresses())
+            logger.info("All addresses $allAddresses")
+            allAddresses.filter { btcAddress ->
+                transfersWallet.isAddressWatched(
+                    Address.fromBase58(
+                        btcNetworkConfigProvider.getConfig(),
+                        btcAddress
                     )
-                }.map { btcAddress -> btcAddress.address }.toMutableSet()
-            }
-            .fanout { btcChangeAddressProvider.getAllChangeAddresses(generatedBefore) }
-            .map { (availableAddresses, changeAddresses) ->
-                changeAddresses.forEach { changeAddress ->
-                    //Change address is also available to use
-                    availableAddresses.add(changeAddress.address)
-                }
-                availableAddresses
-            }
+                )
+            }.toSet()
+        }
     }
 
     /**

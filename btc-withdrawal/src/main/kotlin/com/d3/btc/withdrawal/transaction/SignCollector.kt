@@ -5,22 +5,20 @@
 
 package com.d3.btc.withdrawal.transaction
 
+import com.d3.btc.config.BTC_SIGN_COLLECT_DOMAIN
 import com.d3.btc.helper.address.createMsRedeemScript
 import com.d3.btc.helper.address.getSignThreshold
 import com.d3.btc.helper.address.outPutToBase58Address
 import com.d3.btc.helper.address.toEcPubKey
 import com.d3.btc.helper.input.getConnectedOutput
 import com.d3.btc.helper.transaction.shortTxHash
-import com.d3.commons.model.IrohaCredential
 import com.d3.commons.notary.IrohaCommand
 import com.d3.commons.notary.IrohaTransaction
-import com.d3.btc.config.BTC_SIGN_COLLECT_DOMAIN
 import com.d3.commons.sidechain.iroha.consumer.IrohaConsumer
 import com.d3.commons.sidechain.iroha.consumer.IrohaConverter
-import com.d3.commons.sidechain.iroha.util.ModelUtil
-import com.d3.commons.sidechain.iroha.util.impl.IrohaQueryHelperImpl
-import com.d3.commons.util.hex
+import com.d3.commons.sidechain.iroha.util.IrohaQueryHelper
 import com.d3.commons.util.irohaEscape
+import com.d3.commons.util.toHexString
 import com.d3.commons.util.unHex
 import com.github.kittinunf.result.Result
 import com.github.kittinunf.result.flatMap
@@ -29,7 +27,6 @@ import com.squareup.moshi.Moshi
 import com.squareup.moshi.Types
 import io.ktor.util.KtorExperimentalAPI
 import io.ktor.util.sha1
-import jp.co.soramitsu.iroha.java.IrohaAPI
 import jp.co.soramitsu.iroha.java.Utils
 import mu.KLogging
 import org.bitcoinj.core.ECKey
@@ -37,10 +34,9 @@ import org.bitcoinj.core.Transaction
 import org.bitcoinj.crypto.TransactionSignature
 import org.bitcoinj.script.ScriptBuilder
 import org.bitcoinj.wallet.Wallet
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
-import java.lang.StringBuilder
+import java.math.BigInteger
 import kotlin.math.min
 
 /*
@@ -48,21 +44,14 @@ import kotlin.math.min
  */
 @Component
 class SignCollector(
-    @Qualifier("signatureCollectorCredential")
-    private val signatureCollectorCredential: IrohaCredential,
+    @Qualifier("signatureCollectorQueryHelper")
+    private val signatureCollectorQueryHelper: IrohaQueryHelper,
     @Qualifier("signatureCollectorConsumer")
     private val signatureCollectorConsumer: IrohaConsumer,
-    @Autowired private val irohaAPI: IrohaAPI,
     private val transactionSigner: TransactionSigner,
     private val transfersWallet: Wallet
 ) {
-    private val queryHelper by lazy {
-        IrohaQueryHelperImpl(
-            irohaAPI,
-            signatureCollectorCredential.accountId,
-            signatureCollectorCredential.keyPair
-        )
-    }
+
     //Adapter for JSON serialization/deserialization
     private val inputSignatureJsonAdapter = Moshi.Builder().build()
         .adapter<List<InputSignature>>(
@@ -77,10 +66,15 @@ class SignCollector(
      * 1) Sign tx
      * 2) Create special account named after tx hash for signature storing
      * 3) Save signatures in recently created account details
+     * @param withdrawalDetails - details of withdrawal
      * @param tx - transaction to sign
      * @param walletPath - path to current wallet. Used to get private keys
      */
-    fun signAndSave(tx: Transaction, walletPath: String): Result<Unit, Exception> {
+    fun signAndSave(
+        withdrawalDetails: WithdrawalDetails,
+        tx: Transaction,
+        walletPath: String
+    ): Result<Unit, Exception> {
         return transactionSigner.sign(tx, walletPath).flatMap { signedInputs ->
             if (signedInputs.isEmpty()) {
                 logger.warn(
@@ -91,7 +85,7 @@ class SignCollector(
             }
             logger.info { "Tx ${tx.hashAsString} signatures to add in Iroha $signedInputs" }
             val shortTxHash = tx.shortTxHash()
-            val createAccountTx = IrohaConverter.convert(createSignCollectionAccountTx(shortTxHash))
+            val createAccountTx = IrohaConverter.convert(createSignCollectionAccountTx(shortTxHash, withdrawalDetails))
             /**
              * We create a dedicated account on every withdrawal event.
              * We need this account to store transaction signatures from all the nodes.
@@ -100,7 +94,7 @@ class SignCollector(
              */
             signatureCollectorConsumer.send(createAccountTx)
             val setSignaturesTx =
-                IrohaConverter.convert(setSignatureDetailsTx(shortTxHash, signedInputs))
+                IrohaConverter.convert(setSignatureDetailsTx(shortTxHash, signedInputs, withdrawalDetails))
             signatureCollectorConsumer.send(setSignaturesTx)
         }.map { Unit }
     }
@@ -116,9 +110,9 @@ class SignCollector(
         We use first 32 tx hash symbols as account name because of Iroha account name restrictions ([a-z_0-9]{1,32})
         */
         val signCollectionAccountId = "${shortTxHash(txHash)}@$BTC_SIGN_COLLECT_DOMAIN"
-        return queryHelper.getAccountDetails(
+        return signatureCollectorQueryHelper.getAccountDetails(
             signCollectionAccountId,
-            signatureCollectorCredential.accountId
+            signatureCollectorQueryHelper.getQueryCreatorAccountId()
         ).map { signatureDetails ->
             val totalInputSignatures = HashMap<Int, ArrayList<SignaturePubKey>>()
             signatureDetails.entries.forEach { signatureData ->
@@ -234,16 +228,19 @@ class SignCollector(
     }
 
     //Creates Iroha transaction to create signature storing account
-    private fun createSignCollectionAccountTx(txShortHash: String): IrohaTransaction {
+    private fun createSignCollectionAccountTx(
+        txShortHash: String,
+        withdrawalDetails: WithdrawalDetails
+    ): IrohaTransaction {
         return IrohaTransaction(
-            signatureCollectorCredential.accountId,
-            ModelUtil.getCurrentTime(),
+            signatureCollectorConsumer.creator,
+            BigInteger.valueOf(withdrawalDetails.withdrawalTime),
             1,
             arrayListOf(
                 IrohaCommand.CommandCreateAccount(
                     txShortHash,
                     BTC_SIGN_COLLECT_DOMAIN,
-                    String.hex(signatureCollectorCredential.keyPair.public.encoded)
+                    Utils.parseHexPublicKey("0000000000000000000000000000000000000000000000000000000000000000").toHexString()
                 )
             )
         )
@@ -253,18 +250,21 @@ class SignCollector(
     @KtorExperimentalAPI
     private fun setSignatureDetailsTx(
         txShortHash: String,
-        signedInputs: List<InputSignature>
+        signedInputs: List<InputSignature>,
+        withdrawalDetails: WithdrawalDetails
     ): IrohaTransaction {
         val signCollectionAccountId = "$txShortHash@$BTC_SIGN_COLLECT_DOMAIN"
         val signaturesJson = inputSignatureJsonAdapter.toJson(signedInputs).irohaEscape()
         val hexes = StringBuilder()
-        signedInputs.forEach { inputSignature ->
-            hexes.append(inputSignature.sigPubKey.signatureHex)
-        }
+        signedInputs
+            .sortedBy { inputSignature -> inputSignature.sigPubKey.pubKey }
+            .forEach { inputSignature ->
+                hexes.append(inputSignature.sigPubKey.pubKey)
+            }
         val signaturesHash = Utils.toHex(sha1(hexes.toString().toByteArray()))
         return IrohaTransaction(
-            signatureCollectorCredential.accountId,
-            ModelUtil.getCurrentTime(),
+            signatureCollectorConsumer.creator,
+            BigInteger.valueOf(withdrawalDetails.withdrawalTime),
             1,
             arrayListOf(
                 IrohaCommand.CommandSetAccountDetail(
