@@ -11,6 +11,7 @@ import com.d3.btc.helper.address.getSignThreshold
 import com.d3.btc.helper.address.outPutToBase58Address
 import com.d3.btc.helper.address.toEcPubKey
 import com.d3.btc.helper.input.getConnectedOutput
+import com.d3.btc.helper.transaction.DUMMY_PUB_KEY_HEX
 import com.d3.btc.helper.transaction.shortTxHash
 import com.d3.commons.notary.IrohaCommand
 import com.d3.commons.notary.IrohaTransaction
@@ -21,6 +22,7 @@ import com.d3.commons.util.irohaEscape
 import com.d3.commons.util.toHexString
 import com.d3.commons.util.unHex
 import com.github.kittinunf.result.Result
+import com.github.kittinunf.result.failure
 import com.github.kittinunf.result.flatMap
 import com.github.kittinunf.result.map
 import com.squareup.moshi.Moshi
@@ -86,13 +88,7 @@ class SignCollector(
             logger.info { "Tx ${tx.hashAsString} signatures to add in Iroha $signedInputs" }
             val shortTxHash = tx.shortTxHash()
             val createAccountTx = IrohaConverter.convert(createSignCollectionAccountTx(shortTxHash, withdrawalDetails))
-            /**
-             * We create a dedicated account on every withdrawal event.
-             * We need this account to store transaction signatures from all the nodes.
-             * Every node will try to create an account, but only one creation will succeed.
-             * The following Iroha command can fail.
-             */
-            signatureCollectorConsumer.send(createAccountTx)
+            signatureCollectorConsumer.send(createAccountTx).failure { ex -> throw ex }
             val setSignaturesTx =
                 IrohaConverter.convert(setSignatureDetailsTx(shortTxHash, signedInputs, withdrawalDetails))
             signatureCollectorConsumer.send(setSignaturesTx)
@@ -240,7 +236,7 @@ class SignCollector(
                 IrohaCommand.CommandCreateAccount(
                     txShortHash,
                     BTC_SIGN_COLLECT_DOMAIN,
-                    Utils.parseHexPublicKey("0000000000000000000000000000000000000000000000000000000000000000").toHexString()
+                    DUMMY_PUB_KEY_HEX
                 )
             )
         )

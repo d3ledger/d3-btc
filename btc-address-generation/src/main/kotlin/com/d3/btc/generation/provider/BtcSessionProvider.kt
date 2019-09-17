@@ -5,6 +5,7 @@
 
 package com.d3.btc.generation.provider
 
+import com.d3.btc.helper.transaction.DUMMY_PUB_KEY
 import com.d3.commons.sidechain.iroha.consumer.IrohaConsumer
 import jp.co.soramitsu.iroha.java.Transaction
 import jp.co.soramitsu.iroha.java.Utils
@@ -44,7 +45,7 @@ class BtcSessionProvider(
             .createAccount(
                 sessionId,
                 BTC_SESSION_DOMAIN,
-                Utils.parseHexPublicKey("0000000000000000000000000000000000000000000000000000000000000000")
+                DUMMY_PUB_KEY
             ).setAccountDetail(
                 "$sessionId@$BTC_SESSION_DOMAIN",
                 ADDRESS_GENERATION_TIME_KEY,
