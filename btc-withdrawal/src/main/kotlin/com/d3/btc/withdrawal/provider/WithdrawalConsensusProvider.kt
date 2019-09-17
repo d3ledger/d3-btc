@@ -16,17 +16,17 @@ import com.d3.commons.sidechain.iroha.consumer.IrohaConsumer
 import com.d3.commons.sidechain.iroha.consumer.IrohaConverter
 import com.d3.commons.sidechain.iroha.util.IrohaQueryHelper
 import com.d3.commons.sidechain.iroha.util.ModelUtil
-import com.d3.commons.util.GsonInstance
-import com.d3.commons.util.getRandomId
-import com.d3.commons.util.hex
-import com.d3.commons.util.irohaEscape
+import com.d3.commons.util.*
 import com.github.kittinunf.result.Result
+import com.github.kittinunf.result.failure
 import com.github.kittinunf.result.fanout
 import com.github.kittinunf.result.map
 import jp.co.soramitsu.crypto.ed25519.Ed25519Sha3
+import jp.co.soramitsu.iroha.java.Utils
 import mu.KLogging
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
+import java.math.BigInteger
 
 @Component
 class WithdrawalConsensusProvider(
@@ -61,11 +61,14 @@ class WithdrawalConsensusProvider(
                     availableHeight,
                     peers
                 )
-            /**
-             * Another node may try to create the same account.
-             * So this transaction may fail legally.
-             */
-            consensusIrohaConsumer.send(IrohaConverter.convert(createAccountTx(consensusAccountName)))
+            consensusIrohaConsumer.send(
+                IrohaConverter.convert(
+                    createAccountTx(
+                        consensusAccountName,
+                        withdrawalDetails
+                    )
+                )
+            ).failure { ex -> throw ex }
             withdrawalConsensus
         }.map { withdrawalConsensus ->
             consensusIrohaConsumer.send(
@@ -129,21 +132,23 @@ class WithdrawalConsensusProvider(
      * Creates account creation transaction.
      * This account will be used to store consensus data
      * @param consensusAccountName - account name where consensus data will be stored
+     * @param withdrawalDetails - details of withdrawal
      * @return well formed transaction
      */
     private fun createAccountTx(
-        consensusAccountName: String
+        consensusAccountName: String,
+        withdrawalDetails: WithdrawalDetails
     ): IrohaTransaction {
         return IrohaTransaction(
             consensusIrohaConsumer.creator,
-            ModelUtil.getCurrentTime(),
+            BigInteger.valueOf(withdrawalDetails.withdrawalTime),
             1,
             arrayListOf(
                 IrohaCommand.CommandCreateAccount(
                     consensusAccountName,
                     BTC_CONSENSUS_DOMAIN,
                     // No matter what key. This account is used for storage only
-                    String.hex(Ed25519Sha3().generateKeypair().public.encoded)
+                    Utils.parseHexPublicKey("0000000000000000000000000000000000000000000000000000000000000000").toHexString()
                 )
             )
         )
