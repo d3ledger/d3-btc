@@ -11,6 +11,7 @@ import com.d3.btc.helper.address.getSignThreshold
 import com.d3.btc.helper.address.outPutToBase58Address
 import com.d3.btc.helper.address.toEcPubKey
 import com.d3.btc.helper.input.getConnectedOutput
+import com.d3.btc.helper.transaction.DUMMY_PUB_KEY_HEX
 import com.d3.btc.helper.transaction.shortTxHash
 import com.d3.commons.notary.IrohaCommand
 import com.d3.commons.notary.IrohaTransaction
@@ -235,7 +236,7 @@ class SignCollector(
                 IrohaCommand.CommandCreateAccount(
                     txShortHash,
                     BTC_SIGN_COLLECT_DOMAIN,
-                    Utils.parseHexPublicKey("0000000000000000000000000000000000000000000000000000000000000000").toHexString()
+                    DUMMY_PUB_KEY_HEX
                 )
             )
         )

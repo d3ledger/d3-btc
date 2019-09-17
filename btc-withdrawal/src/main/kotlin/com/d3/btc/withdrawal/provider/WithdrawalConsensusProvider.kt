@@ -7,6 +7,7 @@ package com.d3.btc.withdrawal.provider
 
 import com.d3.btc.config.BTC_CONSENSUS_DOMAIN
 import com.d3.btc.config.BitcoinConfig
+import com.d3.btc.helper.transaction.DUMMY_PUB_KEY_HEX
 import com.d3.btc.withdrawal.transaction.WithdrawalConsensus
 import com.d3.btc.withdrawal.transaction.WithdrawalDetails
 import com.d3.commons.model.IrohaCredential
@@ -148,7 +149,7 @@ class WithdrawalConsensusProvider(
                     consensusAccountName,
                     BTC_CONSENSUS_DOMAIN,
                     // No matter what key. This account is used for storage only
-                    Utils.parseHexPublicKey("0000000000000000000000000000000000000000000000000000000000000000").toHexString()
+                    DUMMY_PUB_KEY_HEX
                 )
             )
         )
