@@ -21,6 +21,7 @@ buildscript {
 }
 
 plugins {
+    id "org.sonarqube" version "2.7.1"
     id "com.github.dolgopolovwork.testreport" version "1"
 }
 
@@ -76,6 +77,19 @@ allprojects {
     }
     compileTestKotlin {
         kotlinOptions.jvmTarget = "1.8"
+    }
+}
+
+allprojects{
+    sonarqube {
+        properties {
+            property "sonar.github.repository", "d3ledger/d3-btc"
+            property "sonar.projectKey", "d3:d3-btc"
+            property "sonar.java.binaries", "${project.projectDir}/build/classes"
+            property "sonar.java.libraries", "${project.projectDir}/build/libs"
+            property "sonar.java.test.binaries", "${project.projectDir}/build/test-results/test/binary"
+            property "sonar.exclusions", "notary-btc-integration-test/**"
+        }
     }
 }
 
