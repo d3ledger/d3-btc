@@ -10,13 +10,12 @@ import com.d3.commons.registration.RegistrationServiceEndpoint
 import com.d3.commons.registration.RegistrationStrategy
 import com.github.kittinunf.result.Result
 import mu.KLogging
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
 @Component
 class BtcRegistrationServiceInitialization(
-    @Autowired private val btcRegistrationConfig: BtcRegistrationConfig,
-    @Autowired private val btcRegistrationStrategy: RegistrationStrategy
+    private val btcRegistrationConfig: BtcRegistrationConfig,
+    private val btcRegistrationStrategy: RegistrationStrategy
 ) {
     /**
      * Init Registration Service

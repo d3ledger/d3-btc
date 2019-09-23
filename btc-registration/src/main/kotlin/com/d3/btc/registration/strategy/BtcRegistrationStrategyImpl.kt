@@ -8,6 +8,8 @@ package com.d3.btc.registration.strategy
 import com.d3.btc.provider.BtcFreeAddressesProvider
 import com.d3.btc.provider.BtcRegisteredAddressesProvider
 import com.d3.btc.provider.account.IrohaBtcAccountRegistrator
+import com.d3.btc.registration.BTC_REGISTRATION_OPERATION_NAME
+import com.d3.commons.model.D3ErrorException
 import com.d3.commons.registration.RegistrationStrategy
 import com.d3.commons.sidechain.iroha.consumer.status.ToriiErrorResponseException
 import com.github.kittinunf.result.Result
@@ -43,7 +45,10 @@ class BtcRegistrationStrategyImpl(
         return btcRegisteredAddressesProvider.ableToRegister("$accountName@$domainId")
             .map { ableToRegister ->
                 if (!ableToRegister) {
-                    throw IllegalStateException("Not able to register $accountName@$domainId")
+                    throw D3ErrorException.warning(
+                        failedOperation = BTC_REGISTRATION_OPERATION_NAME,
+                        description = "Not able to register $accountName@$domainId. The user probably has been registered before"
+                    )
                 }
             }
             .flatMap {
@@ -63,7 +68,12 @@ class BtcRegistrationStrategyImpl(
         var result: Result<String, Exception>? = null
         while (!stopRegistration) {
             if (attempts >= MAX_CAS_ATTEMPTS) {
-                return Result.error(Exception("Cannot register $accountName@$domainId. Too many CAS attempts."))
+                return Result.error(
+                    D3ErrorException.warning(
+                        failedOperation = BTC_REGISTRATION_OPERATION_NAME,
+                        description = "Cannot register $accountName@$domainId. Too many CAS attempts"
+                    )
+                )
             }
             // Get free address
             btcFreeAddressesProvider.getFreeAddress()
@@ -92,7 +102,13 @@ class BtcRegistrationStrategyImpl(
                     } else {
                         // Stop the loop and return an exception
                         stopRegistration = true
-                        result = Result.error(ex)
+                        result = Result.error(
+                            D3ErrorException.warning(
+                                failedOperation = BTC_REGISTRATION_OPERATION_NAME,
+                                description = "Cannot register user $accountName@$domainId due to error response from Iroha",
+                                errorCause = ex
+                            )
+                        )
                     }
                 })
         }

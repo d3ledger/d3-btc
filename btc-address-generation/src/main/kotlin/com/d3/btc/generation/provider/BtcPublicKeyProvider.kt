@@ -5,11 +5,13 @@
 
 package com.d3.btc.generation.provider
 
+import com.d3.btc.generation.BTC_ADDRESS_GENERATION_OPERATION_NAME
 import com.d3.btc.generation.config.BtcAddressGenerationConfig
 import com.d3.btc.helper.address.createMsAddress
 import com.d3.btc.model.AddressInfo
 import com.d3.btc.model.BtcAddressType
 import com.d3.btc.provider.network.BtcNetworkConfigProvider
+import com.d3.commons.model.D3ErrorException
 import com.d3.commons.sidechain.iroha.consumer.IrohaConsumer
 import com.d3.commons.sidechain.iroha.util.IrohaQueryHelper
 import com.d3.commons.sidechain.iroha.util.ModelUtil
@@ -87,7 +89,10 @@ class BtcPublicKeyProvider(
             multiSigConsumer.getConsumerQuorum()
         }.map { (peers, quorum) ->
             if (peers == 0) {
-                throw IllegalStateException("No peers to create btc MultiSig address")
+                throw D3ErrorException.warning(
+                    failedOperation = BTC_ADDRESS_GENERATION_OPERATION_NAME,
+                    description = "Cannot create Bitcoin address. No peers"
+                )
             } else if (notaryKeys.size != peers) {
                 logger.info(
                     "Not enough keys are collected to generate a MultiSig address(${notaryKeys.size}" +
@@ -103,7 +108,10 @@ class BtcPublicKeyProvider(
                 logger.info("Address $msAddress has been already created")
                 return@map
             } else if (!keysWallet.addWatchedAddress(msAddress)) {
-                throw IllegalStateException("BTC address $msAddress was not added to wallet")
+                throw D3ErrorException.warning(
+                    failedOperation = BTC_ADDRESS_GENERATION_OPERATION_NAME,
+                    description = "Failed to add Bitcoin address $msAddress to wallet"
+                )
             }
             onMsAddressCreated()
             logger.info("Address $msAddress was added to wallet. Used keys are $notaryKeys")
@@ -116,9 +124,17 @@ class BtcPublicKeyProvider(
                 addressStorage.addressInfo.toJson().irohaEscape(),
                 generationTime,
                 quorum
-            ).fold({
-                logger.info("New BTC ${addressType.title} address $msAddress was created. Node id '$nodeId'")
-            }, { ex -> throw Exception("Cannot create Bitcoin MultiSig address", ex) })
+            ).fold(
+                {
+                    logger.info("New BTC ${addressType.title} address $msAddress was created. Node id '$nodeId'")
+                },
+                { ex ->
+                    throw D3ErrorException.warning(
+                        failedOperation = BTC_ADDRESS_GENERATION_OPERATION_NAME,
+                        description = "Cannot create Bitcoin MultiSig address due to error response from Iroha",
+                        errorCause = ex
+                    )
+                })
         }
     }
 
