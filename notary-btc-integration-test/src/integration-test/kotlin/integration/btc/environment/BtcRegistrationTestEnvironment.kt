@@ -8,7 +8,6 @@ package integration.btc.environment
 import com.d3.btc.provider.BtcFreeAddressesProvider
 import com.d3.btc.provider.BtcRegisteredAddressesProvider
 import com.d3.btc.provider.account.IrohaBtcAccountRegistrator
-import com.d3.btc.provider.address.BtcAddressesProvider
 import com.d3.btc.registration.init.BtcRegistrationServiceInitialization
 import com.d3.btc.registration.strategy.BtcRegistrationStrategyImpl
 import com.d3.commons.model.IrohaCredential

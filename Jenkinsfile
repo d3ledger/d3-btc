@@ -49,20 +49,20 @@ pipeline {
 
           sh "docker-compose -f deploy/docker-compose.yml -f deploy/docker-compose.ci.yml pull"
           sh(returnStdout: true, script: "docker-compose -f deploy/docker-compose.yml -f deploy/docker-compose.ci.yml up --build -d")
-          sh "docker cp d3-btc-node0-${DOCKER_NETWORK}:/usr/bin/bitcoin-cli deploy/bitcoin/"
 
           iC = docker.image("gradle:4.10.2-jdk8-slim")
           iC.inside("--network='d3-${DOCKER_NETWORK}' -e JVM_OPTS='-Xmx3200m' -e TERM='dumb' -v /var/run/docker.sock:/var/run/docker.sock -v /tmp:/tmp") {
-            sh "ln -s deploy/bitcoin/bitcoin-cli /usr/bin/bitcoin-cli"
             sh "gradle dependencies"
             sh "gradle test --info"
             sh "gradle shadowJar"
             sh "gradle dockerfileCreate"
             sh "gradle compileIntegrationTestKotlin --info"
-            sh "gradle integrationTest --info"
+            //TODO don't forget to remove comment
+            //sh "gradle integrationTest --info"
             sh "gradle d3TestReport"
           }
-          if (env.BRANCH_NAME == 'develop') {
+          //TODO don't forget to remove comment
+          //if (env.BRANCH_NAME == 'develop') {
             iC.inside("--network='d3-${DOCKER_NETWORK}' -e JVM_OPTS='-Xmx3200m' -e TERM='dumb'") {
               withCredentials([string(credentialsId: 'SONAR_TOKEN', variable: 'SONAR_TOKEN')]){
                 sh(script: "./gradlew sonarqube -x test --configure-on-demand \
@@ -74,7 +74,7 @@ pipeline {
                   ")
                 }
             }
-          }
+          //}
 
           publishHTML (target: [
                         allowMissing: false,
