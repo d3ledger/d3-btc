@@ -18,6 +18,7 @@ import org.springframework.context.annotation.ComponentScan
 import kotlin.system.exitProcess
 
 const val BTC_ADDRESS_GENERATION_SERVICE_NAME = "btc-add-gen"
+const val BTC_ADDRESS_GENERATION_OPERATION_NAME = "Bitcoin address generation"
 
 @ComponentScan(
     basePackages = [

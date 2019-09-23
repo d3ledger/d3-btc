@@ -5,12 +5,14 @@
 
 package com.d3.btc.generation.handler
 
+import com.d3.btc.generation.BTC_ADDRESS_GENERATION_OPERATION_NAME
 import com.d3.btc.generation.config.BtcAddressGenerationConfig
 import com.d3.btc.handler.SetAccountDetailEvent
 import com.d3.btc.handler.SetAccountDetailHandler
 import com.d3.btc.model.AddressInfo
 import com.d3.btc.model.BtcAddress
 import com.d3.btc.provider.BtcFreeAddressesProvider
+import com.d3.commons.model.D3ErrorException
 import com.d3.commons.util.GsonInstance
 import com.d3.commons.util.irohaUnEscape
 import com.github.kittinunf.result.failure
@@ -42,7 +44,13 @@ class BtcMultiSigAddressGeneratedHandler(
             } else {
                 statusNeedsUpdate = true
                 // Register address as free
-                btcFreeAddressProvider.createFreeAddress(BtcAddress(address, addressInfo)).failure { ex -> throw ex }
+                btcFreeAddressProvider.createFreeAddress(BtcAddress(address, addressInfo)).failure { ex ->
+                    throw D3ErrorException.warning(
+                        failedOperation = BTC_ADDRESS_GENERATION_OPERATION_NAME,
+                        description = "Cannot mark recently generated $address as free",
+                        errorCause = ex
+                    )
+                }
             }
         }.fold(
             {

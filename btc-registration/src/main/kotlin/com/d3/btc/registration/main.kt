@@ -19,6 +19,8 @@ import kotlin.system.exitProcess
 
 private val logger = KLogging().logger
 
+const val BTC_REGISTRATION_OPERATION_NAME = "Bitcoin user registration"
+
 @ComponentScan(basePackages = ["com.d3.btc.registration"])
 class BtcRegistrationApplication
 

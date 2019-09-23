@@ -5,10 +5,12 @@
 
 package com.d3.btc.generation.trigger
 
+import com.d3.btc.generation.BTC_ADDRESS_GENERATION_OPERATION_NAME
 import com.d3.btc.generation.provider.BtcSessionProvider
 import com.d3.btc.model.BtcAddressType
 import com.d3.btc.provider.BtcChangeAddressProvider
 import com.d3.btc.provider.BtcFreeAddressesProvider
+import com.d3.commons.model.D3ErrorException
 import com.github.kittinunf.result.Result
 import com.github.kittinunf.result.failure
 import com.github.kittinunf.result.flatMap
@@ -39,7 +41,13 @@ class AddressGenerationTrigger(
             repeat(addressesToGenerate) {
                 val sessionAccountName = addressType.createSessionAccountName()
                 btcSessionProvider.createPubKeyCreationSession(sessionAccountName, nodeId)
-                    .failure { ex -> throw ex }
+                    .failure { ex ->
+                        throw D3ErrorException.warning(
+                            failedOperation = BTC_ADDRESS_GENERATION_OPERATION_NAME,
+                            description = "Cannot start address generation",
+                            errorCause = ex
+                        )
+                    }
             }
         }
     }
