@@ -16,6 +16,7 @@ import integration.registration.RegistrationServiceTestEnvironment
 import jp.co.soramitsu.crypto.ed25519.Ed25519Sha3
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
+import mu.KLogging
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -23,6 +24,10 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.fail
 import java.math.BigInteger
+import java.util.*
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.collections.HashSet
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class BtcRegistrationIntegrationTest {
@@ -33,11 +38,6 @@ class BtcRegistrationIntegrationTest {
         RegistrationServiceTestEnvironment(integrationHelper)
     private val btcRegistrationEnvironment =
         BtcRegistrationTestEnvironment(integrationHelper, registrationServiceEnvironment.registrationConfig)
-
-    // Moshi adapter for response JSON deserialization
-    private val moshiAdapter = Moshi
-        .Builder()
-        .build()!!.adapter(Map::class.java)!!
 
     init {
         registrationServiceEnvironment.registrationInitialization.init()
@@ -70,8 +70,7 @@ class BtcRegistrationIntegrationTest {
         res = btcRegistrationEnvironment.register(userName, keypair.public.toHexString())
         assertEquals(200, res.statusCode)
 
-        val response = moshiAdapter.fromJson(res.jsonObject.toString())!!
-        val registeredBtcAddress = response["clientId"].toString()
+        val registeredBtcAddress = res.jsonObject.getString("clientId")
         assertFalse(btcRegistrationEnvironment.btcFreeAddressesProvider.ableToRegister(registeredBtcAddress).get())
         btcRegistrationEnvironment.btcRegisteredAddressesProvider.getRegisteredAddresses()
             .fold({ addresses ->
@@ -105,13 +104,13 @@ class BtcRegistrationIntegrationTest {
         assertEquals(200, res.statusCode)
         res = btcRegistrationEnvironment.register(userName, keypair.public.toHexString())
         assertEquals(200, res.statusCode)
-        val response = moshiAdapter.fromJson(res.jsonObject.toString())!!
+        val registeredBtcAddress = res.jsonObject.getString("clientId")
 
         //Double registration
         res = btcRegistrationEnvironment.register(userName, keypair.public.toHexString())
         assertEquals(500, res.statusCode)
 
-        val registeredBtcAddress = response["clientId"].toString()
+
         assertFalse(btcRegistrationEnvironment.btcFreeAddressesProvider.ableToRegister(registeredBtcAddress).get())
 
         btcRegistrationEnvironment.btcRegisteredAddressesProvider.getRegisteredAddresses()
@@ -183,8 +182,7 @@ class BtcRegistrationIntegrationTest {
             assertEquals(200, res.statusCode)
             res = btcRegistrationEnvironment.register(userName, keypair.public.toHexString())
             assertEquals(200, res.statusCode)
-            val response = moshiAdapter.fromJson(res.jsonObject.toString())!!
-            val registeredBtcAddress = response["clientId"].toString()
+            val registeredBtcAddress = res.jsonObject.getString("clientId")
             assertFalse(btcRegistrationEnvironment.btcFreeAddressesProvider.ableToRegister(registeredBtcAddress).get())
             registeredAddresses.add(registeredBtcAddress)
             assertFalse(takenAddresses.contains(registeredBtcAddress))
@@ -205,12 +203,84 @@ class BtcRegistrationIntegrationTest {
         val num =
             khttp.get("http://127.0.0.1:${btcRegistrationEnvironment.btcRegistrationConfig.port}/free-addresses/number")
         assertEquals("0", num.text)
-
     }
 
     /**
      * Note: Iroha must be deployed to pass the test.
-     * @given no registered btc addreses
+     * @given multiple threads trying to register BTC addresses
+     * @when all threads stop registering BTC addresses
+     * @then every client is given a unique BTC address
+     */
+    @Test
+    fun testRegistrationCAS() {
+        val randomThreadNamePrefix = String.getRandomString(5)
+        val takenAddresses = Collections.synchronizedSet(HashSet<String>())
+        val failedFlag = AtomicBoolean()
+        val threads = 4
+        val registrationCountDownLatch = CountDownLatch(threads)
+        val btcRegistrationCountDownLatch = CountDownLatch(threads)
+        val usersPerThread = 10
+        val addressesToRegister = threads * usersPerThread
+        // Generate enough BTC addresses
+        integrationHelper.preGenFreeBtcAddresses(
+            btcRegistrationEnvironment.btcAddressGenerationConfig.btcKeysWalletPath,
+            addressesToRegister,
+            btcRegistrationEnvironment.btcRegistrationConfig.nodeId
+        )
+        val keypair = Ed25519Sha3().generateKeypair()
+        // Register clients in notary
+        repeat(threads) {
+            val registrationThread = Thread(Runnable {
+                repeat(usersPerThread) threadRepeat@{
+                    val userName = "${Thread.currentThread().name}_$it"
+                    val res =
+                        registrationServiceEnvironment.register(userName, keypair.public.toHexString())
+                    if (res.statusCode != 200) {
+                        failedFlag.set(true)
+                        logger.error("Cannot register user $userName")
+                        return@threadRepeat
+                    }
+                }
+                registrationCountDownLatch.countDown()
+                logger.info("Done user registration")
+            })
+            registrationThread.name = "$randomThreadNamePrefix$it"
+            registrationThread.start()
+        }
+        registrationCountDownLatch.await()
+        // Check that there was no failure
+        assertFalse(failedFlag.get())
+        // Register clients in BTC
+        repeat(threads) {
+            val btcRegistrationThread = Thread(Runnable {
+                repeat(usersPerThread) threadRepeat@{
+                    val userName = "${Thread.currentThread().name}_$it"
+                    val res =
+                        btcRegistrationEnvironment.register(userName, keypair.public.toHexString())
+                    if (res.statusCode != 200) {
+                        failedFlag.set(true)
+                        logger.error("Cannot register user in Btc $userName")
+                        return@threadRepeat
+                    } else {
+                        takenAddresses.add(res.jsonObject.getString("clientId"))
+                    }
+                }
+                btcRegistrationCountDownLatch.countDown()
+                logger.info("Done BTC user registration")
+            })
+            btcRegistrationThread.name = "$randomThreadNamePrefix$it"
+            btcRegistrationThread.start()
+        }
+        btcRegistrationCountDownLatch.await()
+        // Check that there was no failure
+        assertFalse(failedFlag.get())
+        // Check that every client was assigned a unique BTC address
+        assertEquals(addressesToRegister, takenAddresses.size)
+    }
+
+    /**
+     * Note: Iroha must be deployed to pass the test.
+     * @given no generated btc addresses
      * @when client name is passed to registration service
      * @then client stays unregistered
      */
@@ -264,4 +334,6 @@ class BtcRegistrationIntegrationTest {
             btcRegistrationEnvironment.btcRegisteredAddressesProvider.getRegisteredAddresses().get().size
         )
     }
+
+    companion object : KLogging()
 }

@@ -80,7 +80,7 @@ class BtcFreeAddressesProvider(
      * @return free address
      */
     fun getFreeAddress(): Result<BtcAddress, Exception> {
-        return registrationQueryHelper.getAccountDetailsFirst(
+        return registrationQueryHelper.getAccountDetailsFirstShufflePage(
             freeAddressesStorageAccount,
             registrationQueryHelper.getQueryCreatorAccountId(), freeAddressPredicate
         ).map { freeAddressDetail ->
@@ -100,6 +100,11 @@ class BtcFreeAddressesProvider(
      */
     fun addRegisterFreeAddressCommands(tx: Transaction, freeAddress: BtcAddress) =
         tx.makeMutable()
-            .setAccountDetail(freeAddressesStorageAccount, freeAddress.address, "")
+            .compareAndSetAccountDetail(
+                freeAddressesStorageAccount,
+                freeAddress.address,
+                "",
+                freeAddress.info.toJson().irohaEscape()
+            )
             .build()!!
 }
