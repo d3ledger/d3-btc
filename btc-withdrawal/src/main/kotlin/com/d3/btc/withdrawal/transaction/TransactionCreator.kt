@@ -10,7 +10,9 @@ import com.d3.btc.fee.CurrentFeeRate
 import com.d3.btc.model.BtcAddress
 import com.d3.btc.provider.BtcChangeAddressProvider
 import com.d3.btc.provider.network.BtcNetworkConfigProvider
+import com.d3.btc.withdrawal.init.WITHDRAWAL_OPERATION
 import com.d3.btc.withdrawal.provider.UTXOProvider
+import com.d3.commons.model.D3ErrorException
 import com.github.kittinunf.result.*
 import mu.KLogging
 import org.bitcoinj.core.Address
@@ -71,7 +73,13 @@ class TransactionCreator(
                 )
                 unspents
             }.map { unspents ->
-                transactionsStorage.save(withdrawalDetails, transaction).failure { ex -> throw ex }
+                transactionsStorage.save(withdrawalDetails, transaction).failure { ex ->
+                    throw D3ErrorException.fatal(
+                        failedOperation = WITHDRAWAL_OPERATION,
+                        description = "Cannot save Bitcoin transaction for withdrawal $withdrawalDetails",
+                        errorCause = ex
+                    )
+                }
                 transaction
             }
     }

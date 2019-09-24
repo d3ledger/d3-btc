@@ -12,8 +12,10 @@ import com.d3.btc.helper.output.info
 import com.d3.btc.peer.SharedPeerGroup
 import com.d3.btc.provider.network.BtcNetworkConfigProvider
 import com.d3.btc.storage.BtcAddressStorage
+import com.d3.btc.withdrawal.init.WITHDRAWAL_OPERATION
 import com.d3.btc.withdrawal.transaction.WithdrawalDetails
 import com.d3.btc.withdrawal.transaction.isDust
+import com.d3.commons.model.D3ErrorException
 import com.github.kittinunf.result.Result
 import com.github.kittinunf.result.map
 import mu.KLogging
@@ -177,7 +179,10 @@ class UTXOProvider(
         ).filter { unspent -> !recursivelyCollectedUnspents.contains(unspent) })
 
         if (unspents.isEmpty()) {
-            throw IllegalStateException("Out of unspents")
+            throw D3ErrorException.fatal(
+                failedOperation = WITHDRAWAL_OPERATION,
+                description = "Cannot get enough UTXO for withdrawal $withdrawalDetails"
+            )
         }
         logger.info("Filtered unspents\n${unspents.map { unspent -> unspent.info() }}")
 
@@ -211,7 +216,10 @@ class UTXOProvider(
             recursivelyCollectedUnspents.add(unspent)
         }
         if (collectedAmount < amountAndFee) {
-            throw IllegalStateException("Cannot get enough BTC amount(required $amountAndFee, collected $collectedAmount) using current unspent tx collection")
+            throw D3ErrorException.fatal(
+                failedOperation = WITHDRAWAL_OPERATION,
+                description = "Cannot get enough BTC amount for withdrawal $withdrawalDetails (required $amountAndFee, collected $collectedAmount) using current unspent tx collection"
+            )
         }
         // Check if able to pay fee
         val newFee = getTxFee(recursivelyCollectedUnspents.size, OUTPUTS, CurrentFeeRate.get())

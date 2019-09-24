@@ -9,6 +9,7 @@ import com.d3.btc.config.BTC_SIGN_COLLECT_DOMAIN
 import com.d3.btc.handler.SetAccountDetailEvent
 import com.d3.btc.handler.SetAccountDetailHandler
 import com.d3.btc.withdrawal.config.BtcWithdrawalConfig
+import com.d3.btc.withdrawal.init.WITHDRAWAL_OPERATION
 import com.d3.btc.withdrawal.provider.BroadcastsProvider
 import com.d3.btc.withdrawal.provider.UTXOProvider
 import com.d3.btc.withdrawal.service.BtcRollbackService
@@ -16,9 +17,9 @@ import com.d3.btc.withdrawal.statistics.WithdrawalStatistics
 import com.d3.btc.withdrawal.transaction.SignCollector
 import com.d3.btc.withdrawal.transaction.TransactionsStorage
 import com.d3.btc.withdrawal.transaction.WithdrawalDetails
+import com.d3.commons.model.D3ErrorException
 import com.github.kittinunf.result.failure
 import com.github.kittinunf.result.map
-import iroha.protocol.Commands
 import mu.KLogging
 import org.bitcoinj.core.PeerGroup
 import org.bitcoinj.core.Transaction
@@ -67,15 +68,23 @@ class NewSignatureEventHandler(
         transactionsStorage.get(shortTxHash).map { withdrawal ->
             savedWithdrawal = withdrawal.first
             savedTx = withdrawal.second
-            broadcastsProvider.hasBeenBroadcasted(withdrawal.first).fold({ broadcasted ->
-                if (broadcasted) {
-                    logger.info("No need to sign. Withdrawal ${withdrawal.first} has been broadcasted before")
-                } else {
-                    val withdrawalCommand = withdrawal.first
-                    val tx = withdrawal.second
-                    broadcastIfEnoughSignatures(tx, withdrawalCommand)
-                }
-            }, { ex -> throw ex })
+            broadcastsProvider.hasBeenBroadcasted(withdrawal.first).fold(
+                { broadcasted ->
+                    if (broadcasted) {
+                        logger.info("No need to sign. Withdrawal ${withdrawal.first} has been broadcasted before")
+                    } else {
+                        val withdrawalCommand = withdrawal.first
+                        val tx = withdrawal.second
+                        broadcastIfEnoughSignatures(tx, withdrawalCommand)
+                    }
+                },
+                { ex ->
+                    throw D3ErrorException.fatal(
+                        failedOperation = WITHDRAWAL_OPERATION,
+                        description = "Cannot say if the withdrawal $withdrawal has been broadcasted before",
+                        errorCause = ex
+                    )
+                })
         }.failure { ex ->
             if (savedWithdrawal != null && savedTx != null) {
                 btcRollbackService.rollback(

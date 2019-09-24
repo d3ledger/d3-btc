@@ -13,6 +13,8 @@ import com.d3.btc.helper.address.toEcPubKey
 import com.d3.btc.helper.input.getConnectedOutput
 import com.d3.btc.helper.transaction.DUMMY_PUB_KEY_HEX
 import com.d3.btc.helper.transaction.shortTxHash
+import com.d3.btc.withdrawal.init.WITHDRAWAL_OPERATION
+import com.d3.commons.model.D3ErrorException
 import com.d3.commons.notary.IrohaCommand
 import com.d3.commons.notary.IrohaTransaction
 import com.d3.commons.sidechain.iroha.consumer.IrohaConsumer
@@ -88,7 +90,14 @@ class SignCollector(
             logger.info { "Tx ${tx.hashAsString} signatures to add in Iroha $signedInputs" }
             val shortTxHash = tx.shortTxHash()
             val createAccountTx = IrohaConverter.convert(createSignCollectionAccountTx(shortTxHash, withdrawalDetails))
-            signatureCollectorConsumer.send(createAccountTx).failure { ex -> throw ex }
+            signatureCollectorConsumer.send(createAccountTx)
+                .failure { ex ->
+                    throw D3ErrorException.fatal(
+                        failedOperation = WITHDRAWAL_OPERATION,
+                        description = "Cannot create signatures storage account for withdrawal $withdrawalDetails",
+                        errorCause = ex
+                    )
+                }
             val setSignaturesTx =
                 IrohaConverter.convert(setSignatureDetailsTx(shortTxHash, signedInputs, withdrawalDetails))
             signatureCollectorConsumer.send(setSignaturesTx)
@@ -147,7 +156,14 @@ class SignCollector(
                         return false
                     }
                     inputIndex += 1
-                }, { ex -> throw ex })
+                },
+                { ex ->
+                    throw D3ErrorException.fatal(
+                        failedOperation = WITHDRAWAL_OPERATION,
+                        description = "Cannot get public keys for address $inputAddress",
+                        errorCause = ex
+                    )
+                })
         }
         return true
     }
@@ -188,7 +204,11 @@ class SignCollector(
                     input.scriptSig = inputScript
                     input.verify(connectedOutput)
                 }, { ex ->
-                    throw IllegalStateException("Cannot get used keys", ex)
+                    throw D3ErrorException.fatal(
+                        failedOperation = WITHDRAWAL_OPERATION,
+                        description = "Cannot get public keys for address $inputAddress",
+                        errorCause = ex
+                    )
                 })
                 inputIndex++
             }

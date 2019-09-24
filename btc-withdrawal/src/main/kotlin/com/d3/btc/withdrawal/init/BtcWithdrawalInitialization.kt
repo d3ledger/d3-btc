@@ -37,6 +37,7 @@ import org.springframework.stereotype.Component
 import java.io.Closeable
 import java.math.BigDecimal
 
+const val WITHDRAWAL_OPERATION = "Bitcoin withdrawal"
 private const val ONE_DAY_MILLIS = 1000 * 60 * 60 * 24
 
 /*
