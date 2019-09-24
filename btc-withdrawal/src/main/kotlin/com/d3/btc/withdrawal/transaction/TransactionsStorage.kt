@@ -10,7 +10,9 @@ import com.d3.btc.helper.input.irohaKey
 import com.d3.btc.helper.output.info
 import com.d3.btc.helper.transaction.shortTxHash
 import com.d3.btc.provider.network.BtcNetworkConfigProvider
+import com.d3.btc.withdrawal.init.WITHDRAWAL_OPERATION
 import com.d3.btc.withdrawal.provider.UTXODetails
+import com.d3.commons.model.D3ErrorException
 import com.d3.commons.model.IrohaCredential
 import com.d3.commons.sidechain.iroha.consumer.IrohaConsumer
 import com.d3.commons.sidechain.iroha.util.IrohaQueryHelper
@@ -96,7 +98,10 @@ class TransactionsStorage(
             shortTxHash(txHash)
         ).map { withdrawalTx ->
             if (!withdrawalTx.isPresent) {
-                throw IllegalStateException("Transaction with hash $txHash was not found")
+                throw D3ErrorException.fatal(
+                    failedOperation = WITHDRAWAL_OPERATION,
+                    description = "Transaction with hash $txHash was not found"
+                )
             }
             val withdrawalTransaction = WithdrawalTransaction.fromJson(withdrawalTx.get())
             Pair(

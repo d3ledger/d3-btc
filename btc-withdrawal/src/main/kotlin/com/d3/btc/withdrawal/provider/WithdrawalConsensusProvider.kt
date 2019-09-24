@@ -8,8 +8,10 @@ package com.d3.btc.withdrawal.provider
 import com.d3.btc.config.BTC_CONSENSUS_DOMAIN
 import com.d3.btc.config.BitcoinConfig
 import com.d3.btc.helper.transaction.DUMMY_PUB_KEY_HEX
+import com.d3.btc.withdrawal.init.WITHDRAWAL_OPERATION
 import com.d3.btc.withdrawal.transaction.WithdrawalConsensus
 import com.d3.btc.withdrawal.transaction.WithdrawalDetails
+import com.d3.commons.model.D3ErrorException
 import com.d3.commons.model.IrohaCredential
 import com.d3.commons.notary.IrohaCommand
 import com.d3.commons.notary.IrohaTransaction
@@ -69,7 +71,13 @@ class WithdrawalConsensusProvider(
                         withdrawalDetails
                     )
                 )
-            ).failure { ex -> throw ex }
+            ).failure { ex ->
+                throw D3ErrorException.fatal(
+                    failedOperation = WITHDRAWAL_OPERATION,
+                    description = "Cannot create consensus data storage account for withdrawal $withdrawalDetails",
+                    errorCause = ex
+                )
+            }
             withdrawalConsensus
         }.map { withdrawalConsensus ->
             consensusIrohaConsumer.send(
@@ -80,7 +88,13 @@ class WithdrawalConsensusProvider(
                         "Consensus data $withdrawalConsensus has been " +
                                 "successfully saved into $consensusAccountId account"
                     )
-                }, { ex -> throw ex })
+                }, { ex ->
+                    throw D3ErrorException.fatal(
+                        failedOperation = WITHDRAWAL_OPERATION,
+                        description = "Cannot save consensus data for withdrawal $withdrawalDetails",
+                        errorCause = ex
+                    )
+                })
         }
     }
 
@@ -98,7 +112,10 @@ class WithdrawalConsensusProvider(
             if (value.isPresent) {
                 gson.fromJson(value.get(), WithdrawalDetails::class.java)
             } else {
-                throw IllegalStateException("Withdrawal details data is not present for hash $withdrawalHash")
+                throw D3ErrorException.fatal(
+                    failedOperation = WITHDRAWAL_OPERATION,
+                    description = "Withdrawal details data is not present for hash $withdrawalHash"
+                )
             }
         }.fanout {
             withdrawalQueryHelper.getAccountDetails(

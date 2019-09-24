@@ -12,6 +12,8 @@ import com.d3.btc.helper.input.getConnectedOutput
 import com.d3.btc.provider.BtcChangeAddressProvider
 import com.d3.btc.provider.BtcRegisteredAddressesProvider
 import com.d3.btc.wallet.safeLoad
+import com.d3.btc.withdrawal.init.WITHDRAWAL_OPERATION
+import com.d3.commons.model.D3ErrorException
 import com.d3.commons.util.hex
 import com.github.kittinunf.result.Result
 import com.github.kittinunf.result.fanout
@@ -96,7 +98,11 @@ class TransactionSigner(
                     logger.warn { "Cannot sign ${tx.hashAsString} input $inputIndex" }
                 }
             }, { ex ->
-                throw IllegalStateException("Cannot get used pub keys for ${tx.hashAsString}", ex)
+                throw D3ErrorException.fatal(
+                    failedOperation = WITHDRAWAL_OPERATION,
+                    description = "Cannot get used pub keys for Bitcoin transaction ${tx.hashAsString}",
+                    errorCause = ex
+                )
             })
             inputIndex++
         }
