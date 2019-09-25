@@ -5,22 +5,24 @@
 
 package com.d3.btc.withdrawal.transaction
 
-import com.d3.btc.fee.BYTES_PER_INPUT
-import com.d3.btc.fee.CurrentFeeRate
 import com.d3.btc.model.BtcAddress
 import com.d3.btc.provider.BtcChangeAddressProvider
 import com.d3.btc.provider.network.BtcNetworkConfigProvider
 import com.d3.btc.withdrawal.init.WITHDRAWAL_OPERATION
+import com.d3.btc.withdrawal.provider.TX_FEE_SAT
 import com.d3.btc.withdrawal.provider.UTXOProvider
 import com.d3.commons.model.D3ErrorException
-import com.github.kittinunf.result.*
+import com.d3.commons.util.unHex
+import com.github.kittinunf.result.Result
+import com.github.kittinunf.result.failure
+import com.github.kittinunf.result.map
 import mu.KLogging
 import org.bitcoinj.core.Address
 import org.bitcoinj.core.Transaction
+import org.bitcoinj.core.TransactionInput
 import org.springframework.stereotype.Component
 import kotlin.random.Random
 
-//TODO don't forget to restore test
 /*
     Class that is used to create BTC transactions
  */
@@ -34,36 +36,34 @@ class TransactionCreator(
 
     /**
      * Creates UNSIGNED Bitcoin transaction
-     * @param withdrawalDetails - details of withdrawal
-     * @param availableHeight - maximum height of UTXO
-     * @param confidenceLevel - minimum tx depth that will be used in unspents
+     * @param withdrawalConsensus - withdrawal consensus data
      * @return result with unsigned transaction full of input/output data and used unspents
      */
     fun createTransaction(
-        withdrawalDetails: WithdrawalDetails,
-        availableHeight: Int,
-        confidenceLevel: Int
+        withdrawalConsensus: WithdrawalConsensus
     ): Result<Transaction, Exception> {
+        val withdrawalDetails = withdrawalConsensus.withdrawalDetails
         val transaction = Transaction(btcNetworkConfigProvider.getConfig())
-        return bitcoinUTXOProvider.getAvailableAddresses(withdrawalDetails.withdrawalTime)
-            .flatMap { availableAddresses ->
-                logger.info("Available addresses $availableAddresses")
-                bitcoinUTXOProvider.collectUnspents(
-                    withdrawalDetails,
-                    availableAddresses,
-                    withdrawalDetails.amountSat,
-                    availableHeight,
-                    confidenceLevel
-                )
-            }.fanout {
-                btcChangeAddressProvider.getAllChangeAddresses(withdrawalDetails.withdrawalTime)
-            }.map { (unspents, changeAddresses) ->
+        val unspents = withdrawalConsensus.utxo.map {
+            TransactionInput(
+                btcNetworkConfigProvider.getConfig(),
+                null,
+                String.unHex(it.inputHex),
+                0
+            )
+        }
+        var totalAmount: Long = 0
+        withdrawalConsensus.utxo.forEach {
+            totalAmount += it.amountSat
+        }
+        return btcChangeAddressProvider.getAllChangeAddresses(withdrawalDetails.withdrawalTime)
+            .map { changeAddresses ->
                 unspents.forEach { unspent -> transaction.addInput(unspent) }
                 val changeAddress = chooseChangeAddress(withdrawalDetails, changeAddresses).address
                 logger.info("Change address chosen for withdrawal $withdrawalDetails is $changeAddress")
                 bitcoinUTXOProvider.addOutputs(
                     transaction,
-                    unspents,
+                    totalAmount,
                     withdrawalDetails.toAddress,
                     withdrawalDetails.amountSat,
                     Address.fromBase58(
@@ -72,8 +72,8 @@ class TransactionCreator(
                     )
                 )
                 unspents
-            }.map { unspents ->
-                transactionsStorage.save(withdrawalDetails, transaction).failure { ex ->
+            }.map {
+                transactionsStorage.save(withdrawalConsensus, transaction).failure { ex ->
                     throw D3ErrorException.fatal(
                         failedOperation = WITHDRAWAL_OPERATION,
                         description = "Cannot save Bitcoin transaction for withdrawal $withdrawalDetails",
@@ -115,4 +115,4 @@ class TransactionCreator(
  * @param satValue - amount of SAT to check if it's a dust
  * @return true, if [satValue] is a dust
  */
-fun isDust(satValue: Long) = satValue < (CurrentFeeRate.get() * BYTES_PER_INPUT)
+fun isDust(satValue: Long) = satValue < TX_FEE_SAT

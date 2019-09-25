@@ -5,7 +5,6 @@
 
 package com.d3.btc.withdrawal.init
 
-import com.d3.btc.fee.CurrentFeeRate
 import com.d3.btc.handler.SetAccountDetailEvent
 import com.d3.btc.handler.SetAccountDetailHandler
 import com.d3.btc.healthcheck.HealthyService
@@ -59,9 +58,6 @@ class BtcWithdrawalInitialization(
 ) : HealthyService(), Closeable {
 
     fun init(): Result<Unit, Exception> {
-        //TODO create a fee rate updating mechanism
-        //Set minimum fee rate
-        CurrentFeeRate.setMinimum()
         // Check wallet network
         return transferWallet.checkWalletNetwork(btcNetworkConfigProvider.getConfig()).map {
             waitChangeAddresses()

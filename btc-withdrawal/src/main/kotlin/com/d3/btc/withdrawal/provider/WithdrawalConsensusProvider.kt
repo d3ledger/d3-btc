@@ -5,130 +5,141 @@
 
 package com.d3.btc.withdrawal.provider
 
-import com.d3.btc.config.BTC_CONSENSUS_DOMAIN
 import com.d3.btc.config.BitcoinConfig
-import com.d3.btc.helper.transaction.DUMMY_PUB_KEY_HEX
+import com.d3.btc.helper.iroha.isCASError
+import com.d3.btc.provider.network.BtcNetworkConfigProvider
 import com.d3.btc.withdrawal.init.WITHDRAWAL_OPERATION
+import com.d3.btc.withdrawal.transaction.SerializableUTXO
 import com.d3.btc.withdrawal.transaction.WithdrawalConsensus
 import com.d3.btc.withdrawal.transaction.WithdrawalDetails
 import com.d3.commons.model.D3ErrorException
-import com.d3.commons.model.IrohaCredential
-import com.d3.commons.notary.IrohaCommand
-import com.d3.commons.notary.IrohaTransaction
 import com.d3.commons.sidechain.iroha.consumer.IrohaConsumer
-import com.d3.commons.sidechain.iroha.consumer.IrohaConverter
 import com.d3.commons.sidechain.iroha.util.IrohaQueryHelper
-import com.d3.commons.sidechain.iroha.util.ModelUtil
-import com.d3.commons.util.*
+import com.d3.commons.util.irohaEscape
 import com.github.kittinunf.result.Result
-import com.github.kittinunf.result.failure
-import com.github.kittinunf.result.fanout
+import com.github.kittinunf.result.flatMap
 import com.github.kittinunf.result.map
-import jp.co.soramitsu.crypto.ed25519.Ed25519Sha3
-import jp.co.soramitsu.iroha.java.Utils
+import jp.co.soramitsu.iroha.java.TransactionBuilder
 import mu.KLogging
+import org.bitcoinj.core.Transaction
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
-import java.math.BigInteger
 
 @Component
 class WithdrawalConsensusProvider(
-    @Qualifier("withdrawalCredential")
-    private val withdrawalCredential: IrohaCredential,
     @Qualifier("consensusIrohaConsumer")
     private val consensusIrohaConsumer: IrohaConsumer,
+    @Qualifier("reliableWithdrawalConsumer")
+    private val withdrawalIrohaConsumer: IrohaConsumer,
     @Qualifier("withdrawalQueryHelper")
     private val withdrawalQueryHelper: IrohaQueryHelper,
     private val bitcoinUTXOProvider: UTXOProvider,
-    private val bitcoinConfig: BitcoinConfig
+    private val usedUTXOProvider: UsedUTXOProvider,
+    private val bitcoinConfig: BitcoinConfig,
+    private val btcNetworkConfigProvider: BtcNetworkConfigProvider
 ) {
-    private val gson = GsonInstance.get()
 
     /**
      * Creates consensus data and saves it in Iroha
      * @param withdrawalDetails - withdrawal details that will be used to create consensus
      */
     fun createConsensusData(withdrawalDetails: WithdrawalDetails): Result<Unit, Exception> {
-        //Create consensus storage for withdrawal
-        val consensusAccountName = withdrawalDetails.irohaFriendlyHashCode()
-        val consensusAccountId = "$consensusAccountName@$BTC_CONSENSUS_DOMAIN"
-        return bitcoinUTXOProvider.getAvailableUTXOHeight(
-            withdrawalDetails,
-            bitcoinConfig.confidenceLevel,
-            withdrawalDetails.withdrawalTime
-        ).fanout {
-            withdrawalQueryHelper.getPeersCount()
-        }.map { (availableHeight, peers) ->
-            val withdrawalConsensus =
-                WithdrawalConsensus(
-                    availableHeight,
-                    peers
-                )
-            consensusIrohaConsumer.send(
-                IrohaConverter.convert(
-                    createAccountTx(
-                        consensusAccountName,
-                        withdrawalDetails
-                    )
-                )
-            ).failure { ex ->
-                throw D3ErrorException.fatal(
-                    failedOperation = WITHDRAWAL_OPERATION,
-                    description = "Cannot create consensus data storage account for withdrawal $withdrawalDetails",
-                    errorCause = ex
-                )
+        return hasBeenEstablished(withdrawalDetails.irohaFriendlyHashCode()).flatMap { hasBeenEstablished ->
+            // No need to create consensus if it has been established before
+            if (hasBeenEstablished) {
+                return@flatMap Result.of(Unit)
             }
-            withdrawalConsensus
-        }.map { withdrawalConsensus ->
-            consensusIrohaConsumer.send(
-                IrohaConverter.convert(addConsensusDataTx(consensusAccountId, withdrawalConsensus, withdrawalDetails))
-            ).fold(
-                {
-                    logger.info(
-                        "Consensus data $withdrawalConsensus has been " +
-                                "successfully saved into $consensusAccountId account"
-                    )
-                }, { ex ->
-                    throw D3ErrorException.fatal(
-                        failedOperation = WITHDRAWAL_OPERATION,
-                        description = "Cannot save consensus data for withdrawal $withdrawalDetails",
-                        errorCause = ex
-                    )
-                })
+            handleConsensus(withdrawalDetails)
         }
     }
 
     /**
-     * Returns consensus data
-     * @param withdrawalHash - hash of withdrawal
-     * @return consensus data in form of (withdrawal details, list of consensus data from all the nodes)
+     * Handle consensus creation process
+     * @param withdrawalDetails - details of withdrawal
+     * @return result of operation
      */
-    fun getConsensus(withdrawalHash: String): Result<Pair<WithdrawalDetails, List<WithdrawalConsensus>>, Exception> {
+    private fun handleConsensus(withdrawalDetails: WithdrawalDetails): Result<Unit, Exception> {
+        val utxo = ArrayList<SerializableUTXO>()
+        // Collect unspents
+        return bitcoinUTXOProvider.collectUnspents(withdrawalDetails, bitcoinConfig.confidenceLevel)
+            .flatMap { unspents ->
+                unspents.forEach { output ->
+                    val transaction = Transaction(btcNetworkConfigProvider.getConfig())
+                    val input = transaction.addInput(output)
+                    input.setParent(null)
+                    // Populate utxo list
+                    utxo.add(SerializableUTXO.toSerializableUTXO(input, output))
+                }
+                // Only one node will succeed to commit the following tx
+                val transactionBuilder = TransactionBuilder(
+                    consensusIrohaConsumer.creator,
+                    withdrawalDetails.withdrawalTime
+                ).compareAndSetAccountDetail(
+                    consensusIrohaConsumer.creator,
+                    withdrawalDetails.irohaFriendlyHashCode(),
+                    WithdrawalConsensus(utxo, withdrawalDetails).toJson().irohaEscape(),
+                    null
+                )
+                // And UTXO registration commands to the transaction
+                usedUTXOProvider.addRegisterUTXOCommands(transactionBuilder, withdrawalDetails, unspents)
+                consensusIrohaConsumer.send(transactionBuilder.build())
+            }.fold(
+                {
+                    // Start consensus registration if everything is ok
+                    return registerConsensus(WithdrawalConsensus(utxo, withdrawalDetails))
+                }, { ex ->
+                    return if (isCASError(ex)) {
+                        // Start consensus registration if the error is a CAS issue
+                        registerConsensusCASFailure(withdrawalDetails)
+                    } else {
+                        // Return error if it's something else
+                        Result.error(ex)
+                    }
+                })
+    }
+
+    /**
+     * Register consensus in case of CAS failure
+     * @param withdrawalDetails - details of withdrawal
+     * @return result of operation
+     */
+    private fun registerConsensusCASFailure(withdrawalDetails: WithdrawalDetails): Result<Unit, Exception> {
+        // Get consensus data
         return withdrawalQueryHelper.getAccountDetails(
             consensusIrohaConsumer.creator,
             consensusIrohaConsumer.creator,
-            withdrawalHash
-        ).map { value ->
-            if (value.isPresent) {
-                gson.fromJson(value.get(), WithdrawalDetails::class.java)
+            withdrawalDetails.irohaFriendlyHashCode()
+        ).flatMap { withdrawalConsensusDetail ->
+            if (withdrawalConsensusDetail.isPresent) {
+                // Register consensus data
+                registerConsensus(WithdrawalConsensus.fromJson(withdrawalConsensusDetail.get()))
             } else {
                 throw D3ErrorException.fatal(
                     failedOperation = WITHDRAWAL_OPERATION,
-                    description = "Withdrawal details data is not present for hash $withdrawalHash"
+                    description = "Cannot register consensus for withdrawal $withdrawalDetails"
                 )
             }
-        }.fanout {
-            withdrawalQueryHelper.getAccountDetails(
-                "$withdrawalHash@$BTC_CONSENSUS_DOMAIN",
-                consensusIrohaConsumer.creator
-            )
-        }.map {
-            val (withdrawalDetails, consensusData) = it
-            Pair(
-                withdrawalDetails,
-                consensusData.values.map { value -> WithdrawalConsensus.fromJson(value) }.toList()
-            )
         }
+    }
+
+    /**
+     * Registers consensus in an MST fashion
+     * @param withdrawalConsensus - withdrawal consensus data to register
+     */
+    private fun registerConsensus(withdrawalConsensus: WithdrawalConsensus): Result<Unit, Exception> {
+        return withdrawalIrohaConsumer.getConsumerQuorum()
+            .flatMap { quorum ->
+                withdrawalIrohaConsumer.send(
+                    TransactionBuilder(
+                        withdrawalIrohaConsumer.creator,
+                        withdrawalConsensus.withdrawalDetails.withdrawalTime
+                    ).setQuorum(quorum).setAccountDetail(
+                        consensusIrohaConsumer.creator,
+                        withdrawalConsensus.withdrawalDetails.irohaFriendlyHashCode(),
+                        withdrawalConsensus.toJson().irohaEscape()
+                    ).build()
+                )
+            }.map { Unit }
     }
 
     /**
@@ -136,71 +147,14 @@ class WithdrawalConsensusProvider(
      * @param withdrawalHash - hash of withdrawal to check
      * @return true if consensus has been established before
      */
-    fun hasBeenEstablished(withdrawalHash: String): Result<Boolean, Exception> {
+    private fun hasBeenEstablished(withdrawalHash: String): Result<Boolean, Exception> {
         return withdrawalQueryHelper.getAccountDetails(
             consensusIrohaConsumer.creator,
-            withdrawalCredential.accountId,
+            withdrawalIrohaConsumer.creator,
             withdrawalHash
         ).map { value ->
             value.isPresent
         }
-    }
-
-    /**
-     * Creates account creation transaction.
-     * This account will be used to store consensus data
-     * @param consensusAccountName - account name where consensus data will be stored
-     * @param withdrawalDetails - details of withdrawal
-     * @return well formed transaction
-     */
-    private fun createAccountTx(
-        consensusAccountName: String,
-        withdrawalDetails: WithdrawalDetails
-    ): IrohaTransaction {
-        return IrohaTransaction(
-            consensusIrohaConsumer.creator,
-            BigInteger.valueOf(withdrawalDetails.withdrawalTime),
-            1,
-            arrayListOf(
-                IrohaCommand.CommandCreateAccount(
-                    consensusAccountName,
-                    BTC_CONSENSUS_DOMAIN,
-                    // No matter what key. This account is used for storage only
-                    DUMMY_PUB_KEY_HEX
-                )
-            )
-        )
-    }
-
-    /**
-     * Creates consensus data addition transaction
-     * @param consensusAccountId - account id, where consensus data will be stored
-     * @param withdrawalConsensus - withdrawal consensus data
-     * @param withdrawalDetails - details of withdrawal
-     * @return well formed transaction
-     */
-    private fun addConsensusDataTx(
-        consensusAccountId: String,
-        withdrawalConsensus: WithdrawalConsensus,
-        withdrawalDetails: WithdrawalDetails
-    ): IrohaTransaction {
-        return IrohaTransaction(
-            consensusIrohaConsumer.creator,
-            ModelUtil.getCurrentTime(),
-            1,
-            arrayListOf(
-                IrohaCommand.CommandSetAccountDetail(
-                    consensusAccountId,
-                    String.getRandomId(),
-                    withdrawalConsensus.toJson().irohaEscape()
-                ),
-                IrohaCommand.CommandSetAccountDetail(
-                    consensusIrohaConsumer.creator,
-                    withdrawalDetails.irohaFriendlyHashCode(),
-                    gson.toJson(withdrawalDetails).irohaEscape()
-                )
-            )
-        )
     }
 
     /**

@@ -5,17 +5,13 @@
 
 package com.d3.btc.withdrawal.transaction
 
-import com.d3.commons.util.GsonInstance
-import com.d3.btc.helper.input.irohaKey
-import com.d3.btc.helper.output.info
 import com.d3.btc.helper.transaction.shortTxHash
 import com.d3.btc.provider.network.BtcNetworkConfigProvider
 import com.d3.btc.withdrawal.init.WITHDRAWAL_OPERATION
-import com.d3.btc.withdrawal.provider.UTXODetails
 import com.d3.commons.model.D3ErrorException
-import com.d3.commons.model.IrohaCredential
 import com.d3.commons.sidechain.iroha.consumer.IrohaConsumer
 import com.d3.commons.sidechain.iroha.util.IrohaQueryHelper
+import com.d3.commons.util.GsonInstance
 import com.d3.commons.util.irohaEscape
 import com.d3.commons.util.unHex
 import com.github.kittinunf.result.Result
@@ -37,24 +33,21 @@ class TransactionsStorage(
     private val btcNetworkConfigProvider: BtcNetworkConfigProvider,
     @Qualifier("withdrawalQueryHelper")
     private val withdrawalQueryHelper: IrohaQueryHelper,
-    @Qualifier("withdrawalConsumer")
+    @Qualifier("reliableWithdrawalConsumer")
     private val btcWithdrawalConsumer: IrohaConsumer,
     @Qualifier("txStorageAccount")
-    private val txStorageAccount: String,
-    @Qualifier("utxoStorageAccount")
-    private val utxoStorageAccount: String,
-    @Qualifier("consensusIrohaCredential")
-    private val consensusIrohaCredential: IrohaCredential
+    private val txStorageAccount: String
 ) {
     /**
      * Saves transactions
-     * @param withdrawalDetails - details of withdrawal(account id, amount and time)
+     * @param withdrawalConsensus - withdrawal consensus data
      * @param transaction - transaction that will be saved
      */
     fun save(
-        withdrawalDetails: WithdrawalDetails,
+        withdrawalConsensus: WithdrawalConsensus,
         transaction: Transaction
     ): Result<Unit, Exception> {
+        val withdrawalDetails = withdrawalConsensus.withdrawalDetails
         logger.info(
             "Save transaction in Iroha.\nDetails $withdrawalDetails\n" +
                     "Transaction $transaction\n" +
@@ -65,23 +58,14 @@ class TransactionsStorage(
                 .builder(btcWithdrawalConsumer.creator)
                 .setAccountDetail(
                     txStorageAccount, transaction.shortTxHash(), WithdrawalTransaction(
-                        withdrawalDetails,
+                        withdrawalConsensus,
                         Utils.toHex(transaction.bitcoinSerialize())
                     ).toJson().irohaEscape()
                 )
                 .setCreatedTime(withdrawalDetails.withdrawalTime)
-                .setAccountDetail(consensusIrohaCredential.accountId, withdrawalDetails.irohaFriendlyHashCode(), "")
                 .setQuorum(quorum)
-            transaction.inputs.forEach { input ->
-                transactionBuilder.setAccountDetail(
-                    utxoStorageAccount,
-                    input.irohaKey(),
-                    gson.toJson(UTXODetails.register(withdrawalDetails.withdrawalTime)).irohaEscape()
-                )
-            }
             btcWithdrawalConsumer.send(transactionBuilder.build())
         }.map {
-            logger.info("Registered UTXO items:\n${transaction.inputs.map { it.connectedOutput!!.info() }}")
             Unit
         }
     }
@@ -89,9 +73,9 @@ class TransactionsStorage(
     /**
      * Returns transaction by its hash
      * @param txHash - hash of transaction
-     * @return transaction
+     * @return transaction and its withdrawal consensus data
      */
-    fun get(txHash: String): Result<Pair<WithdrawalDetails, Transaction>, Exception> {
+    fun get(txHash: String): Result<Pair<WithdrawalConsensus, Transaction>, Exception> {
         logger.info("Read transaction in Iroha. Key ${shortTxHash(txHash)}")
         return withdrawalQueryHelper.getAccountDetails(
             txStorageAccount, btcWithdrawalConsumer.creator,
@@ -104,17 +88,19 @@ class TransactionsStorage(
                 )
             }
             val withdrawalTransaction = WithdrawalTransaction.fromJson(withdrawalTx.get())
-            Pair(
-                withdrawalTransaction.withdrawalDetails,
+            val transaction =
                 Transaction(btcNetworkConfigProvider.getConfig(), String.unHex(withdrawalTransaction.txHex))
-            )
+            Pair(withdrawalTransaction.withdrawalConsensus, transaction)
         }
     }
 
     companion object : KLogging()
 }
 
-private data class WithdrawalTransaction(val withdrawalDetails: WithdrawalDetails, val txHex: String) {
+private data class WithdrawalTransaction(
+    val withdrawalConsensus: WithdrawalConsensus,
+    val txHex: String
+) {
     fun toJson() = gson.toJson(this)!!
 
     companion object {

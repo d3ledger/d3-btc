@@ -8,9 +8,8 @@ package com.d3.btc.withdrawal.transaction
 import com.d3.btc.config.BTC_SIGN_COLLECT_DOMAIN
 import com.d3.btc.helper.address.createMsRedeemScript
 import com.d3.btc.helper.address.getSignThreshold
-import com.d3.btc.helper.address.outPutToBase58Address
 import com.d3.btc.helper.address.toEcPubKey
-import com.d3.btc.helper.input.getConnectedOutput
+import com.d3.btc.helper.input.verify
 import com.d3.btc.helper.transaction.DUMMY_PUB_KEY_HEX
 import com.d3.btc.helper.transaction.shortTxHash
 import com.d3.btc.withdrawal.init.WITHDRAWAL_OPERATION
@@ -21,9 +20,9 @@ import com.d3.commons.sidechain.iroha.consumer.IrohaConsumer
 import com.d3.commons.sidechain.iroha.consumer.IrohaConverter
 import com.d3.commons.sidechain.iroha.util.IrohaQueryHelper
 import com.d3.commons.util.irohaEscape
-import com.d3.commons.util.toHexString
 import com.d3.commons.util.unHex
 import com.github.kittinunf.result.Result
+import com.github.kittinunf.result.Result.Companion.of
 import com.github.kittinunf.result.failure
 import com.github.kittinunf.result.flatMap
 import com.github.kittinunf.result.map
@@ -37,7 +36,6 @@ import org.bitcoinj.core.ECKey
 import org.bitcoinj.core.Transaction
 import org.bitcoinj.crypto.TransactionSignature
 import org.bitcoinj.script.ScriptBuilder
-import org.bitcoinj.wallet.Wallet
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 import java.math.BigInteger
@@ -52,8 +50,7 @@ class SignCollector(
     private val signatureCollectorQueryHelper: IrohaQueryHelper,
     @Qualifier("signatureCollectorConsumer")
     private val signatureCollectorConsumer: IrohaConsumer,
-    private val transactionSigner: TransactionSigner,
-    private val transfersWallet: Wallet
+    private val transactionSigner: TransactionSigner
 ) {
 
     //Adapter for JSON serialization/deserialization
@@ -70,22 +67,23 @@ class SignCollector(
      * 1) Sign tx
      * 2) Create special account named after tx hash for signature storing
      * 3) Save signatures in recently created account details
-     * @param withdrawalDetails - details of withdrawal
+     * @param withdrawalConsensus - withdrawal consensus
      * @param tx - transaction to sign
      * @param walletPath - path to current wallet. Used to get private keys
      */
     fun signAndSave(
-        withdrawalDetails: WithdrawalDetails,
+        withdrawalConsensus: WithdrawalConsensus,
         tx: Transaction,
         walletPath: String
     ): Result<Unit, Exception> {
-        return transactionSigner.sign(tx, walletPath).flatMap { signedInputs ->
+        val withdrawalDetails = withdrawalConsensus.withdrawalDetails
+        return transactionSigner.sign(tx, walletPath, withdrawalConsensus).flatMap { signedInputs ->
             if (signedInputs.isEmpty()) {
                 logger.warn(
                     "Cannot sign transaction ${tx.hashAsString}. " +
                             "Current node probably doesn't posses private keys for a given transaction to sign."
                 )
-                return@flatMap Result.of {}
+                return@flatMap of(Unit)
             }
             logger.info { "Tx ${tx.hashAsString} signatures to add in Iroha $signedInputs" }
             val shortTxHash = tx.shortTxHash()
@@ -137,7 +135,8 @@ class SignCollector(
      */
     fun isEnoughSignaturesCollected(
         tx: Transaction,
-        signatures: Map<Int, List<SignaturePubKey>>
+        signatures: Map<Int, List<SignaturePubKey>>,
+        withdrawalConsensus: WithdrawalConsensus
     ): Boolean {
         var inputIndex = 0
         tx.inputs.forEach { input ->
@@ -145,9 +144,8 @@ class SignCollector(
                 logger.info { "Tx ${tx.hashAsString} input at index $inputIndex is not signed yet" }
                 return false
             }
-            val connectedOutput = input.getConnectedOutput(transfersWallet)
-            val inputAddress = outPutToBase58Address(connectedOutput)
-            transactionSigner.getUsedPubKeys(inputAddress).fold(
+            val connectedOutput = withdrawalConsensus.getConnectedOutput(input)
+            transactionSigner.getUsedPubKeys(connectedOutput.address).fold(
                 { usedPubKeys ->
                     val threshold = getSignThreshold(usedPubKeys)
                     val collectedSignatures = signatures[inputIndex]!!.size
@@ -160,7 +158,7 @@ class SignCollector(
                 { ex ->
                     throw D3ErrorException.fatal(
                         failedOperation = WITHDRAWAL_OPERATION,
-                        description = "Cannot get public keys for address $inputAddress",
+                        description = "Cannot get public keys for address ${connectedOutput.address}",
                         errorCause = ex
                     )
                 })
@@ -172,17 +170,18 @@ class SignCollector(
      * Fills given transaction with input signatures
      * @param tx - transaction to fill with signatures
      * @param signatures - map full of input signatures from other notary nodes
+     * @param withdrawalConsensus - withdrawal consensus data
      */
     fun fillTxWithSignatures(
         tx: Transaction,
-        signatures: Map<Int, List<SignaturePubKey>>
+        signatures: Map<Int, List<SignaturePubKey>>,
+        withdrawalConsensus: WithdrawalConsensus
     ): Result<Unit, Exception> {
-        return Result.of {
+        return of {
             var inputIndex = 0
             tx.inputs.forEach { input ->
-                val connectedOutput = input.getConnectedOutput(transfersWallet)
-                val inputAddress = outPutToBase58Address(connectedOutput)
-                transactionSigner.getUsedPubKeys(inputAddress).fold({ usedKeys ->
+                val connectedOutput = withdrawalConsensus.getConnectedOutput(input)
+                transactionSigner.getUsedPubKeys(connectedOutput.address).fold({ usedKeys ->
                     /**
                      * Signatures must be ordered the same way public keys are ordered in redeem script
                      */
@@ -202,11 +201,11 @@ class SignCollector(
                         redeemScript
                     )
                     input.scriptSig = inputScript
-                    input.verify(connectedOutput)
+                    input.verify(connectedOutput.script)
                 }, { ex ->
                     throw D3ErrorException.fatal(
                         failedOperation = WITHDRAWAL_OPERATION,
-                        description = "Cannot get public keys for address $inputAddress",
+                        description = "Cannot get public keys for address ${connectedOutput.address}",
                         errorCause = ex
                     )
                 })

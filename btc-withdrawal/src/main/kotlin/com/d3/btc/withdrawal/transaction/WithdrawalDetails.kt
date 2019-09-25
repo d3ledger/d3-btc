@@ -7,6 +7,7 @@ package com.d3.btc.withdrawal.transaction
 
 import io.ktor.util.sha1
 import jp.co.soramitsu.iroha.java.Utils
+import java.lang.Math.min
 
 /**
  * Withdrawal details
@@ -27,8 +28,10 @@ data class WithdrawalDetails(
      * Computes sha1 based Iroha friendly hash code
      * @return hash code as a String
      */
-    fun irohaFriendlyHashCode(): String =
-        Utils.toHex(
+    fun irohaFriendlyHashCode(): String {
+        val hashCode = Utils.toHex(
             sha1((sourceAccountId + toAddress + amountSat + withdrawalTime + withdrawalFeeSat).toByteArray())
-        ).toLowerCase().substring(0..31)
+        )
+        return hashCode.toLowerCase().substring(0..min(63, hashCode.length - 1))
+    }
 }

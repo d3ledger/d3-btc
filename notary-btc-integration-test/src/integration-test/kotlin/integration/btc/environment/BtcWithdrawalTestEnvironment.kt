@@ -9,7 +9,6 @@ import com.d3.btc.config.BitcoinConfig
 import com.d3.btc.dwbridge.config.BtcDWBridgeConfig
 import com.d3.btc.handler.NewBtcClientRegistrationHandler
 import com.d3.btc.helper.address.outPutToBase58Address
-import com.d3.btc.peer.SharedPeerGroup
 import com.d3.btc.provider.BtcChangeAddressProvider
 import com.d3.btc.provider.BtcRegisteredAddressesProvider
 import com.d3.btc.provider.network.BtcNetworkConfigProvider
@@ -246,12 +245,15 @@ class BtcWithdrawalTestEnvironment(
     private val btcAddressStorage = BtcAddressStorage(btcRegisteredAddressesProvider, btcChangeAddressProvider)
 
     private val usedUTXOProvider =
-        UsedUTXOProvider(withdrawalQueryHelper, withdrawalIrohaConsumer, btcWithdrawalConfig.utxoStorageAccount)
+        UsedUTXOProvider(
+            withdrawalQueryHelper = withdrawalQueryHelper,
+            consensusIrohaConsumer = btcConsensusIrohaConsumer,
+            utxoStorageAccount = btcWithdrawalConfig.utxoStorageAccount
+        )
 
     val utxoProvider =
         BlackListableBitcoinUTXOProvider(
             transferWallet,
-            peerGroup,
             btcNetworkConfigProvider,
             btcAddressStorage,
             usedUTXOProvider
@@ -262,27 +264,28 @@ class BtcWithdrawalTestEnvironment(
             BtcRegTestConfigProvider(),
             withdrawalQueryHelper,
             withdrawalIrohaConsumer,
-            btcWithdrawalConfig.txStorageAccount,
-            btcWithdrawalConfig.utxoStorageAccount,
-            btcConsensusCredential
+            btcWithdrawalConfig.txStorageAccount
         )
     private val transactionCreator =
-        TransactionCreator(btcChangeAddressProvider, btcNetworkConfigProvider, utxoProvider, transactionsStorage)
+        TransactionCreator(
+            btcChangeAddressProvider,
+            btcNetworkConfigProvider,
+            utxoProvider,
+            transactionsStorage
+        )
     private val transactionSigner =
-        TransactionSigner(btcRegisteredAddressesProvider, btcChangeAddressProvider, transferWallet)
+        TransactionSigner(btcRegisteredAddressesProvider, btcChangeAddressProvider)
 
     private val signatureCollectorQueryHelper = RobustIrohaQueryHelperImpl(
         IrohaQueryHelperImpl(irohaApi, signaturesCollectorCredential),
-        dwBridgeConfig
-            .irohaQueryTimeoutMls
+        dwBridgeConfig.irohaQueryTimeoutMls
     )
 
     val signCollector =
         SignCollector(
             signatureCollectorQueryHelper,
             signaturesCollectorIrohaConsumer,
-            transactionSigner,
-            transferWallet
+            transactionSigner
         )
 
     private val withdrawalStatistics = WithdrawalStatistics.create()
@@ -293,12 +296,18 @@ class BtcWithdrawalTestEnvironment(
     private val btcRollbackService =
         BtcRollbackService(reliableWithdrawalConsumer)
     private val withdrawalConsensusProvider = WithdrawalConsensusProvider(
-        withdrawalCredential,
-        btcConsensusIrohaConsumer,
-        withdrawalQueryHelper,
-        utxoProvider,
-        bitcoinConfig
+        consensusIrohaConsumer = btcConsensusIrohaConsumer,
+        withdrawalIrohaConsumer = reliableWithdrawalConsumer,
+        withdrawalQueryHelper = withdrawalQueryHelper,
+        bitcoinUTXOProvider = utxoProvider,
+        usedUTXOProvider = usedUTXOProvider,
+        bitcoinConfig = bitcoinConfig,
+        btcNetworkConfigProvider = btcNetworkConfigProvider
     )
+
+    private val rollbackHandler =
+        RollbackHandler(withdrawalQueryHelper, usedUTXOProvider)
+
     private val newChangeAddressHandler
             by lazy {
                 NewBtcChangeAddressWithdrawalHandler(
@@ -317,9 +326,9 @@ class BtcWithdrawalTestEnvironment(
         )
     private val withdrawalTransferService = object : WithdrawalTransferService(
         withdrawalStatistics,
-        bitcoinConfig,
         transactionCreator,
-        btcRollbackService
+        btcRollbackService,
+        btcNetworkConfigProvider
     ) {
         override fun registerWithdrawal(withdrawalDetails: WithdrawalDetails) {
             if (withdrawalDetails.amountSat == FAILED_WITHDRAW_AMOUNT) {
@@ -341,7 +350,6 @@ class BtcWithdrawalTestEnvironment(
             withdrawalStatistics,
             signCollector,
             transactionsStorage,
-            utxoProvider,
             btcRollbackService,
             peerGroup,
             broadcastsProvider
@@ -350,10 +358,8 @@ class BtcWithdrawalTestEnvironment(
     private val broadcastTransactionHandler = BroadcastTransactionHandler(btcWithdrawalConfig, btcWithdrawalFinalizer)
 
     private val newConsensusDataHandler =
-        NewConsensusDataHandler(
+        ConsensusDataCreatedHandler(
             withdrawalTransferService,
-            withdrawalConsensusProvider,
-            btcRollbackService,
             btcWithdrawalConfig
         )
 
@@ -363,7 +369,6 @@ class BtcWithdrawalTestEnvironment(
             transactionsStorage,
             btcWithdrawalConfig,
             btcRollbackService,
-            utxoProvider,
             broadcastsProvider
         )
 
@@ -395,7 +400,8 @@ class BtcWithdrawalTestEnvironment(
                 newChangeAddressHandler,
                 newConsensusDataHandler,
                 newTransactionCreatedHandler,
-                broadcastTransactionHandler
+                broadcastTransactionHandler,
+                rollbackHandler
             ),
             WithdrawalServiceExpansion(
                 irohaApi,
@@ -418,13 +424,11 @@ class BtcWithdrawalTestEnvironment(
 
     class BlackListableBitcoinUTXOProvider(
         transferWallet: Wallet,
-        peerGroup: SharedPeerGroup,
         btcNetworkConfigProvider: BtcNetworkConfigProvider,
         btcAddressStorage: BtcAddressStorage,
         usedUTXOProvider: UsedUTXOProvider
     ) : UTXOProvider(
         transferWallet,
-        peerGroup,
         btcNetworkConfigProvider,
         btcAddressStorage,
         usedUTXOProvider
@@ -443,13 +447,10 @@ class BtcWithdrawalTestEnvironment(
 
         // Checks if transaction output was addressed to available address
         override fun isAvailableOutput(
-            availableAddresses: Set<String>,
             output: TransactionOutput
         ): Boolean {
             val btcAddress = outPutToBase58Address(output)
-            return availableAddresses.contains(btcAddress) && !btcAddressBlackList.contains(
-                btcAddress
-            )
+            return super.isAvailableOutput(output) && !btcAddressBlackList.contains(btcAddress)
         }
     }
 
