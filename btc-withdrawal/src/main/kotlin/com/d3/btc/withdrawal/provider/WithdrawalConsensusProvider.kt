@@ -85,6 +85,7 @@ class WithdrawalConsensusProvider(
                 )
                 // And UTXO registration commands to the transaction
                 usedUTXOProvider.addRegisterUTXOCommands(transactionBuilder, withdrawalDetails, unspents)
+                logger.info("Create consensus for withdrawal $withdrawalDetails. Hash ${withdrawalDetails.irohaFriendlyHashCode()}")
                 consensusIrohaConsumer.send(transactionBuilder.build())
             }.fold(
                 {
@@ -108,6 +109,7 @@ class WithdrawalConsensusProvider(
      * @return result of operation
      */
     private fun registerConsensusCASFailure(withdrawalDetails: WithdrawalDetails): Result<Unit, Exception> {
+        logger.info("Get consensus for withdrawal $withdrawalDetails. Hash ${withdrawalDetails.irohaFriendlyHashCode()}")
         // Get consensus data
         return withdrawalQueryHelper.getAccountDetails(
             consensusIrohaConsumer.creator,
