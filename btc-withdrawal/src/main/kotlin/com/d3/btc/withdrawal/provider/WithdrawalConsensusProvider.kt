@@ -111,19 +111,47 @@ class WithdrawalConsensusProvider(
     private fun registerConsensusCASFailure(withdrawalDetails: WithdrawalDetails): Result<Unit, Exception> {
         logger.info("Get consensus for withdrawal $withdrawalDetails. Hash ${withdrawalDetails.irohaFriendlyHashCode()}")
         // Get consensus data
-        return withdrawalQueryHelper.getAccountDetails(
-            consensusIrohaConsumer.creator,
-            consensusIrohaConsumer.creator,
-            withdrawalDetails.irohaFriendlyHashCode()
-        ).flatMap { withdrawalConsensusDetail ->
-            if (withdrawalConsensusDetail.isPresent) {
-                // Register consensus data
-                registerConsensus(WithdrawalConsensus.fromJson(withdrawalConsensusDetail.get()))
-            } else {
+        return getConsensusRepeatOnFailure(withdrawalDetails).flatMap { withdrawalConsensusDetail ->
+            // Register consensus data
+            registerConsensus(WithdrawalConsensus.fromJson(withdrawalConsensusDetail))
+        }
+    }
+
+    //TODO remove after bugfix in Iroha
+    /**
+     * Shitty Iroha bug workaround. It reads details from Iroha until it's not read properly.
+     * @param withdrawalDetails - withdrawal details
+     * @return consensus data in JSON format
+     */
+    private fun getConsensusRepeatOnFailure(withdrawalDetails: WithdrawalDetails): Result<String, Exception> {
+        return Result.of {
+            var withdrawalConsensusDetail: String? = null
+            var attemptToRead = 0
+            while (withdrawalConsensusDetail == null && attemptToRead < 10) {
+                withdrawalQueryHelper.getAccountDetails(
+                    consensusIrohaConsumer.creator,
+                    consensusIrohaConsumer.creator,
+                    withdrawalDetails.irohaFriendlyHashCode()
+                ).fold(
+                    {
+                        if (it.isPresent) {
+                            logger.info("Successful read from Iroha. Attempt $attemptToRead")
+                            withdrawalConsensusDetail = it.get()
+                        } else {
+                            Thread.sleep(1_000)
+                            attemptToRead++
+                            logger.warn("Failed to get withdrawal consensus detail for withdrawal $withdrawalDetails. Try one more time. Attempt $attemptToRead")
+                        }
+
+                    }, { ex -> throw ex })
+            }
+            if (withdrawalConsensusDetail == null) {
                 throw D3ErrorException.fatal(
                     failedOperation = WITHDRAWAL_OPERATION,
-                    description = "Cannot register consensus for withdrawal $withdrawalDetails"
+                    description = "Cannot get withdrawal consensus details for withdrawal $withdrawalDetails"
                 )
+            } else {
+                withdrawalConsensusDetail!!
             }
         }
     }
