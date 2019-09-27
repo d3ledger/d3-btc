@@ -89,6 +89,7 @@ class WithdrawalConsensusProvider(
                     return registerConsensus(WithdrawalConsensus(utxo, withdrawalDetails))
                 }, { ex ->
                     return if (isCASError(ex)) {
+                        logger.info("Register consensus for withdrawal $withdrawalDetails on CAS failure")
                         // Start consensus registration if the error is a CAS issue
                         registerConsensusCASFailure(withdrawalDetails)
                     } else {

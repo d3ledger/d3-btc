@@ -43,6 +43,12 @@ open class UsedUTXOProvider(
         }
     }
 
+    /**
+     * Adds UTXO registration Iroha commands
+     * @param transactionBuilder - transaction builder to add commands to
+     * @param withdrawalDetails - detail of withdrawal
+     * @param unspents - unspents to register
+     */
     fun addRegisterUTXOCommands(
         transactionBuilder: TransactionBuilder,
         withdrawalDetails: WithdrawalDetails,
