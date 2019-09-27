@@ -133,17 +133,17 @@ class UTXOProvider(
             if (utxoCount >= MAX_UTXO_ITEMS) {
                 return@filter false
             }
-            val availableToSpent = !isDust(unspent.value.value) &&
+            val availableToSpend = !isDust(unspent.value.value) &&
                     //Only confirmed unspents may be used
                     unspent.parentTransactionDepthInBlocks >= confidenceLevel
                     //We use registered clients outputs only
                     && isAvailableOutput(unspent)
                     //Cannot use already used unspents
                     && !usedUTXOProvider.isUsed(withdrawalDetails, unspent).get()
-            if (availableToSpent) {
+            if (availableToSpend) {
                 utxoCount++
             }
-            availableToSpent
+            availableToSpend
         }
     }
 
@@ -159,7 +159,7 @@ class UTXOProvider(
         output: TransactionOutput
     ): Boolean {
         val btcAddress = outPutToBase58Address(output)
-        return btcAddressStorage.isChangeAddress(btcAddress) || btcAddressStorage.isOurClient(btcAddress)
+        return btcAddressStorage.isWatchedAddress(btcAddress)
     }
 
     /**

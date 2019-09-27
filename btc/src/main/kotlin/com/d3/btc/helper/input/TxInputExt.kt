@@ -10,6 +10,10 @@ import org.bitcoinj.script.Script
  */
 fun TransactionInput.irohaKey() = "${this.outpoint.index}_${this.outpoint.hash}".substring(0..32)
 
+/**
+ * Verifies that the current input was signed correctly
+ * @param scriptBytes - corresponding output script
+ */
 fun TransactionInput.verify(scriptBytes: ByteArray) {
     val pubKey = Script(scriptBytes)
     val myIndex = parentTransaction.inputs.indexOf(this)
