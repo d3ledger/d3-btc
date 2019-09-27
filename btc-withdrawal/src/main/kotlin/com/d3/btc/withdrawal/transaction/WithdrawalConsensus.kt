@@ -19,7 +19,8 @@ private val gson = GsonInstance.get()
  */
 data class WithdrawalConsensus(
     val utxo: List<SerializableUTXO>,
-    val withdrawalDetails: WithdrawalDetails
+    val withdrawalDetails: WithdrawalDetails,
+    val id: String
 ) {
     fun toJson() = gson.toJson(this)!!
 

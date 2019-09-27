@@ -24,6 +24,8 @@ import mu.KLogging
 import org.bitcoinj.core.Transaction
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
+import java.util.*
+import kotlin.collections.ArrayList
 
 @Component
 class WithdrawalConsensusProvider(
@@ -60,6 +62,7 @@ class WithdrawalConsensusProvider(
      */
     private fun handleConsensus(withdrawalDetails: WithdrawalDetails): Result<Unit, Exception> {
         val utxo = ArrayList<SerializableUTXO>()
+        val consensusId = UUID.randomUUID().toString()
         // Collect unspents
         return bitcoinUTXOProvider.collectUnspents(withdrawalDetails, bitcoinConfig.confidenceLevel)
             .flatMap { unspents ->
@@ -77,7 +80,7 @@ class WithdrawalConsensusProvider(
                 ).compareAndSetAccountDetail(
                     consensusIrohaConsumer.creator,
                     withdrawalDetails.irohaFriendlyHashCode(),
-                    WithdrawalConsensus(utxo, withdrawalDetails).toJson().irohaEscape(),
+                    WithdrawalConsensus(utxo, withdrawalDetails, consensusId).toJson().irohaEscape(),
                     null
                 )
                 // And UTXO registration commands to the transaction
@@ -86,7 +89,7 @@ class WithdrawalConsensusProvider(
             }.fold(
                 {
                     // Start consensus registration if everything is ok
-                    return registerConsensus(WithdrawalConsensus(utxo, withdrawalDetails))
+                    return registerConsensus(WithdrawalConsensus(utxo, withdrawalDetails, consensusId))
                 }, { ex ->
                     return if (isCASError(ex)) {
                         logger.info("Register consensus for withdrawal $withdrawalDetails on CAS failure")

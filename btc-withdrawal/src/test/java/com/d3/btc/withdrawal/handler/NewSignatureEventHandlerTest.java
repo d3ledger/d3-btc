@@ -72,7 +72,7 @@ public class NewSignatureEventHandlerTest {
     @Test
     public void testHandleHasBeenBroadcasted() {
         WithdrawalDetails withdrawalDetails = new WithdrawalDetails("src account id", "to address", 0, System.currentTimeMillis(), 0);
-        WithdrawalConsensus withdrawalConsensus = new WithdrawalConsensus(new ArrayList<>(), withdrawalDetails);
+        WithdrawalConsensus withdrawalConsensus = new WithdrawalConsensus(new ArrayList<>(), withdrawalDetails,"random id");
         Transaction transaction = mock(Transaction.class);
         Pair<WithdrawalConsensus, Transaction> withdrawal = new Pair<>(withdrawalConsensus, transaction);
         when(transactionsStorage.get(anyString())).thenReturn(Result.Companion.of(() -> withdrawal));
@@ -92,7 +92,7 @@ public class NewSignatureEventHandlerTest {
     @Test
     public void testHandleHasNotBeenBroadcasted() {
         WithdrawalDetails withdrawalDetails = new WithdrawalDetails("src account id", "to address", 0, System.currentTimeMillis(), 0);
-        WithdrawalConsensus withdrawalConsensus = new WithdrawalConsensus(new ArrayList<>(), withdrawalDetails);
+        WithdrawalConsensus withdrawalConsensus = new WithdrawalConsensus(new ArrayList<>(), withdrawalDetails,"random id");
         Transaction transaction = mock(Transaction.class);
         Pair<WithdrawalConsensus, Transaction> withdrawal = new Pair<>(withdrawalConsensus, transaction);
         when(transactionsStorage.get(anyString())).thenReturn(Result.Companion.of(() -> withdrawal));
@@ -112,7 +112,7 @@ public class NewSignatureEventHandlerTest {
     @Test
     public void testHandleBroadcastFailure() {
         WithdrawalDetails withdrawalDetails = new WithdrawalDetails("src account id", "to address", 0, System.currentTimeMillis(), 0);
-        WithdrawalConsensus withdrawalConsensus = new WithdrawalConsensus(new ArrayList<>(), withdrawalDetails);
+        WithdrawalConsensus withdrawalConsensus = new WithdrawalConsensus(new ArrayList<>(), withdrawalDetails,"random id");
         Transaction transaction = mock(Transaction.class);
         Pair<WithdrawalConsensus, Transaction> withdrawal = new Pair<>(withdrawalConsensus, transaction);
         when(transactionsStorage.get(anyString())).thenReturn(Result.Companion.of(() -> withdrawal));
@@ -135,7 +135,7 @@ public class NewSignatureEventHandlerTest {
     @Test
     public void testHandleGetSignaturesFail() {
         WithdrawalDetails withdrawalDetails = new WithdrawalDetails("src account id", "to address", 0, System.currentTimeMillis(), 0);
-        WithdrawalConsensus withdrawalConsensus = new WithdrawalConsensus(new ArrayList<>(), withdrawalDetails);
+        WithdrawalConsensus withdrawalConsensus = new WithdrawalConsensus(new ArrayList<>(), withdrawalDetails,"random id");
         Transaction transaction = mock(Transaction.class);
         when(transaction.getHashAsString()).thenReturn("abc");
         Pair<WithdrawalConsensus, Transaction> withdrawal = new Pair<>(withdrawalConsensus, transaction);

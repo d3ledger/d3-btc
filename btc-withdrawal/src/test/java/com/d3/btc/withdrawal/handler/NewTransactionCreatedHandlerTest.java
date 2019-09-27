@@ -66,7 +66,7 @@ public class NewTransactionCreatedHandlerTest {
                 System.currentTimeMillis(),
                 0);
 
-        WithdrawalConsensus withdrawalConsensus = new WithdrawalConsensus(new ArrayList<>(), withdrawalDetails);
+        WithdrawalConsensus withdrawalConsensus = new WithdrawalConsensus(new ArrayList<>(), withdrawalDetails,"random id");
         when(transactionsStorage.get(anyString())).thenReturn(Result.Companion.of(() -> {
             Transaction transaction = mock(Transaction.class);
             return new Pair<>(withdrawalConsensus, transaction);
@@ -91,7 +91,7 @@ public class NewTransactionCreatedHandlerTest {
                 1,
                 System.currentTimeMillis(),
                 0);
-        WithdrawalConsensus withdrawalConsensus = new WithdrawalConsensus(new ArrayList<>(), withdrawalDetails);
+        WithdrawalConsensus withdrawalConsensus = new WithdrawalConsensus(new ArrayList<>(), withdrawalDetails,"random id");
         when(transactionsStorage.get(anyString())).thenReturn(Result.Companion.of(() -> {
             Transaction transaction = mock(Transaction.class);
             return new Pair<>(withdrawalConsensus, transaction);
@@ -117,7 +117,7 @@ public class NewTransactionCreatedHandlerTest {
                 1,
                 System.currentTimeMillis(),
                 0);
-        WithdrawalConsensus withdrawalConsensus = new WithdrawalConsensus(new ArrayList<>(), withdrawalDetails);
+        WithdrawalConsensus withdrawalConsensus = new WithdrawalConsensus(new ArrayList<>(), withdrawalDetails,"random id");
         when(transactionsStorage.get(anyString())).thenReturn(Result.Companion.of(() -> {
             Transaction transaction = mock(Transaction.class);
             return new Pair<>(withdrawalConsensus, transaction);
