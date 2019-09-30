@@ -5,9 +5,6 @@
 
 package com.d3.btc.withdrawal.provider;
 
-import com.d3.btc.peer.SharedPeerGroup;
-import com.d3.btc.provider.BtcChangeAddressProvider;
-import com.d3.btc.provider.BtcRegisteredAddressesProvider;
 import com.d3.btc.provider.network.BtcRegTestConfigProvider;
 import com.d3.btc.storage.BtcAddressStorage;
 import com.d3.btc.withdrawal.transaction.WithdrawalDetails;
@@ -24,7 +21,6 @@ import java.util.*;
 
 import static org.junit.Assert.*;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anySet;
 import static org.mockito.Mockito.*;
 
 public class UTXOProviderTest {
@@ -32,7 +28,6 @@ public class UTXOProviderTest {
     private static final int CONFIDENCE_LEVEL = 6;
     private static Wallet wallet = mock(Wallet.class);
     private static Map<Sha256Hash, Integer> txHashAppearance = new HashMap<>();
-    private static SharedPeerGroup peerGroup = mock(SharedPeerGroup.class);
     private static UsedUTXOProvider usedUTXOProvider = new UsedUTXOProvider(mock(IrohaQueryHelper.class), mock(IrohaConsumer.class), "abc") {
 
         private final Set<String> usedUTXO = new HashSet<>();
@@ -45,7 +40,6 @@ public class UTXOProviderTest {
     private static UTXOProvider bitcoinUTXOProvider = spy(
             new UTXOProvider(
                     wallet,
-                    peerGroup,
                     new BtcRegTestConfigProvider(),
                     mock(BtcAddressStorage.class),
                     usedUTXOProvider
@@ -55,10 +49,9 @@ public class UTXOProviderTest {
     public static void setUp() {
         Sha256Hash mockHash = mock(Sha256Hash.class);
         txHashAppearance.put(mockHash, 1);
-        doReturn(true).when(bitcoinUTXOProvider).isAvailableOutput(anySet(), any(TransactionOutput.class));
+        doReturn(true).when(bitcoinUTXOProvider).isAvailableOutput(any(TransactionOutput.class));
         StoredBlock storedBlock = mock(StoredBlock.class);
         when(storedBlock.getHeight()).thenReturn(0);
-        when(peerGroup.getBlock(mockHash)).thenReturn(storedBlock);
     }
 
     /**
@@ -79,37 +72,12 @@ public class UTXOProviderTest {
         unspents.add(output);
         when(wallet.getUnspents()).thenReturn(unspents);
         Result<List<TransactionOutput>, Exception> result = bitcoinUTXOProvider.collectUnspents(
-                createDetails(), new HashSet<>(), amountToSpendSat, Integer.MAX_VALUE, CONFIDENCE_LEVEL);
+                createDetails(amountToSpendSat), CONFIDENCE_LEVEL);
         result.fold(transactionOutputs -> {
             assertEquals(1, transactionOutputs.size());
             assertTrue(transactionOutputs.contains(output));
             return null;
         }, Assertions::fail);
-    }
-
-    /**
-     * @given wallet with 1_000_000 SAT as one unspent
-     * @when try to collect 1000 SAT with available max UTXO height as -1
-     * @then exception is thrown because there is no UTXO with height less than -1
-     */
-    @Test
-    public void testCollectUnspentsBadHeight() {
-        long amountToSpendSat = 1000;
-        List<TransactionOutput> unspents = new ArrayList<>();
-        TransactionOutput output = createTransactionOutput();
-        Transaction transaction = mock(Transaction.class);
-        when(transaction.getAppearsInHashes()).thenReturn(txHashAppearance);
-        when(output.getParentTransaction()).thenReturn(transaction);
-        when(output.getValue()).thenReturn(Coin.valueOf(1_000_000L));
-        when(output.getParentTransactionDepthInBlocks()).thenReturn(CONFIDENCE_LEVEL);
-        unspents.add(output);
-        when(wallet.getUnspents()).thenReturn(unspents);
-        Result<List<TransactionOutput>, Exception> result = bitcoinUTXOProvider.collectUnspents(
-                createDetails(), new HashSet<>(), amountToSpendSat, -1, CONFIDENCE_LEVEL);
-        result.fold(transactionOutputs -> {
-            fail();
-            return null;
-        }, e -> null);
     }
 
     /**
@@ -133,7 +101,7 @@ public class UTXOProviderTest {
         }
         when(wallet.getUnspents()).thenReturn(unspents);
         Result<List<TransactionOutput>, Exception> result = bitcoinUTXOProvider.collectUnspents(
-                createDetails(), new HashSet<>(), amountToSpendSat, Integer.MAX_VALUE, CONFIDENCE_LEVEL);
+                createDetails(amountToSpendSat), CONFIDENCE_LEVEL);
         result.fold(transactionOutputs -> {
             assertEquals(2, transactionOutputs.size());
             assertEquals(18_000, bitcoinUTXOProvider.getTotalUnspentValue(transactionOutputs));
@@ -168,7 +136,7 @@ public class UTXOProviderTest {
         List<TransactionOutput> unspents = new ArrayList<>(Arrays.asList(outputSmallValue, outputBigValue));
         when(wallet.getUnspents()).thenReturn(unspents);
         Result<List<TransactionOutput>, Exception> result = bitcoinUTXOProvider.collectUnspents(
-                createDetails(), new HashSet<>(), amountToSpendSat, Integer.MAX_VALUE, CONFIDENCE_LEVEL);
+                createDetails(amountToSpendSat), CONFIDENCE_LEVEL);
         result.fold(transactionOutputs -> {
             assertEquals(1, transactionOutputs.size());
             assertTrue(transactionOutputs.contains(outputBigValue));
@@ -196,7 +164,7 @@ public class UTXOProviderTest {
         unspents.add(output);
         when(wallet.getUnspents()).thenReturn(unspents);
         Result<List<TransactionOutput>, Exception> result = bitcoinUTXOProvider.collectUnspents(
-                createDetails(), new HashSet<>(), amountToSpendSat, Integer.MAX_VALUE, CONFIDENCE_LEVEL);
+                createDetails(amountToSpendSat), CONFIDENCE_LEVEL);
         result.fold(transactionOutputs -> {
             fail();
             return null;
@@ -223,7 +191,7 @@ public class UTXOProviderTest {
         unspents.add(output);
         when(wallet.getUnspents()).thenReturn(unspents);
         Result<List<TransactionOutput>, Exception> result = bitcoinUTXOProvider.collectUnspents(
-                createDetails(), new HashSet<>(), amountToSpendSat, Integer.MAX_VALUE, CONFIDENCE_LEVEL);
+                createDetails(amountToSpendSat), CONFIDENCE_LEVEL);
         result.fold(transactionOutputs -> {
             fail();
             return null;
@@ -251,7 +219,7 @@ public class UTXOProviderTest {
         List<TransactionOutput> unspents = new ArrayList<>(Arrays.asList(smallOutput, evenSmallerOutput));
         when(wallet.getUnspents()).thenReturn(unspents);
         Result<List<TransactionOutput>, Exception> result = bitcoinUTXOProvider.collectUnspents(
-                createDetails(), new HashSet<>(), amountToSpendSat, Integer.MAX_VALUE, CONFIDENCE_LEVEL);
+                createDetails(amountToSpendSat), CONFIDENCE_LEVEL);
         result.fold(transactionOutputs -> {
             fail();
             return null;
@@ -281,7 +249,7 @@ public class UTXOProviderTest {
         }
         when(wallet.getUnspents()).thenReturn(unspents);
         Result<List<TransactionOutput>, Exception> result = bitcoinUTXOProvider.collectUnspents(
-                createDetails(), new HashSet<>(), amountToSpendSat, Integer.MAX_VALUE, CONFIDENCE_LEVEL);
+                createDetails(amountToSpendSat), CONFIDENCE_LEVEL);
         result.fold(transactionOutputs -> {
             fail();
             return null;
@@ -297,10 +265,10 @@ public class UTXOProviderTest {
         return output;
     }
 
-    private WithdrawalDetails createDetails() {
+    private WithdrawalDetails createDetails(long amountSat) {
         return new WithdrawalDetails("test@account",
                 "test address",
-                666,
+                amountSat,
                 System.currentTimeMillis(), 0);
     }
 }

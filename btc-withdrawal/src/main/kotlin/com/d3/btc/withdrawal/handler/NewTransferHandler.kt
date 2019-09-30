@@ -5,7 +5,6 @@
 
 package com.d3.btc.withdrawal.handler
 
-import com.d3.btc.fee.CurrentFeeRate
 import com.d3.btc.helper.address.isValidBtcAddress
 import com.d3.btc.helper.currency.btcToSat
 import com.d3.btc.withdrawal.config.BtcWithdrawalConfig
@@ -40,7 +39,7 @@ class NewTransferHandler(
      */
     fun handleTransferCommand(
         transferCommand: Commands.TransferAsset,
-        feeInBtc:BigDecimal ,
+        feeInBtc: BigDecimal,
         withdrawalTime: Long
     ) {
         if (transferCommand.destAccountId != btcWithdrawalConfig.withdrawalCredential.accountId) {
@@ -61,7 +60,6 @@ class NewTransferHandler(
                     "fee:$fee " +
                     "hash:${withdrawalDetails.irohaFriendlyHashCode()})"
         }
-        //TODO check withdrawal before this call
         broadcastsProvider.hasBeenBroadcasted(withdrawalDetails)
             .fold({ broadcasted ->
                 if (broadcasted) {
@@ -80,13 +78,6 @@ class NewTransferHandler(
      * @param withdrawalDetails - details of withdrawal
      */
     protected fun checkAndStartConsensus(withdrawalDetails: WithdrawalDetails) {
-        if (!CurrentFeeRate.isPresent()) {
-            logger.warn { "Cannot execute transfer. Fee rate was not set." }
-            btcRollbackService.rollback(
-                withdrawalDetails, "Not able to transfer yet"
-            )
-            return
-        }
         // Check if withdrawal has valid destination address
         if (!isValidBtcAddress(withdrawalDetails.toAddress)) {
             logger.warn { "Cannot execute transfer. Destination '${withdrawalDetails.toAddress}' is not a valid base58 address." }
@@ -116,6 +107,7 @@ class NewTransferHandler(
         withdrawalConsensusProvider.createConsensusData(withdrawalDetails).fold({
             logger.info("Consensus data for $withdrawalDetails has been created")
         }, { ex ->
+            //TODO need to rollback UTXO as well
             logger.error("Cannot create consensus for withdrawal $withdrawalDetails", ex)
             btcRollbackService.rollback(withdrawalDetails, "Cannot create consensus")
         })

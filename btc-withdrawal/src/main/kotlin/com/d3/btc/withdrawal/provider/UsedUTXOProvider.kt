@@ -1,33 +1,29 @@
 package com.d3.btc.withdrawal.provider
 
-import com.d3.commons.util.GsonInstance
-import com.d3.btc.helper.input.irohaKey
+import com.d3.btc.helper.iroha.isCASError
 import com.d3.btc.helper.output.irohaKey
 import com.d3.btc.withdrawal.transaction.WithdrawalDetails
 import com.d3.commons.sidechain.iroha.consumer.IrohaConsumer
 import com.d3.commons.sidechain.iroha.util.IrohaQueryHelper
-import com.d3.commons.util.irohaEscape
 import com.github.kittinunf.result.Result
-import com.github.kittinunf.result.flatMap
 import com.github.kittinunf.result.map
-import com.google.gson.Gson
+import jp.co.soramitsu.iroha.java.TransactionBuilder
 import mu.KLogging
-import org.bitcoinj.core.Transaction
 import org.bitcoinj.core.TransactionOutput
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
+
+private const val REMOVED_UTXO_KEY = "removed"
 
 @Component
 open class UsedUTXOProvider(
     @Qualifier("withdrawalQueryHelper")
     private val withdrawalQueryHelper: IrohaQueryHelper,
-    @Qualifier("withdrawalConsumer")
-    private val withdrawalConsumer: IrohaConsumer,
+    @Qualifier("consensusIrohaConsumer")
+    private val consensusIrohaConsumer: IrohaConsumer,
     @Qualifier("utxoStorageAccount")
     private val utxoStorageAccount: String
 ) {
-
-    private val gson = GsonInstance.get()
 
     /**
      * Checks if a given output has been used already
@@ -37,12 +33,10 @@ open class UsedUTXOProvider(
      */
     fun isUsed(withdrawalDetails: WithdrawalDetails, output: TransactionOutput): Result<Boolean, Exception> {
         return withdrawalQueryHelper.getAccountDetails(
-            utxoStorageAccount, withdrawalConsumer.creator, output.irohaKey()
+            utxoStorageAccount, consensusIrohaConsumer.creator, output.irohaKey()
         ).map { value ->
             if (value.isPresent) {
-                val utxoDetails = gson.fromJson(value.get(), UTXODetails::class.java)
-                // UTXO is considered free to use if it's removed or it was created for the same withdrawal transaction
-                !(utxoDetails.removed || utxoDetails.withdrawalTime == withdrawalDetails.withdrawalTime)
+                !(value.get() == REMOVED_UTXO_KEY || value.get() == withdrawalDetails.irohaFriendlyHashCode())
             } else {
                 false
             }
@@ -50,42 +44,56 @@ open class UsedUTXOProvider(
     }
 
     /**
+     * Adds UTXO registration Iroha commands
+     * @param transactionBuilder - transaction builder to add commands to
+     * @param withdrawalDetails - detail of withdrawal
+     * @param unspents - unspents to register
+     */
+    fun addRegisterUTXOCommands(
+        transactionBuilder: TransactionBuilder,
+        withdrawalDetails: WithdrawalDetails,
+        unspents: List<TransactionOutput>
+    ) {
+        unspents.forEach { utxo ->
+            transactionBuilder.setAccountDetail(
+                utxoStorageAccount,
+                utxo.irohaKey(),
+                withdrawalDetails.irohaFriendlyHashCode()
+            )
+        }
+    }
+
+    /**
      * Unregisters UTXO
-     * @param transaction - transaction which UTXOs will be unregistered
+     * @param utxoKeys - UTXO keys to remove
      * @param withdrawalDetails - details of withdrawal
      * @return result of operation
      * */
     fun unregisterUsedUTXO(
-        transaction: Transaction,
+        utxoKeys: List<String>,
         withdrawalDetails: WithdrawalDetails
-    ): Result<Unit, Exception> {
-        return withdrawalConsumer.getConsumerQuorum().flatMap { quorum ->
-            val transactionBuilder = jp.co.soramitsu.iroha.java.Transaction
-                .builder(withdrawalConsumer.creator)
-                .setCreatedTime(withdrawalDetails.withdrawalTime)
-                .setQuorum(quorum)
-            transaction.inputs.forEach { input ->
-                transactionBuilder.setAccountDetail(
-                    utxoStorageAccount,
-                    input.irohaKey(),
-                    gson.toJson(UTXODetails.remove(withdrawalDetails.withdrawalTime)).irohaEscape()
-                )
-            }
-            withdrawalConsumer.send(transactionBuilder.build())
-        }.map {
-            logger.info("The following transaction inputs have been unregistered\n$transaction")
-            Unit
+    ) {
+        val transactionBuilder = jp.co.soramitsu.iroha.java.Transaction
+            .builder(consensusIrohaConsumer.creator)
+        utxoKeys.forEach { utxoItem ->
+            transactionBuilder.compareAndSetAccountDetail(
+                utxoStorageAccount,
+                utxoItem,
+                REMOVED_UTXO_KEY,
+                withdrawalDetails.irohaFriendlyHashCode()
+            )
         }
+        consensusIrohaConsumer.send(transactionBuilder.build())
+            .fold({
+                logger.info("UTXO of withdrawal have been unregistered")
+            }, { ex ->
+                if (isCASError(ex)) {
+                    logger.info("UTXO of withdrawal have been unregistered by someone else.")
+                } else {
+                    logger.error("Cannot unregister UTXO of withdrawal", ex)
+                }
+            })
     }
 
     companion object : KLogging()
-}
-
-data class UTXODetails(val withdrawalTime: Long, val removed: Boolean) {
-
-    companion object {
-        fun remove(withdrawalTime: Long) = UTXODetails(withdrawalTime, true)
-
-        fun register(withdrawalTime: Long) = UTXODetails(withdrawalTime, false)
-    }
 }

@@ -6,9 +6,7 @@
 package com.d3.btc.withdrawal.transaction
 
 import com.d3.btc.helper.address.createMsRedeemScript
-import com.d3.btc.helper.address.outPutToBase58Address
 import com.d3.btc.helper.address.toEcPubKey
-import com.d3.btc.helper.input.getConnectedOutput
 import com.d3.btc.provider.BtcChangeAddressProvider
 import com.d3.btc.provider.BtcRegisteredAddressesProvider
 import com.d3.btc.wallet.safeLoad
@@ -16,13 +14,13 @@ import com.d3.btc.withdrawal.init.WITHDRAWAL_OPERATION
 import com.d3.commons.model.D3ErrorException
 import com.d3.commons.util.hex
 import com.github.kittinunf.result.Result
-import com.github.kittinunf.result.fanout
 import com.github.kittinunf.result.flatMap
 import com.github.kittinunf.result.map
 import mu.KLogging
 import org.bitcoinj.core.ECKey
 import org.bitcoinj.core.Transaction
 import org.bitcoinj.wallet.Wallet
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 
 /*
@@ -31,18 +29,22 @@ import org.springframework.stereotype.Component
 @Component
 class TransactionSigner(
     private val btcRegisteredAddressesProvider: BtcRegisteredAddressesProvider,
-    private val btcChangeAddressesProvider: BtcChangeAddressProvider,
-    private val transfersWallet: Wallet
+    private val btcChangeAddressesProvider: BtcChangeAddressProvider
 ) {
     /**
      * Signs transaction using available private keys from wallet
      *
      * @param tx - transaction to sign
      * @param keysWalletPath - path to wallet file. Used to take private keys
+     * @param withdrawalConsensus - withdrawal consensus data
      * @return - result with list full of signatures in form "input index"->"signatureHex hex"
      */
-    fun sign(tx: Transaction, keysWalletPath: String): Result<List<InputSignature>, Exception> {
-        return Result.of { signUnsafe(tx, safeLoad(keysWalletPath)) }
+    fun sign(
+        tx: Transaction,
+        keysWalletPath: String,
+        withdrawalConsensus: WithdrawalConsensus
+    ): Result<List<InputSignature>, Exception> {
+        return Result.of { signUnsafe(tx, safeLoad(keysWalletPath), withdrawalConsensus) }
     }
 
     /**
@@ -71,12 +73,16 @@ class TransactionSigner(
     }
 
     // Main signing function
-    private fun signUnsafe(tx: Transaction, wallet: Wallet): List<InputSignature> {
+    private fun signUnsafe(
+        tx: Transaction,
+        wallet: Wallet,
+        withdrawalConsensus: WithdrawalConsensus
+    ): List<InputSignature> {
         var inputIndex = 0
         val signatures = ArrayList<InputSignature>()
         tx.inputs.forEach { input ->
-            val connectedOutput = input.getConnectedOutput(transfersWallet)
-            getUsedPubKeys(outPutToBase58Address(connectedOutput)).fold({ pubKeys ->
+            val connectedOutput = withdrawalConsensus.getConnectedOutput(input)
+            getUsedPubKeys(connectedOutput.address).fold({ pubKeys ->
                 val keyPair = getPrivPubKeyPair(pubKeys, wallet)
                 if (keyPair != null) {
                     val redeem = createMsRedeemScript(pubKeys)

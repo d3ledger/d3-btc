@@ -110,6 +110,14 @@ open class BtcAddressStorage(
     fun isOurClient(address: String) = clientAddressesStorage.contains(address)
 
     /**
+     * Checks if address is a client address or a change address
+     * @param address - address to check
+     * @return true if address is a client address or a change address
+     */
+    @Synchronized
+    fun isWatchedAddress(address: String) = isChangeAddress(address) || isOurClient(address)
+
+    /**
      * Returns account id related to address
      * @param address - address that is related to some client
      * @return account id or null if there is no such address among client addresses

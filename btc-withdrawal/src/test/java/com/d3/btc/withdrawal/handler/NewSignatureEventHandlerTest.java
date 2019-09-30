@@ -8,18 +8,19 @@ import com.d3.btc.withdrawal.service.BtcRollbackService;
 import com.d3.btc.withdrawal.statistics.WithdrawalStatistics;
 import com.d3.btc.withdrawal.transaction.SignCollector;
 import com.d3.btc.withdrawal.transaction.TransactionsStorage;
+import com.d3.btc.withdrawal.transaction.WithdrawalConsensus;
 import com.d3.btc.withdrawal.transaction.WithdrawalDetails;
 import com.d3.commons.config.IrohaCredentialRawConfig;
 import com.github.kittinunf.result.Result;
 import iroha.protocol.Commands;
 import kotlin.Pair;
-import kotlin.Unit;
 import org.bitcoinj.core.PeerGroup;
 import org.bitcoinj.core.Transaction;
 import org.bitcoinj.wallet.Wallet;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.d3.btc.config.BitcoinConfigKt.BTC_SIGN_COLLECT_DOMAIN;
@@ -33,7 +34,6 @@ public class NewSignatureEventHandlerTest {
     private PeerGroup peerGroup;
     private BroadcastsProvider broadcastsProvider;
     private BtcRollbackService btcRollbackService;
-    private UTXOProvider utxoProvider;
     private NewSignatureEventHandler newSignatureEventHandler;
     private Wallet transferWallet;
     private BtcWithdrawalConfig btcWithdrawalConfig;
@@ -52,7 +52,6 @@ public class NewSignatureEventHandlerTest {
         peerGroup = mock(PeerGroup.class);
         broadcastsProvider = mock(BroadcastsProvider.class);
         btcRollbackService = mock(BtcRollbackService.class);
-        utxoProvider = mock(UTXOProvider.class);
 
         newSignatureEventHandler = spy(new NewSignatureEventHandler(
                 transferWallet,
@@ -60,7 +59,6 @@ public class NewSignatureEventHandlerTest {
                 withdrawalStatistics,
                 signCollector,
                 transactionsStorage,
-                utxoProvider,
                 btcRollbackService,
                 peerGroup,
                 broadcastsProvider));
@@ -74,8 +72,9 @@ public class NewSignatureEventHandlerTest {
     @Test
     public void testHandleHasBeenBroadcasted() {
         WithdrawalDetails withdrawalDetails = new WithdrawalDetails("src account id", "to address", 0, System.currentTimeMillis(), 0);
+        WithdrawalConsensus withdrawalConsensus = new WithdrawalConsensus(new ArrayList<>(), withdrawalDetails,"random id");
         Transaction transaction = mock(Transaction.class);
-        Pair<WithdrawalDetails, Transaction> withdrawal = new Pair<>(withdrawalDetails, transaction);
+        Pair<WithdrawalConsensus, Transaction> withdrawal = new Pair<>(withdrawalConsensus, transaction);
         when(transactionsStorage.get(anyString())).thenReturn(Result.Companion.of(() -> withdrawal));
         when(broadcastsProvider.hasBeenBroadcasted(any(WithdrawalDetails.class))).thenReturn(Result.Companion.of(() -> true));
         doNothing().when(newSignatureEventHandler).broadcastIfEnoughSignatures(any(), any());
@@ -93,8 +92,9 @@ public class NewSignatureEventHandlerTest {
     @Test
     public void testHandleHasNotBeenBroadcasted() {
         WithdrawalDetails withdrawalDetails = new WithdrawalDetails("src account id", "to address", 0, System.currentTimeMillis(), 0);
+        WithdrawalConsensus withdrawalConsensus = new WithdrawalConsensus(new ArrayList<>(), withdrawalDetails,"random id");
         Transaction transaction = mock(Transaction.class);
-        Pair<WithdrawalDetails, Transaction> withdrawal = new Pair<>(withdrawalDetails, transaction);
+        Pair<WithdrawalConsensus, Transaction> withdrawal = new Pair<>(withdrawalConsensus, transaction);
         when(transactionsStorage.get(anyString())).thenReturn(Result.Companion.of(() -> withdrawal));
         when(broadcastsProvider.hasBeenBroadcasted(any(WithdrawalDetails.class))).thenReturn(Result.Companion.of(() -> false));
         doNothing().when(newSignatureEventHandler).broadcastIfEnoughSignatures(any(), any());
@@ -112,10 +112,10 @@ public class NewSignatureEventHandlerTest {
     @Test
     public void testHandleBroadcastFailure() {
         WithdrawalDetails withdrawalDetails = new WithdrawalDetails("src account id", "to address", 0, System.currentTimeMillis(), 0);
+        WithdrawalConsensus withdrawalConsensus = new WithdrawalConsensus(new ArrayList<>(), withdrawalDetails,"random id");
         Transaction transaction = mock(Transaction.class);
-        Pair<WithdrawalDetails, Transaction> withdrawal = new Pair<>(withdrawalDetails, transaction);
+        Pair<WithdrawalConsensus, Transaction> withdrawal = new Pair<>(withdrawalConsensus, transaction);
         when(transactionsStorage.get(anyString())).thenReturn(Result.Companion.of(() -> withdrawal));
-        when(utxoProvider.unregisterUnspents(any(), any())).thenReturn(Result.Companion.of(() -> Unit.INSTANCE));
         when(broadcastsProvider.hasBeenBroadcasted(any(WithdrawalDetails.class))).thenReturn(Result.Companion.of(() -> {
             throw new RuntimeException("Broadcast failure");
         }));
@@ -124,8 +124,7 @@ public class NewSignatureEventHandlerTest {
         SetAccountDetailEvent event = new SetAccountDetailEvent(newSignatureDetail, signatureCollectorAccountId);
         newSignatureEventHandler.handle(event);
         verify(newSignatureEventHandler, never()).broadcastIfEnoughSignatures(any(), any());
-        verify(btcRollbackService).rollback(any(), any());
-        verify(utxoProvider).unregisterUnspents(any(), any());
+        verify(btcRollbackService).rollback(any(), any(), any());
     }
 
     /**
@@ -136,11 +135,11 @@ public class NewSignatureEventHandlerTest {
     @Test
     public void testHandleGetSignaturesFail() {
         WithdrawalDetails withdrawalDetails = new WithdrawalDetails("src account id", "to address", 0, System.currentTimeMillis(), 0);
+        WithdrawalConsensus withdrawalConsensus = new WithdrawalConsensus(new ArrayList<>(), withdrawalDetails,"random id");
         Transaction transaction = mock(Transaction.class);
         when(transaction.getHashAsString()).thenReturn("abc");
-        Pair<WithdrawalDetails, Transaction> withdrawal = new Pair<>(withdrawalDetails, transaction);
+        Pair<WithdrawalConsensus, Transaction> withdrawal = new Pair<>(withdrawalConsensus, transaction);
         when(transactionsStorage.get(anyString())).thenReturn(Result.Companion.of(() -> withdrawal));
-        when(utxoProvider.unregisterUnspents(any(), any())).thenReturn(Result.Companion.of(() -> Unit.INSTANCE));
         when(broadcastsProvider.hasBeenBroadcasted(any(WithdrawalDetails.class))).thenReturn(Result.Companion.of(() -> false));
         when(signCollector.getSignatures(anyString())).thenReturn(Result.Companion.of(() -> {
             throw new RuntimeException("Cannot get signatures");
@@ -149,7 +148,6 @@ public class NewSignatureEventHandlerTest {
         SetAccountDetailEvent event = new SetAccountDetailEvent(newSignatureDetail, signatureCollectorAccountId);
         newSignatureEventHandler.handle(event);
         verify(newSignatureEventHandler).broadcastIfEnoughSignatures(any(), any());
-        verify(btcRollbackService).rollback(any(), any());
-        verify(utxoProvider).unregisterUnspents(any(), any());
+        verify(btcRollbackService).rollback(any(), any(), any());
     }
 }

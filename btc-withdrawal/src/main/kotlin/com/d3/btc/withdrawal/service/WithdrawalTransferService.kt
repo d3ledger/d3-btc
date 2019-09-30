@@ -5,14 +5,12 @@
 
 package com.d3.btc.withdrawal.service
 
-import com.d3.btc.config.BitcoinConfig
+import com.d3.btc.provider.network.BtcNetworkConfigProvider
 import com.d3.btc.withdrawal.statistics.WithdrawalStatistics
 import com.d3.btc.withdrawal.transaction.TransactionCreator
 import com.d3.btc.withdrawal.transaction.WithdrawalConsensus
 import com.d3.btc.withdrawal.transaction.WithdrawalDetails
-import com.github.kittinunf.result.Result
 import com.github.kittinunf.result.failure
-import com.github.kittinunf.result.flatMap
 import com.github.kittinunf.result.map
 import mu.KLogging
 import org.bitcoinj.core.Transaction
@@ -24,9 +22,9 @@ import org.springframework.stereotype.Component
 @Component
 class WithdrawalTransferService(
     private val withdrawalStatistics: WithdrawalStatistics,
-    private val bitcoinConfig: BitcoinConfig,
     private val transactionCreator: TransactionCreator,
-    private val btcRollbackService: BtcRollbackService
+    private val btcRollbackService: BtcRollbackService,
+    private val btcNetworkConfigProvider: BtcNetworkConfigProvider
 ) {
     /**
      * Starts withdrawal process. Consists of the following steps:
@@ -34,26 +32,26 @@ class WithdrawalTransferService(
      * 2) Call all "on new transaction" listeners
      * 3) Collect transaction input signatures using current node controlled private keys
      * 4) Mark created transaction as unsigned
-     * @param withdrawalDetails - details of withdrawal
+     * @param withdrawalConsensus - withdrawal consensus data
      * */
-    fun withdraw(
-        withdrawalDetails: WithdrawalDetails,
-        withdrawalConsensus: WithdrawalConsensus
-    ) {
-        Result.of {
-            registerWithdrawal(withdrawalDetails)
-        }.flatMap {
-            transactionCreator.createTransaction(
-                withdrawalDetails,
-                withdrawalConsensus.availableHeight,
-                bitcoinConfig.confidenceLevel
-            )
-        }.map { tx ->
+    fun withdraw(withdrawalConsensus: WithdrawalConsensus) {
+        var savedTx: Transaction? = null
+        transactionCreator.createTransaction(withdrawalConsensus).map { tx ->
+            savedTx = tx
+            registerWithdrawal(withdrawalConsensus.withdrawalDetails)
             registerTx(tx)
         }.failure { ex ->
-            btcRollbackService.rollback(withdrawalDetails, "Cannot create Bitcoin transaction")
+            val rollbackReason = "Cannot create Bitcoin transaction"
+            if (savedTx != null) {
+                btcRollbackService.rollback(withdrawalConsensus.withdrawalDetails, rollbackReason, savedTx!!)
+            } else {
+                btcRollbackService.rollback(withdrawalConsensus.withdrawalDetails, rollbackReason)
+            }
             withdrawalStatistics.incFailedTransfers()
-            logger.error("Cannot create withdrawal transaction", ex)
+            logger.error(
+                "Cannot create Bitcoin transaction for withdrawal ${withdrawalConsensus.withdrawalDetails}",
+                ex
+            )
         }
     }
 

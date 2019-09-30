@@ -5,42 +5,67 @@
 
 package com.d3.btc.withdrawal.transaction
 
-import com.squareup.moshi.Moshi
+import com.d3.btc.helper.address.outPutToBase58Address
+import com.d3.commons.util.GsonInstance
+import com.d3.commons.util.hex
+import com.d3.commons.util.unHex
+import org.bitcoinj.core.TransactionInput
+import org.bitcoinj.core.TransactionOutput
 
-private val withdrawalConsensusJsonAdapter =
-    Moshi.Builder().build().adapter(WithdrawalConsensus::class.java)
+private val gson = GsonInstance.get()
 
 /**
  * Data class that holds all the information to decide how withdrawal transaction must be created
  */
-data class WithdrawalConsensus(val availableHeight: Int, val peers: Int) {
+data class WithdrawalConsensus(
+    val utxo: List<SerializableUTXO>,
+    val withdrawalDetails: WithdrawalDetails,
+    val id: String
+) {
+    fun toJson() = gson.toJson(this)!!
 
-    fun toJson() = withdrawalConsensusJsonAdapter.toJson(this)
+    /**
+     * Returns connected output by given input
+     * @param input - input that is bound with some output
+     * @return output
+     */
+    fun getConnectedOutput(input: TransactionInput): ConnectedOutput {
+        val connectedUTXO =
+            utxo.first { it.index == input.outpoint.index.toInt() && it.parentTxHash.toLowerCase() == String.hex(input.outpoint.hash.bytes).toLowerCase() }
+        return ConnectedOutput(connectedUTXO.address, String.unHex(connectedUTXO.scriptHex))
+    }
 
     companion object {
+        fun fromJson(json: String) = gson.fromJson(json, WithdrawalConsensus::class.java)!!
+    }
+}
 
-        /**
-         * Turns JSON string into withdrawal
-         * @param json - withdrawal data in JSON format
-         * @return withdrawal data
-         */
-        fun fromJson(json: String) =
-            withdrawalConsensusJsonAdapter.fromJson(json)!!
+/**
+ * Data class that represents connected output data
+ */
+data class ConnectedOutput(val address: String, val script: ByteArray)
 
-        /**
-         * Takes consensus data from all the notaries and creates common consensus solution
-         * @param consensusData - consensus data from all the notaries
-         * @return common consensus
-         */
-        fun createCommonConsensus(consensusData: List<WithdrawalConsensus>): WithdrawalConsensus {
-            if (consensusData.isEmpty()) {
-                throw IllegalStateException("Cannot create withdrawal consensus")
-            }
-            val commonAvailableHeight =
-                consensusData.minBy { withdrawalConsensus -> withdrawalConsensus.availableHeight }!!.availableHeight
-            val commonPeers =
-                consensusData.minBy { withdrawalConsensus -> withdrawalConsensus.peers }!!.peers
-            return WithdrawalConsensus(commonAvailableHeight, commonPeers)
+/**
+ * Data class that represents UTXO in a well serializable format
+ */
+data class SerializableUTXO(
+    val inputHex: String,
+    val index: Int,
+    val parentTxHash: String,
+    val amountSat: Long,
+    val address: String,
+    val scriptHex: String
+) {
+    companion object {
+        fun toSerializableUTXO(input: TransactionInput, output: TransactionOutput): SerializableUTXO {
+            return SerializableUTXO(
+                index = output.index,
+                parentTxHash = String.hex(output.parentTransactionHash!!.bytes),
+                scriptHex = String.hex(output.scriptBytes),
+                amountSat = output.value.value,
+                inputHex = String.hex(input.bitcoinSerialize()),
+                address = outPutToBase58Address(output)
+            )
         }
     }
 }

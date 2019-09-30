@@ -54,7 +54,7 @@ class BitcoinTransactionListener(
 
     //Checks if tx contains our addresses in its outputs
     private fun hasOurAddresses(tx: Transaction) = tx.outputs.map { out -> outPutToBase58Address(out) }
-        .any { address -> btcAddressStorage.isChangeAddress(address) || btcAddressStorage.isOurClient(address) }
+        .any { address -> btcAddressStorage.isWatchedAddress(address) }
 
     /**
      * Logger

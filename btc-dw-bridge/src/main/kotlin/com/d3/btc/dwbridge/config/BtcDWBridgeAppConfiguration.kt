@@ -312,16 +312,18 @@ class BtcDWBridgeAppConfiguration {
         broadcastTransactionHandler: BroadcastTransactionHandler,
         newTransactionCreatedHandler: NewTransactionCreatedHandler,
         newSignatureEventHandler: NewSignatureEventHandler,
-        newConsensusDataHandler: NewConsensusDataHandler,
+        newConsensusDataHandler: ConsensusDataCreatedHandler,
         newBtcClientRegistrationHandler: NewBtcClientRegistrationHandler,
-        newChangeAddressHandler: NewBtcChangeAddressWithdrawalHandler
+        newChangeAddressHandler: NewBtcChangeAddressWithdrawalHandler,
+        rollbackHandler: RollbackHandler
     ) = listOf(
         broadcastTransactionHandler,
         newTransactionCreatedHandler,
         newSignatureEventHandler,
         newConsensusDataHandler,
         newBtcClientRegistrationHandler,
-        newChangeAddressHandler
+        newChangeAddressHandler,
+        rollbackHandler
     )
 
     @Bean

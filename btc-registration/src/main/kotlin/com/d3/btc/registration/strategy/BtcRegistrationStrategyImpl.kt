@@ -5,6 +5,7 @@
 
 package com.d3.btc.registration.strategy
 
+import com.d3.btc.helper.iroha.isCASError
 import com.d3.btc.provider.BtcFreeAddressesProvider
 import com.d3.btc.provider.BtcRegisteredAddressesProvider
 import com.d3.btc.provider.account.IrohaBtcAccountRegistrator
@@ -18,8 +19,6 @@ import com.github.kittinunf.result.map
 import mu.KLogging
 import org.springframework.stereotype.Component
 
-private const val BAD_OLD_VALUE_ERROR_CODE = 4
-private const val COMPARE_AND_SET_DETAIL_COMMAND = "compareAndSetAccountDetail"
 private const val MAX_CAS_ATTEMPTS = 15
 
 //Strategy for registering BTC addresses
@@ -114,16 +113,6 @@ class BtcRegistrationStrategyImpl(
         }
         return result!!
     }
-
-    /**
-     * Checks if a given exception is related to CAS issues
-     * @param ex - exception to check
-     * @return true if it's related to CAS issues
-     */
-    private fun isCASError(ex: Exception) =
-        ex is ToriiErrorResponseException &&
-                ex.toriiResponse.errorCode == BAD_OLD_VALUE_ERROR_CODE &&
-                ex.toriiResponse.errOrCmdName == COMPARE_AND_SET_DETAIL_COMMAND
 
     /**
      * Get number of free addresses.
