@@ -11,10 +11,6 @@ services:
       - 19010:9010
     env_file:
       - ../deploy/.env-default-jvm-options
-    environment:
-      WAIT_HOSTS: d3-iroha:50051
-      WAIT_BEFORE_HOSTS: 10
-      WAIT_HOSTS_TIMEOUT: 60
     networks:
       - d3-network
 
@@ -27,10 +23,6 @@ services:
       - 19011:9010
     env_file:
       - ../deploy/.env-default-jvm-options
-    environment:
-      WAIT_HOSTS: d3-rmq:5672, d3-iroha:50051
-      WAIT_BEFORE_HOSTS: 10
-      WAIT_HOSTS_TIMEOUT: 60
     volumes:
       - ../deploy/bitcoin:/deploy/bitcoin
     depends_on:
