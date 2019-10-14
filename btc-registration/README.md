@@ -1,5 +1,5 @@
 ## Bitcoin registration service
-The Bitcoin registration service (or simply `btc-registration`) is a service that responsible for assigning Bitcoin MultiSig addresses to Iroha clients.
+The Bitcoin registration service (or simply `btc-registration`) is a REST based service that responsible for assigning Bitcoin MultiSig addresses to Iroha clients.
 ### Configuration overview (registration.properties)
 * `btc-registration.registrationAccount` - Iroha account that registers clients in D3
 * `btc-registration.mstRegistrationAccount` - Iroha account that creates Bitcoin MultiSig addresses
