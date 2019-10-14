@@ -34,7 +34,7 @@ MultiSig address generation works this way:
 #### Implementation details/issues 
 Address generation is a time-consuming process. It may take approximately 10-15 seconds to collect all the keys. To speed up the registration process, we generate MultiSig addresses up front.
 
-[More details](https://github.com/d3ledger/d3-btc/blob/develop/btc-address-generation/README.md)
+[More details](https://github.com/d3ledger/d3-btc/tree/develop/btc-address-generation)
 
 ## Client Registration 
 The service assigns Bitcoin MultiSig addresses to Iroha accounts. 
@@ -42,14 +42,14 @@ The service assigns Bitcoin MultiSig addresses to Iroha accounts.
 Client sends a registration request to a particular Notary node. 
 Notary chooses MultiSig address and creates a transaction in Iroha to create a "client to Bitcoin address" relationship.  
 
-[More details](https://github.com/d3ledger/d3-btc/blob/develop/btc-registration/README.md)
+[More details](https://github.com/d3ledger/d3-btc/tree/develop/btc-registration)
 
 ## Deposit Service
 Each Notary listens to transactions of the MultiSig addresses assigned to our clients in the Bitcoin network. Whenever we see a transaction with coins being sent to one of the addresses, Notaries increase its balance.
 
 Iroha transfer transaction is formed as a multi-signature transaction that has two commands:`AddAssetQuantity` and `TransferAsstet`.
 
-[More details](https://github.com/d3ledger/d3-btc/blob/develop/btc-deposit/README.md)
+[More details](https://github.com/d3ledger/d3-btc/tree/develop/btc-deposit)
 
 ## Withdrawal Service
 The withdrawal process works the following way: 
@@ -62,7 +62,7 @@ The withdrawal process works the following way:
 
 The change address is a special MultiSig address used and controlled by Notaries to collect the change.   
 
-[More details](https://github.com/d3ledger/d3-btc/blob/develop/btc-withdrawal/README.md)
+[More details](https://github.com/d3ledger/d3-btc/tree/develop/btc-withdrawal)
 
 ## Testing
 There is a dedicated endpoint for testing purposes. Visit [Swagger](http://127.0.0.1:18981/apidocs) for more details.
