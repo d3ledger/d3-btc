@@ -5,13 +5,13 @@
 
 * SPV - a.k.a Simplified Payment Verification. A special mode of `BitcoinD` where only headers of Bitcoin blocks are stored.
 
-* Wallet - a special file that stores and manages private/public keys and addresses.
+* Wallet - special file that stores and manages private/public keys and addresses.
 
-* BitcoinJ - a Java library that we use to communicate with Bitcoin network (see https://bitcoinj.github.io/)
+* BitcoinJ - Java library that we use to communicate with Bitcoin network (see https://bitcoinj.github.io/)
 
-* MultiSig Address - a special address in Bitcoin that requires m (threshold) of n (number of Notaries) signatures to unlock assets. 
+* MultiSig Address - special address in Bitcoin that requires m (threshold) of n (number of Notaries) signatures to unlock assets. 
 
-* Redeem Script - a special script that is used to describe the terms of locking/releasing coins.
+* Redeem Script - special script that is used to describe the terms of locking/releasing coins.
 
 * RegTest - local Bitcoin testing network
 
@@ -20,7 +20,7 @@
 * MainNet - public Bitcoin main network
 
 ## Bitcoin network
-Notary communicates with two entities: ``BitcoinD`` and `IrohaD`. The communication between `BitcoinD` and Notary goes through SPV node. By doing so, we can be sure that Notary won't run out of disk space while working with Bitcoin. 
+Notary communicates with two entities: ``BitcoinD`` and `IrohaD`. The communication between `BitcoinD` and Notary goes through SPV node. By doing so, we ensure Notary won't run out of disk space while working with Bitcoin. 
 
 ## Address generation
 For each client in D3, a dedicated MultiSig address must be created. A deposit to this address creates a deposit event in Notary and updates related account balance in Iroha.
@@ -37,16 +37,16 @@ Address generation is a time-consuming process. It may take approximately 10-15 
 [More details](https://github.com/d3ledger/d3-btc/blob/develop/btc-address-generation/README.md)
 
 ## Client Registration 
-This event will assign a Bitcoin MultiSig address to recently created Iroha account. 
+The service assigns Bitcoin MultiSig addresses to Iroha accounts. 
 
-Client sends a registration request to particular Notary node. 
+Client sends a registration request to a particular Notary node. 
 Notary chooses MultiSig address and creates a transaction in Iroha to create a "client to Bitcoin address" relationship.  
 
 
 ## Deposit Service
-Each Notary watches for transactions of MultiSig addresses assigned to our clients in the Bitcoin network. Whenever we see a transaction with coins being sent to one of the addresses, Notaries increase its balance.
+Each Notary listens to transactions of the MultiSig addresses assigned to our clients in the Bitcoin network. Whenever we see a transaction with coins being sent to one of the addresses, Notaries increase its balance.
 
-Iroha transfer transaction is formed as a multi-signature transaction that has two commands:` AddAssetQuantity` and `TransferAsstet`.
+Iroha transfer transaction is formed as a multi-signature transaction that has two commands:`AddAssetQuantity` and `TransferAsstet`.
 
 [More details](https://github.com/d3ledger/d3-btc/blob/develop/btc-deposit/README.md)
 
@@ -55,9 +55,9 @@ The withdrawal process works the following way:
 
 1. D3 client sends assets to a dedicated Iroha withdrawal account.
 2. Every node reacts to this transfer by creating a Bitcoin transaction.
-3. Once a transaction is created, all the nodes try to sign recently created Bitcoin transaction if possible.
-4. When enough signatures are collected(supermajority threshold), Notary forms a transaction with all the signatures and sends it to the Bitcoin network. 
-5. The Bitcoin withdrawal transaction is formed as a multi-input transfer with 2 outputs: destination address and change address.
+3. Once a transaction is created, all nodes try to sign recently created Bitcoin transaction if possible.
+4. When enough signatures are collected (supermajority threshold), Notary forms a transaction with all the signatures and sends it to the Bitcoin network. 
+5. Bitcoin withdrawal transaction is formed as a multi-input transfer with 2 outputs: destination address and change address.
 
 The change address is a special MultiSig address used and controlled by Notaries to collect the change.   
 
