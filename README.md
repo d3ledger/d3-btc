@@ -47,7 +47,7 @@ Notary chooses MultiSig address and creates a transaction in Iroha to create a "
 ## Deposit Service
 Each Notary listens to transactions of the MultiSig addresses assigned to our clients in the Bitcoin network. Whenever we see a transaction with coins being sent to one of the addresses, Notaries increase its balance.
 
-Iroha transfer transaction is formed as a multi-signature transaction that has two commands:`AddAssetQuantity` and `TransferAsstet`.
+Iroha transfer transaction is formed as a multi-signature transaction that has two commands:`AddAssetQuantity` and `TransferAsset`.
 
 [More details](https://github.com/d3ledger/d3-btc/tree/develop/btc-deposit)
 
